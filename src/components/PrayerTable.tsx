@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback } from 'react';
 import type { DailySchedule, PrayerName } from '../types/index';
+import type { CountdownMode } from '../hooks/usePrayerContext';
 import { PrayerRow } from './PrayerRow';
 
 interface PrayerTableProps {
@@ -10,6 +11,11 @@ interface PrayerTableProps {
   onTabChange:      (tab: 'today' | 'tomorrow') => void;
   /** Increments every second — forces isPast recalculation */
   tick?:            number;
+  /**
+   * Current countdown phase from usePrayerContext.
+   * When 'to_iqama', the nextPrayer row shows the "now" badge.
+   */
+  countdownMode?:   CountdownMode;
 }
 
 const PRAYERS: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
@@ -40,12 +46,17 @@ function DayRows({
   schedule,
   nextPrayer,
   isToday,
+  countdownMode,
 }: {
-  schedule:   DailySchedule;
-  nextPrayer: PrayerName | null;
-  isToday:    boolean;
+  schedule:      DailySchedule;
+  nextPrayer:    PrayerName | null;
+  isToday:       boolean;
+  countdownMode: CountdownMode;
 }) {
   const now = new Date();
+  // "now" badge only appears during the azan→iqama window
+  const activePrayer = isToday && countdownMode === 'to_iqama' ? nextPrayer : null;
+
   return (
     <div className="px-3 pb-4 space-y-1">
       {/* Fajr */}
@@ -53,6 +64,7 @@ function DayRows({
         name="fajr"
         entry={schedule.fajr}
         isNext={isToday && nextPrayer === 'fajr'}
+        isActive={activePrayer === 'fajr'}
         isPast={isToday && isPrayerPast(schedule, 'fajr', now) && nextPrayer !== 'fajr'}
       />
 
@@ -61,6 +73,7 @@ function DayRows({
         name="sunrise"
         entry={{ azan: schedule.sunrise }}
         isNext={false}
+        isActive={false}
         isPast={isToday && isSunrisePast(schedule, now)}
       />
 
@@ -71,6 +84,7 @@ function DayRows({
           name={prayer}
           entry={schedule[prayer]}
           isNext={isToday && nextPrayer === prayer}
+          isActive={activePrayer === prayer}
           isPast={isToday && isPrayerPast(schedule, prayer, now) && nextPrayer !== prayer}
         />
       ))}
@@ -84,7 +98,8 @@ export function PrayerTable({
   nextPrayer,
   activeTab,
   onTabChange,
-  tick: _tick = 0,   // consumed to trigger re-render; not used directly
+  tick: _tick = 0,
+  countdownMode = 'done',
 }: PrayerTableProps) {
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -203,6 +218,7 @@ export function PrayerTable({
               schedule={todaySchedule}
               nextPrayer={nextPrayer}
               isToday={true}
+              countdownMode={countdownMode}
             />
           </div>
 
@@ -213,6 +229,7 @@ export function PrayerTable({
                 schedule={tomorrowSchedule}
                 nextPrayer={null}
                 isToday={false}
+                countdownMode="done"
               />
             ) : (
               <div className="px-6 py-8 text-center text-gray-400 text-sm">

@@ -104,7 +104,7 @@ export function PrayerViewerPage() {
             nextPrayer={todayNextPrayer}
             activeTab={activeTab}
             onTabChange={setActiveTab}
-            /* pass tick so DayRows re-evaluates isPast every second */
+            countdownMode={countdownMode}
             tick={tick}
           />
         )}

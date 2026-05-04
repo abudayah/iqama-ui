@@ -50,6 +50,7 @@ describe('PrayerRow — unit tests', () => {
         name="fajr"
         entry={{ azan: '05:30', iqama: '05:45' }}
         isNext={true}
+        isActive={false}
         isPast={false}
       />,
     );
@@ -65,6 +66,7 @@ describe('PrayerRow — unit tests', () => {
         name="fajr"
         entry={{ azan: '05:30', iqama: '05:45' }}
         isNext={false}
+        isActive={false}
         isPast={false}
       />,
     );
@@ -80,12 +82,37 @@ describe('PrayerRow — unit tests', () => {
         name="fajr"
         entry={{ azan: '05:30', iqama: '05:45' }}
         isNext={false}
+        isActive={false}
         isPast={true}
       />,
     );
 
     const row = screen.getByTestId('prayer-row-fajr');
     expect(row.className).toContain('opacity-40');
+  });
+
+  it('shows "now" badge only when isActive is true', () => {
+    const { rerender } = render(
+      <PrayerRow
+        name="fajr"
+        entry={{ azan: '05:30', iqama: '05:45' }}
+        isNext={true}
+        isActive={false}
+        isPast={false}
+      />,
+    );
+    expect(screen.queryByLabelText('Current prayer')).not.toBeInTheDocument();
+
+    rerender(
+      <PrayerRow
+        name="fajr"
+        entry={{ azan: '05:30', iqama: '05:45' }}
+        isNext={true}
+        isActive={true}
+        isPast={false}
+      />,
+    );
+    expect(screen.getByLabelText('Current prayer')).toBeInTheDocument();
   });
 });
 

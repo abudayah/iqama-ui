@@ -141,7 +141,11 @@ export function HeroBanner({
             aria-live="polite"
             aria-atomic="true"
           >
-            {countdown.display}
+            {/* HH:mm in large type, :ss in smaller superscript */}
+            {countdown.display.slice(0, 5)}
+            <span className="text-2xl font-semibold opacity-70">
+              &nbsp;:&nbsp;{countdown.display.slice(6)}
+            </span>
           </p>
         )}
 

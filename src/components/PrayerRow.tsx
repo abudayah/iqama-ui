@@ -1,10 +1,12 @@
 import type { PrayerName, PrayerEntry } from '../types/index';
 
 interface PrayerRowProps {
-  name:    PrayerName | 'sunrise';
-  entry:   PrayerEntry | { azan: string; iqama?: never };
-  isNext:  boolean;
-  isPast:  boolean;
+  name:     PrayerName | 'sunrise';
+  entry:    PrayerEntry | { azan: string; iqama?: never };
+  isNext:   boolean;
+  isPast:   boolean;
+  /** True only during the azan→iqama window for this prayer — shows "now" badge */
+  isActive: boolean;
 }
 
 const PRAYER_LABELS: Record<string, string> = {
@@ -22,7 +24,7 @@ const DOT_COLORS: Record<string, string> = {
   isha:    '#4b5563',
 };
 
-export function PrayerRow({ name, entry, isNext, isPast }: PrayerRowProps) {
+export function PrayerRow({ name, entry, isNext, isPast, isActive }: PrayerRowProps) {
   const isSunrise  = name === 'sunrise';
   const dotColor   = DOT_COLORS[name] ?? '#6b7280';
   const iqamaValue = 'iqama' in entry && entry.iqama ? entry.iqama : null;
@@ -31,17 +33,17 @@ export function PrayerRow({ name, entry, isNext, isPast }: PrayerRowProps) {
     <div
       className={[
         'flex items-center justify-between px-3 py-[18px]',
-        isNext  ? 'bg-blue-50 rounded-2xl'  : '',
-        isPast  ? 'opacity-40'              : '',
+        isNext  ? 'bg-blue-50 rounded-2xl' : '',
+        isPast  ? 'opacity-40'             : '',
       ].join(' ')}
       data-testid={`prayer-row-${name}`}
       aria-current={isNext ? 'true' : undefined}
     >
       {/* Left: dot + name + "now" pill */}
       <div className="flex items-center gap-4">
-        {/* Dot — pulses when this is the active prayer */}
+        {/* Dot — pulses only during the active (azan→iqama) window */}
         <span
-          className={['rounded-full flex-shrink-0', isNext ? 'active-dot' : ''].join(' ')}
+          className={['rounded-full flex-shrink-0', isActive ? 'active-dot' : ''].join(' ')}
           style={{ width: 12, height: 12, background: dotColor }}
           aria-hidden="true"
         />
@@ -58,13 +60,12 @@ export function PrayerRow({ name, entry, isNext, isPast }: PrayerRowProps) {
           {PRAYER_LABELS[name] ?? name}
         </span>
 
-        {/* "now" pill — only on the active prayer */}
-        {isNext && (
+        {/* "now" pill — only shown during the azan→iqama window */}
+        {isActive && (
           <span
             className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-600 text-white"
             aria-label="Current prayer"
           >
-            {/* Pulsing white dot inside the pill */}
             <span
               className="block rounded-full bg-white"
               style={{
