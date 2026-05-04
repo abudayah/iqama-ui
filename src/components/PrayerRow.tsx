@@ -94,7 +94,7 @@ export function PrayerRow({ name, entry, isNext, isPast, isActive }: PrayerRowPr
             isNext ? 'font-bold text-blue-700' : 'text-gray-400'
           }`}
         >
-          {iqamaValue ?? '--:--'}
+          {iqamaValue ?? ''}
         </span>
       </div>
     </div>
