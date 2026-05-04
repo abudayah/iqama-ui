@@ -5,6 +5,7 @@ import { useCountdown } from '../hooks/useCountdown';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { PrayerTable } from '../components/PrayerTable';
 import { NextPrayerBanner } from '../components/NextPrayerBanner';
+import { MasjidHeader } from '../components/MasjidHeader';
 
 /** Returns today's date as YYYY-MM-DD in the browser's local timezone. */
 function getLocalDateString(offset = 0): string {
@@ -44,6 +45,7 @@ export function PrayerViewerPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <MasjidHeader />
       <OfflineBanner />
       <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
         {/* Next prayer hero — always visible when today's schedule is loaded */}
