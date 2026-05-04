@@ -23,19 +23,19 @@ function makeTime(hhmm: string): Date {
 
 describe('deriveCountdown', () => {
   it('before azan: phase is to_azan and display shows remaining time', () => {
-    // now = 05:00, fajr azan = 05:30 → 30 minutes remaining
+    // now = 05:00, fajr azan = 05:30 → 30 minutes remaining → "00:30:00"
     const now = makeTime('05:00');
     const result = deriveCountdown(schedule, 'fajr', now);
     expect(result.phase).toBe('to_azan');
-    expect(result.display).toBe('30:00');
+    expect(result.display).toBe('00:30:00');
   });
 
   it('between azan and iqama: phase is to_iqama and display shows remaining time', () => {
-    // now = 05:35, fajr iqama = 05:45 → 10 minutes remaining
+    // now = 05:35, fajr iqama = 05:45 → 10 minutes remaining → "00:10:00"
     const now = makeTime('05:35');
     const result = deriveCountdown(schedule, 'fajr', now);
     expect(result.phase).toBe('to_iqama');
-    expect(result.display).toBe('10:00');
+    expect(result.display).toBe('00:10:00');
   });
 
   it('after iqama: phase is done and display is "All prayers complete"', () => {
@@ -61,10 +61,10 @@ describe('deriveCountdown', () => {
   });
 
   it('display format includes hours when more than 60 minutes remain', () => {
-    // now = 00:00, fajr azan = 05:30 → 5h 30m remaining → "5:30:00"
+    // now = 00:00, fajr azan = 05:30 → 5h 30m remaining → "05:30:00"
     const now = makeTime('00:00');
     const result = deriveCountdown(schedule, 'fajr', now);
     expect(result.phase).toBe('to_azan');
-    expect(result.display).toBe('5:30:00');
+    expect(result.display).toBe('05:30:00');
   });
 });

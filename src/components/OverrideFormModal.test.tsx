@@ -21,10 +21,6 @@ function getTimeInput() {
   return document.querySelector<HTMLInputElement>('input[type="time"]')!;
 }
 
-// Helper: get the offset text input
-function getOffsetInput() {
-  return screen.getByPlaceholderText(/\+15 or -10/i) as HTMLInputElement;
-}
 
 describe('OverrideFormModal — FIXED validation', () => {
   beforeEach(() => {

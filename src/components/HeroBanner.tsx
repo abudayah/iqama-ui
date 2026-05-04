@@ -1,229 +1,270 @@
-import type { PrayerName, CountdownState, DailySchedule } from '../types/index';
+import { useRef, useEffect } from 'react';
+import type { TimeOfDay, CountdownMode } from '../hooks/usePrayerContext';
+import type { PrayerName, DailySchedule, CountdownState } from '../types/index';
 
+/* ─── Props ─────────────────────────────────────────────────────────────────── */
 interface HeroBannerProps {
-  nextPrayer: PrayerName | null;
-  countdown: CountdownState;
-  schedule: DailySchedule | null;
+  nextPrayer:    PrayerName | null;
+  countdown:     CountdownState;
+  schedule:      DailySchedule | null;
+  timeOfDay:     TimeOfDay;
+  countdownMode: CountdownMode;
+  hijriDay:      number;
 }
 
+/* ─── Constants ─────────────────────────────────────────────────────────────── */
 const PRAYER_LABELS: Record<string, string> = {
-  fajr: 'Fajr',
-  dhuhr: 'Dhuhr',
-  asr: 'Asr',
-  maghrib: 'Maghrib',
-  isha: 'Isha',
+  fajr: 'Fajr', dhuhr: 'Dhuhr', asr: 'Asr', maghrib: 'Maghrib', isha: 'Isha',
 };
 
-type Phase = 'dawn' | 'day' | 'dusk' | 'night';
+/** Sky gradient stops per phase — used inline so the browser transitions them */
+const PHASE_SKY: Record<TimeOfDay, { top: string; mid: string; bot: string }> = {
+  DAWN:  { top: '#2c1b3d', mid: '#6b4c5a', bot: '#b08980' },
+  DAY:   { top: '#2980b9', mid: '#4eb1df', bot: '#6dd5ed' },
+  DUSK:  { top: '#2c3e50', mid: '#c06c84', bot: '#f67280' },
+  NIGHT: { top: '#0f2027', mid: '#162c36', bot: '#203a43' },
+};
 
-/**
- * Parses the day number from a hijri_date string like "Dhul Hijjah 25, 1446".
- * Returns null if the format is unrecognised.
- */
-function parseHijriDay(hijriDate: string): number | null {
-  // Match one or two digits that appear before a comma
-  const match = hijriDate.match(/(\d{1,2}),/);
-  if (!match) return null;
-  const day = parseInt(match[1]!, 10);
-  return day >= 1 && day <= 30 ? day : null;
-}
-
-/**
- * Converts a Hijri day (1–30) to the SVG shadow-circle cx value used in the
- * moon mask. The same algorithm as the reference HTML:
- *   day 15  → cx 200  (full moon, shadow off-screen right)
- *   day < 15 → shadow slides in from the right (waxing)
- *   day > 15 → shadow slides in from the left (waning)
- */
-function moonShadowCxFromDay(day: number): number {
-  if (day === 15) return 200; // full moon — shadow completely off-screen
-  if (day < 15) {
-    const progress = day / 15;
-    return 50 + progress * 100; // ~50 (new) → ~150 (almost full)
-  }
-  // day > 15
-  const progress = (day - 15) / 15;
-  return -50 + progress * 100; // ~-50 (almost full) → ~50 (new)
-}
-
-function getPhase(prayer: PrayerName | null): Phase {
-  if (!prayer) return 'night';
-  if (prayer === 'fajr') return 'dawn';
-  if (prayer === 'dhuhr' || prayer === 'asr') return 'day';
-  if (prayer === 'maghrib') return 'dusk';
-  return 'night';
-}
-
-const PHASE_STYLES: Record<Phase, {
-  skyTop: string;
-  skyMid: string;
-  skyBottom: string;
-  showSun: boolean;
-  showMoon: boolean;
-  celestialY: string;
-  celestialX: string;
-  celestialColor: string;
-  mountainBackTop: string;
-  mountainBackBot: string;
-  mountainMidTop: string;
-  mountainMidBot: string;
-  mountainFrontTop: string;
-  mountainFrontBot: string;
+/** Celestial body position + colour per phase */
+const PHASE_CELESTIAL: Record<TimeOfDay, {
+  top: string; left: string; color: string; showSun: boolean;
 }> = {
-  dawn: {
-    skyTop: '#2c1b3d', skyMid: '#6b4c5a', skyBottom: '#b08980',
-    showSun: true, showMoon: false,
-    celestialY: '50%', celestialX: '25%', celestialColor: '#fbc02d',
-    mountainBackTop: '#4a4053', mountainBackBot: '#2a2533',
-    mountainMidTop: '#3a3545', mountainMidBot: '#1c1a24',
-    mountainFrontTop: '#2c2b36', mountainFrontBot: '#11151c',
-  },
-  day: {
-    skyTop: '#2980b9', skyMid: '#4eb1df', skyBottom: '#6dd5ed',
-    showSun: true, showMoon: false,
-    celestialY: '20%', celestialX: '50%', celestialColor: '#fff4ca',
-    mountainBackTop: '#5a7b9c', mountainBackBot: '#2c3e50',
-    mountainMidTop: '#3b5978', mountainMidBot: '#1a252f',
-    mountainFrontTop: '#2c3e50', mountainFrontBot: '#111827',
-  },
-  dusk: {
-    skyTop: '#2c3e50', skyMid: '#c06c84', skyBottom: '#f67280',
-    showSun: true, showMoon: false,
-    celestialY: '60%', celestialX: '80%', celestialColor: '#ffb88c',
-    mountainBackTop: '#4a3b4f', mountainBackBot: '#2a1f2e',
-    mountainMidTop: '#38293d', mountainMidBot: '#1c1121',
-    mountainFrontTop: '#291e2e', mountainFrontBot: '#0f0a14',
-  },
-  night: {
-    skyTop: '#0f2027', skyMid: '#162c36', skyBottom: '#203a43',
-    showSun: false, showMoon: true,
-    celestialY: '30%', celestialX: '75%', celestialColor: '#fff4ca',
-    mountainBackTop: '#1f2937', mountainBackBot: '#111827',
-    mountainMidTop: '#151e29', mountainMidBot: '#0b1016',
-    mountainFrontTop: '#111827', mountainFrontBot: '#000000',
-  },
+  DAWN:  { top: '50%', left: '25%', color: '#fbc02d', showSun: true  },
+  DAY:   { top: '20%', left: '50%', color: '#fff4ca', showSun: true  },
+  DUSK:  { top: '60%', left: '80%', color: '#ffb88c', showSun: true  },
+  NIGHT: { top: '30%', left: '75%', color: '#fff4ca', showSun: false },
 };
 
-export function HeroBanner({ nextPrayer, countdown, schedule }: HeroBannerProps) {
-  const phase = getPhase(nextPrayer);
-  const s = PHASE_STYLES[phase];
-  const iqamaTime = nextPrayer && schedule ? schedule[nextPrayer]?.iqama : null;
+/** Mountain gradient colours per phase */
+const PHASE_MTN: Record<TimeOfDay, {
+  backTop: string; backBot: string;
+  midTop:  string; midBot:  string;
+  frtTop:  string; frtBot:  string;
+}> = {
+  DAWN:  { backTop:'#4a4053',backBot:'#2a2533', midTop:'#3a3545',midBot:'#1c1a24', frtTop:'#2c2b36',frtBot:'#11151c' },
+  DAY:   { backTop:'#5a7b9c',backBot:'#2c3e50', midTop:'#3b5978',midBot:'#1a252f', frtTop:'#2c3e50',frtBot:'#111827' },
+  DUSK:  { backTop:'#4a3b4f',backBot:'#2a1f2e', midTop:'#38293d',midBot:'#1c1121', frtTop:'#291e2e',frtBot:'#0f0a14' },
+  NIGHT: { backTop:'#1f2937',backBot:'#111827', midTop:'#151e29',midBot:'#0b1016', frtTop:'#111827',frtBot:'#000000' },
+};
 
-  // Dynamic moon phase from hijri day
-  const hijriDay = schedule ? parseHijriDay(schedule.hijri_date) : null;
-  const moonShadowCx = hijriDay !== null ? moonShadowCxFromDay(hijriDay) : 75; // default ~quarter moon
+/* ─── Moon phase helpers ─────────────────────────────────────────────────────
+ * Converts a Hijri day (1–30) to the SVG shadow-circle cx value.
+ *   day 15  → cx 200  (full moon — shadow off-screen right)
+ *   day < 15 → waxing: shadow slides right as day increases
+ *   day > 15 → waning: shadow slides in from the left
+ */
+function moonShadowCx(day: number): number {
+  if (day === 15) return 200;
+  if (day < 15)  return 50 + (day / 15) * 100;          // ~50 → ~150
+  return -50 + ((day - 15) / 15) * 100;                  // ~-50 → ~50
+}
 
-  const countdownLabel =
-    countdown.phase === 'to_azan'
-      ? 'Time until azan'
-      : countdown.phase === 'to_iqama'
-        ? 'Time until iqama'
-        : 'Iqama in progress';
+/* ─── Component ─────────────────────────────────────────────────────────────── */
+export function HeroBanner({
+  nextPrayer,
+  countdown,
+  schedule,
+  timeOfDay,
+  countdownMode,
+  hijriDay,
+}: HeroBannerProps) {
+  /* ── Sky gradient ── */
+  const sky = PHASE_SKY[timeOfDay];
+  const cel = PHASE_CELESTIAL[timeOfDay];
+  const mtn = PHASE_MTN[timeOfDay];
+
+  /* ── Prayer data ── */
+  const prayerLabel = nextPrayer ? (PRAYER_LABELS[nextPrayer] ?? nextPrayer) : '—';
+  const azanTime    = nextPrayer && schedule ? schedule[nextPrayer]?.azan  : null;
+  const iqamaTime   = nextPrayer && schedule ? schedule[nextPrayer]?.iqama : null;
+
+  /* ── Countdown display ── */
+  const isIqamaWindow = countdownMode === 'to_iqama';
+  const isDone        = countdownMode === 'done';
+
+  const superTitle = isIqamaWindow ? 'TIME UNTIL IQAMA' : 'NEXT PRAYER';
+  const subLine    = isIqamaWindow
+    ? (iqamaTime ? `${prayerLabel} · Iqama at ${iqamaTime}` : prayerLabel)
+    : (azanTime  ? `${prayerLabel} · Azan at ${azanTime}`   : prayerLabel);
+
+  /* ── Smooth sky transition via inline style ──
+   * We update a data-phase attribute on the wrapper so the CSS vars in
+   * index.css transition. We also set the gradient directly so it works
+   * even in browsers that don't support @property transitions.
+   */
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (wrapperRef.current) {
+      wrapperRef.current.setAttribute('data-phase', timeOfDay);
+    }
+  }, [timeOfDay]);
+
+  /* ── Moon shadow cx ── */
+  const shadowCx = moonShadowCx(hijriDay);
 
   return (
     <div
-      className="relative overflow-hidden text-white"
+      ref={wrapperRef}
+      data-phase={timeOfDay}
+      className="relative overflow-hidden text-white hero-sky"
       style={{
-        height: 280,
-        background: `linear-gradient(to bottom, ${s.skyTop}, ${s.skyMid}, ${s.skyBottom})`,
+        height: 300,
+        background: `linear-gradient(to bottom, ${sky.top}, ${sky.mid}, ${sky.bot})`,
         transition: 'background 1.5s ease-in-out',
       }}
+      aria-label="Prayer hero banner"
     >
-      {/* Text content */}
-      <div className="relative z-10 flex justify-between items-start px-6 pt-8" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.3)' }}>
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest opacity-60">Next prayer</p>
-          <h1 className="text-5xl font-bold mt-1" style={{ letterSpacing: '-1px' }}>
-            {nextPrayer ? (PRAYER_LABELS[nextPrayer] ?? nextPrayer) : '—'}
-          </h1>
-          {iqamaTime && (
-            <p className="text-sm mt-2 opacity-90">Iqama at {iqamaTime}</p>
-          )}
-        </div>
-        <div className="text-right">
-          <p className="text-sm opacity-90">{countdownLabel}</p>
-          {countdown.display !== 'All prayers complete' ? (
-            <p className="text-4xl font-bold mt-1 tabular-nums leading-none">
-              {countdown.display.slice(0, 5)}
-              <span className="text-xl font-semibold opacity-70">
-                :{countdown.display.slice(6)}
-              </span>
-            </p>
-          ) : (
-            <p className="text-4xl font-bold mt-1">—</p>
-          )}
-        </div>
+      {/* ── Text content — left-aligned stacked layout ── */}
+      <div
+        className="relative z-10 flex flex-col justify-start px-6 pt-8 max-w-xs"
+        style={{ textShadow: '0 2px 12px rgba(0,0,0,0.45)' }}
+      >
+        {/* Super-title */}
+        {isIqamaWindow ? (
+          <p className="iqama-warning-label text-xs font-bold uppercase tracking-[0.18em]">
+            {superTitle}
+          </p>
+        ) : (
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/60">
+            {superTitle}
+          </p>
+        )}
+
+        {/* Timer */}
+        {isDone ? (
+          <p className="text-5xl font-bold mt-1 tabular-nums leading-none tracking-tight">
+            —
+          </p>
+        ) : (
+          <p
+            className="text-5xl font-bold mt-1 tabular-nums leading-none tracking-tight"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {countdown.display}
+          </p>
+        )}
+
+        {/* Subtitle */}
+        <p className="text-sm font-semibold mt-2 text-white/90">
+          {isDone ? 'All prayers complete' : subLine}
+        </p>
       </div>
 
-      {/* Landscape layer */}
+      {/* ── Landscape layer (z-index 1, behind text) ── */}
       <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
-        {/* Sun */}
-        {s.showSun && (
+
+        {/* Sun — shown during DAWN / DAY / DUSK */}
+        {cel.showSun && (
           <div
+            className="celestial-body absolute rounded-full"
             style={{
-              position: 'absolute',
-              top: s.celestialY,
-              left: s.celestialX,
+              top:       cel.top,
+              left:      cel.left,
               transform: 'translate(-50%, -50%)',
-              width: 70,
-              height: 70,
-              background: s.celestialColor,
-              borderRadius: '50%',
-              boxShadow: `0 0 40px ${s.celestialColor}`,
-              transition: 'all 1.5s cubic-bezier(0.4, 0, 0.2, 1)',
+              width:     70,
+              height:    70,
+              background: cel.color,
+              boxShadow: `0 0 50px 10px ${cel.color}`,
             }}
+            aria-hidden="true"
           />
         )}
 
-        {/* Moon */}
-        {s.showMoon && (
+        {/* Moon — shown during NIGHT only */}
+        {!cel.showSun && (
           <div
+            className="celestial-body absolute"
             style={{
-              position: 'absolute',
-              top: s.celestialY,
-              left: s.celestialX,
+              top:       cel.top,
+              left:      cel.left,
               transform: 'translate(-50%, -50%)',
-              width: 80,
-              height: 80,
-              filter: 'drop-shadow(0 0 15px rgba(255, 244, 202, 0.4))',
-              transition: 'all 1.5s cubic-bezier(0.4, 0, 0.2, 1)',
+              width:     80,
+              height:    80,
+              filter:    'drop-shadow(0 0 18px rgba(255,244,202,0.45))',
             }}
+            aria-hidden="true"
           >
-            <svg viewBox="0 0 100 100" width="100%" height="100%" style={{ transform: 'rotate(-25deg)' }}>
+            {/* The entire SVG is tilted -25° for a natural crescent angle */}
+            <svg
+              viewBox="0 0 100 100"
+              width="100%"
+              height="100%"
+              style={{ transform: 'rotate(-25deg)' }}
+            >
               <defs>
-                <mask id="moon-mask">
+                {/*
+                  Moon phase mask:
+                  - White rect = visible area
+                  - Black circle = shadow that hides part of the moon
+                  cx is driven by hijriDay:
+                    day 15 → cx 200 (full moon, shadow off-screen)
+                    day < 15 → waxing (shadow moves right)
+                    day > 15 → waning (shadow comes from left)
+                */}
+                <mask id="moon-phase-mask">
                   <rect x="0" y="0" width="100" height="100" fill="white" />
-                  <circle cx={moonShadowCx} cy="50" r="50" fill="black" />
+                  <circle cx={shadowCx} cy="50" r="50" fill="black" />
                 </mask>
               </defs>
-              <circle cx="50" cy="50" r="45" fill="#fff4ca" mask="url(#moon-mask)" />
+              <circle cx="50" cy="50" r="45" fill="#fff4ca" mask="url(#moon-phase-mask)" />
             </svg>
           </div>
         )}
 
-        {/* Mountains SVG */}
+        {/* Mountains SVG — three receding ranges with atmospheric gradients */}
         <svg
           viewBox="0 0 100 40"
           preserveAspectRatio="none"
-          style={{ position: 'absolute', bottom: -2, left: 0, width: '100%', height: 160 }}
+          style={{ position: 'absolute', bottom: -2, left: 0, width: '100%', height: 170 }}
+          aria-hidden="true"
         >
           <defs>
-            <linearGradient id="grad-back" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor={s.mountainBackTop} />
-              <stop offset="100%" stopColor={s.mountainBackBot} />
+            {/* Back range — lightest (most atmospheric haze) */}
+            <linearGradient id="hb-grad-back" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor={mtn.backTop} />
+              <stop offset="100%" stopColor={mtn.backBot} />
             </linearGradient>
-            <linearGradient id="grad-mid" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor={s.mountainMidTop} />
-              <stop offset="100%" stopColor={s.mountainMidBot} />
+            {/* Mid range */}
+            <linearGradient id="hb-grad-mid" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor={mtn.midTop} />
+              <stop offset="100%" stopColor={mtn.midBot} />
             </linearGradient>
-            <linearGradient id="grad-front" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor={s.mountainFrontTop} />
-              <stop offset="100%" stopColor={s.mountainFrontBot} />
+            {/* Front range — darkest */}
+            <linearGradient id="hb-grad-front" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor={mtn.frtTop} />
+              <stop offset="100%" stopColor={mtn.frtBot} />
+            </linearGradient>
+            {/* Mist layer — faint white-to-transparent veil between back and mid */}
+            <linearGradient id="hb-grad-mist" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="rgba(255,255,255,0.07)" />
+              <stop offset="100%" stopColor="rgba(255,255,255,0)" />
             </linearGradient>
           </defs>
-          <path fill="url(#grad-back)" d="M0,40 L0,15 Q15,5 30,12 T60,10 T90,18 T100,12 L100,40 Z" />
-          <path fill="url(#grad-mid)" d="M0,40 L0,22 Q18,12 35,20 T70,16 T100,24 L100,40 Z" />
-          <path fill="url(#grad-front)" d="M-10,40 L-10,28 Q25,18 45,28 T110,22 L110,40 Z" />
+
+          {/* Back mountains */}
+          <path
+            fill="url(#hb-grad-back)"
+            d="M0,40 L0,15 Q15,5 30,12 T60,10 T90,18 T100,12 L100,40 Z"
+          />
+
+          {/* Mist veil — sits between back and mid ranges */}
+          <path
+            fill="url(#hb-grad-mist)"
+            d="M0,40 L0,18 Q20,10 40,16 T80,14 T100,20 L100,40 Z"
+          />
+
+          {/* Mid mountains */}
+          <path
+            fill="url(#hb-grad-mid)"
+            d="M0,40 L0,22 Q18,12 35,20 T70,16 T100,24 L100,40 Z"
+          />
+
+          {/* Front mountains */}
+          <path
+            fill="url(#hb-grad-front)"
+            d="M-10,40 L-10,28 Q25,18 45,28 T110,22 L110,40 Z"
+          />
         </svg>
       </div>
     </div>

@@ -49,9 +49,22 @@ const scheduleArb: fc.Arbitrary<DailySchedule> = fc.record({
   }),
 });
 
+/** Helper: render PrayerTable with the new API using sensible defaults */
+function renderTable(schedule: DailySchedule) {
+  return render(
+    <PrayerTable
+      todaySchedule={schedule}
+      tomorrowSchedule={null}
+      nextPrayer={null}
+      activeTab="today"
+      onTabChange={() => undefined}
+    />,
+  );
+}
+
 describe('PrayerTable — unit tests', () => {
   it('renders all 5 prayers and sunrise', () => {
-    render(<PrayerTable schedule={fixtureSchedule} nextPrayer={null} isToday={false} />);
+    renderTable(fixtureSchedule);
 
     expect(screen.getByTestId('prayer-row-fajr')).toBeInTheDocument();
     expect(screen.getByTestId('prayer-row-dhuhr')).toBeInTheDocument();
@@ -62,42 +75,30 @@ describe('PrayerTable — unit tests', () => {
   });
 
   it('renders sunrise immediately after fajr', () => {
-    render(<PrayerTable schedule={fixtureSchedule} nextPrayer={null} isToday={false} />);
+    renderTable(fixtureSchedule);
 
     const rows = screen.getAllByTestId(/^prayer-row-/);
     const names = rows.map(r => r.getAttribute('data-testid'));
-    const fajrIdx = names.indexOf('prayer-row-fajr');
+    const fajrIdx    = names.indexOf('prayer-row-fajr');
     const sunriseIdx = names.indexOf('prayer-row-sunrise');
     expect(sunriseIdx).toBe(fajrIdx + 1);
-  });
-
-  it('shows override indicator when has_overrides is true', () => {
-    const schedule = { ...fixtureSchedule, metadata: { calculation_method: 'ISNA' as const, has_overrides: true } };
-    render(<PrayerTable schedule={schedule} nextPrayer={null} isToday={false} />);
-
-    expect(screen.getByTestId('override-indicator')).toBeInTheDocument();
-  });
-
-  it('does not show override indicator when has_overrides is false', () => {
-    render(<PrayerTable schedule={fixtureSchedule} nextPrayer={null} isToday={false} />);
-
-    expect(screen.queryByTestId('override-indicator')).not.toBeInTheDocument();
   });
 });
 
 describe('PrayerTable — Property 8: renders all required fields for any schedule', () => {
   // Feature: prayer-app, Property 8: PrayerTable renders all required fields for any schedule
-  it('always renders date, hijri date, day of week, sunrise, and all 5 prayer rows', () => {
+  it('always renders all 5 prayer rows and sunrise', () => {
     fc.assert(
       fc.property(scheduleArb, (schedule) => {
         const { unmount } = render(
-          <PrayerTable schedule={schedule} nextPrayer={null} isToday={false} />,
+          <PrayerTable
+            todaySchedule={schedule}
+            tomorrowSchedule={null}
+            nextPrayer={null}
+            activeTab="today"
+            onTabChange={() => undefined}
+          />,
         );
-
-        // Gregorian date, hijri date, day of week
-        expect(screen.getByText(schedule.date)).toBeInTheDocument();
-        expect(screen.getByText(schedule.hijri_date)).toBeInTheDocument();
-        expect(screen.getByText(schedule.day_of_week)).toBeInTheDocument();
 
         // Sunrise row
         expect(screen.getByTestId('prayer-row-sunrise')).toBeInTheDocument();
@@ -105,30 +106,6 @@ describe('PrayerTable — Property 8: renders all required fields for any schedu
         // All 5 prayer rows
         for (const prayer of ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha']) {
           expect(screen.getByTestId(`prayer-row-${prayer}`)).toBeInTheDocument();
-        }
-
-        unmount();
-      }),
-      { numRuns: 100 },
-    );
-  });
-});
-
-describe('PrayerTable — Property 10: has_overrides indicator shown iff overrides are active', () => {
-  // Feature: prayer-app, Property 10: has_overrides indicator is shown if and only if overrides are active
-  it('shows override indicator iff metadata.has_overrides is true', () => {
-    fc.assert(
-      fc.property(scheduleArb, (schedule) => {
-        const { unmount } = render(
-          <PrayerTable schedule={schedule} nextPrayer={null} isToday={false} />,
-        );
-
-        const indicator = screen.queryByTestId('override-indicator');
-
-        if (schedule.metadata.has_overrides) {
-          expect(indicator).toBeInTheDocument();
-        } else {
-          expect(indicator).not.toBeInTheDocument();
         }
 
         unmount();

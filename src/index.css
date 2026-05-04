@@ -1,3 +1,126 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SKY THEME — CSS custom properties per time-of-day phase.
+   The hero background gradient reads these variables; CSS transitions on the
+   hero element make the sky smoothly cross-fade when the phase changes.
+───────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Default: DAWN */
+  --sky-top:    #2c1b3d;
+  --sky-mid:    #6b4c5a;
+  --sky-bottom: #b08980;
+
+  /* Mountain layer colours */
+  --mtn-back-top:  #4a4053;
+  --mtn-back-bot:  #2a2533;
+  --mtn-mid-top:   #3a3545;
+  --mtn-mid-bot:   #1c1a24;
+  --mtn-front-top: #2c2b36;
+  --mtn-front-bot: #11151c;
+}
+
+[data-phase="DAWN"] {
+  --sky-top:    #2c1b3d;
+  --sky-mid:    #6b4c5a;
+  --sky-bottom: #b08980;
+  --mtn-back-top:  #4a4053; --mtn-back-bot:  #2a2533;
+  --mtn-mid-top:   #3a3545; --mtn-mid-bot:   #1c1a24;
+  --mtn-front-top: #2c2b36; --mtn-front-bot: #11151c;
+}
+
+[data-phase="DAY"] {
+  --sky-top:    #2980b9;
+  --sky-mid:    #4eb1df;
+  --sky-bottom: #6dd5ed;
+  --mtn-back-top:  #5a7b9c; --mtn-back-bot:  #2c3e50;
+  --mtn-mid-top:   #3b5978; --mtn-mid-bot:   #1a252f;
+  --mtn-front-top: #2c3e50; --mtn-front-bot: #111827;
+}
+
+[data-phase="DUSK"] {
+  --sky-top:    #2c3e50;
+  --sky-mid:    #c06c84;
+  --sky-bottom: #f67280;
+  --mtn-back-top:  #4a3b4f; --mtn-back-bot:  #2a1f2e;
+  --mtn-mid-top:   #38293d; --mtn-mid-bot:   #1c1121;
+  --mtn-front-top: #291e2e; --mtn-front-bot: #0f0a14;
+}
+
+[data-phase="NIGHT"] {
+  --sky-top:    #0f2027;
+  --sky-mid:    #162c36;
+  --sky-bottom: #203a43;
+  --mtn-back-top:  #1f2937; --mtn-back-bot:  #111827;
+  --mtn-mid-top:   #151e29; --mtn-mid-bot:   #0b1016;
+  --mtn-front-top: #111827; --mtn-front-bot: #000000;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   HERO BACKGROUND — reads CSS vars so the transition is handled by the browser
+───────────────────────────────────────────────────────────────────────────── */
+.hero-sky {
+  background: linear-gradient(
+    to bottom,
+    var(--sky-top),
+    var(--sky-mid),
+    var(--sky-bottom)
+  );
+  /* Smooth sky cross-fade when phase changes */
+  transition:
+    --sky-top    1.5s ease-in-out,
+    --sky-mid    1.5s ease-in-out,
+    --sky-bottom 1.5s ease-in-out,
+    background   1.5s ease-in-out;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   COUNTDOWN TYPOGRAPHY — State 1 / State 2 fade-slide transition
+───────────────────────────────────────────────────────────────────────────── */
+.countdown-block {
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.countdown-block-enter {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.countdown-block-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   IQAMA WARNING — pulsing amber colour for State 2 super-title
+───────────────────────────────────────────────────────────────────────────── */
+@keyframes iqama-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
+}
+.iqama-warning-label {
+  animation: iqama-pulse 1.8s ease-in-out infinite;
+  color: #fbbf24; /* amber-400 */
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ACTIVE PRAYER DOT — soft pulse ring
+───────────────────────────────────────────────────────────────────────────── */
+@keyframes dot-pulse {
+  0%   { box-shadow: 0 0 0 0   rgba(37, 99, 235, 0.6); }
+  70%  { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0);   }
+  100% { box-shadow: 0 0 0 0   rgba(37, 99, 235, 0);   }
+}
+.active-dot {
+  animation: dot-pulse 1.8s ease-out infinite;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CELESTIAL BODY — smooth position transitions
+───────────────────────────────────────────────────────────────────────────── */
+.celestial-body {
+  transition: top 1.5s cubic-bezier(0.4, 0, 0.2, 1),
+              left 1.5s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.8s ease;
+}

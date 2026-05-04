@@ -1,50 +1,51 @@
 import type { PrayerName, PrayerEntry } from '../types/index';
 
 interface PrayerRowProps {
-  name: PrayerName | 'sunrise';
-  entry: PrayerEntry | { azan: string; iqama?: never };
-  isNext: boolean;
-  isPast: boolean;
+  name:    PrayerName | 'sunrise';
+  entry:   PrayerEntry | { azan: string; iqama?: never };
+  isNext:  boolean;
+  isPast:  boolean;
 }
 
 const PRAYER_LABELS: Record<string, string> = {
-  fajr: 'Fajr',
-  dhuhr: 'Dhuhr',
-  asr: 'Asr',
-  maghrib: 'Maghrib',
-  isha: 'Isha',
-  sunrise: 'Sunrise',
+  fajr: 'Fajr', dhuhr: 'Dhuhr', asr: 'Asr',
+  maghrib: 'Maghrib', isha: 'Isha', sunrise: 'Sunrise',
 };
 
-/** Dot color per prayer — matches the design */
+/** Dot colour per prayer — matches the design system */
 const DOT_COLORS: Record<string, string> = {
-  fajr: '#cbd5e1',
+  fajr:    '#cbd5e1',
   sunrise: '#fde047',
-  dhuhr: '#93c5fd',
-  asr: '#fdba74',
+  dhuhr:   '#93c5fd',
+  asr:     '#fdba74',
   maghrib: '#2563eb',
-  isha: '#4b5563',
+  isha:    '#4b5563',
 };
 
 export function PrayerRow({ name, entry, isNext, isPast }: PrayerRowProps) {
-  const isSunrise = name === 'sunrise';
-  const dotColor = DOT_COLORS[name] ?? '#6b7280';
+  const isSunrise  = name === 'sunrise';
+  const dotColor   = DOT_COLORS[name] ?? '#6b7280';
   const iqamaValue = 'iqama' in entry && entry.iqama ? entry.iqama : null;
 
   return (
     <div
-      className={`flex items-center justify-between px-3 py-[18px] ${
-        isNext ? 'bg-blue-50 rounded-2xl' : ''
-      } ${isPast ? 'opacity-40' : ''}`}
+      className={[
+        'flex items-center justify-between px-3 py-[18px]',
+        isNext  ? 'bg-blue-50 rounded-2xl'  : '',
+        isPast  ? 'opacity-40'              : '',
+      ].join(' ')}
       data-testid={`prayer-row-${name}`}
       aria-current={isNext ? 'true' : undefined}
     >
-      {/* Left: dot + name + status pill */}
+      {/* Left: dot + name + "now" pill */}
       <div className="flex items-center gap-4">
+        {/* Dot — pulses when this is the active prayer */}
         <span
-          className="rounded-full flex-shrink-0"
+          className={['rounded-full flex-shrink-0', isNext ? 'active-dot' : ''].join(' ')}
           style={{ width: 12, height: 12, background: dotColor }}
+          aria-hidden="true"
         />
+
         <span
           className={`text-[1.05rem] ${
             isNext
@@ -57,6 +58,25 @@ export function PrayerRow({ name, entry, isNext, isPast }: PrayerRowProps) {
           {PRAYER_LABELS[name] ?? name}
         </span>
 
+        {/* "now" pill — only on the active prayer */}
+        {isNext && (
+          <span
+            className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-600 text-white"
+            aria-label="Current prayer"
+          >
+            {/* Pulsing white dot inside the pill */}
+            <span
+              className="block rounded-full bg-white"
+              style={{
+                width: 6,
+                height: 6,
+                animation: 'dot-pulse 1.8s ease-out infinite',
+              }}
+              aria-hidden="true"
+            />
+            now
+          </span>
+        )}
       </div>
 
       {/* Right: azan + iqama times */}

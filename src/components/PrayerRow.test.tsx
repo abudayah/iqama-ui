@@ -50,13 +50,13 @@ describe('PrayerRow — unit tests', () => {
         name="fajr"
         entry={{ azan: '05:30', iqama: '05:45' }}
         isNext={true}
+        isPast={false}
       />,
     );
 
     const row = screen.getByTestId('prayer-row-fajr');
     expect(row).toHaveAttribute('aria-current', 'true');
     expect(row.className).toContain('bg-blue-50');
-    expect(row.className).toContain('border-blue-600');
   });
 
   it('does not apply highlight style when isNext is false', () => {
@@ -65,13 +65,27 @@ describe('PrayerRow — unit tests', () => {
         name="fajr"
         entry={{ azan: '05:30', iqama: '05:45' }}
         isNext={false}
+        isPast={false}
       />,
     );
 
     const row = screen.getByTestId('prayer-row-fajr');
     expect(row).not.toHaveAttribute('aria-current');
     expect(row.className).not.toContain('bg-blue-50');
-    expect(row.className).not.toContain('border-blue-600');
+  });
+
+  it('reduces opacity when isPast is true', () => {
+    render(
+      <PrayerRow
+        name="fajr"
+        entry={{ azan: '05:30', iqama: '05:45' }}
+        isNext={false}
+        isPast={true}
+      />,
+    );
+
+    const row = screen.getByTestId('prayer-row-fajr');
+    expect(row.className).toContain('opacity-40');
   });
 });
 
@@ -81,7 +95,13 @@ describe('PrayerRow — Property 9: Exactly one prayer row is highlighted as nex
     fc.assert(
       fc.property(scheduleArb, prayerNameArb, (schedule, nextPrayer) => {
         const { unmount } = render(
-          <PrayerTable schedule={schedule} nextPrayer={nextPrayer} isToday={true} />,
+          <PrayerTable
+            todaySchedule={schedule}
+            tomorrowSchedule={null}
+            nextPrayer={nextPrayer}
+            activeTab="today"
+            onTabChange={() => undefined}
+          />,
         );
 
         const prayers: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];

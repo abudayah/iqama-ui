@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useSchedule } from '../hooks/useSchedule';
-import { useNextPrayer } from '../hooks/useNextPrayer';
-import { useCountdown } from '../hooks/useCountdown';
+import { usePrayerContext } from '../hooks/usePrayerContext';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { PrayerTable } from '../components/PrayerTable';
 import { HeroBanner } from '../components/HeroBanner';
@@ -9,8 +8,8 @@ import { HeroBanner } from '../components/HeroBanner';
 function getLocalDateString(offset = 0): string {
   const d = new Date();
   d.setDate(d.getDate() + offset);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const y  = d.getFullYear();
+  const m  = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
@@ -18,28 +17,54 @@ function getLocalDateString(offset = 0): string {
 export function PrayerViewerPage() {
   const [activeTab, setActiveTab] = useState<'today' | 'tomorrow'>('today');
 
-  const { data: todaySchedule, loading: todayLoading, error: todayError, refetch: refetchToday } = useSchedule(getLocalDateString(0));
-  const { data: tomorrowSchedule, error: tomorrowError, refetch: refetchTomorrow } = useSchedule(getLocalDateString(1));
+  const {
+    data: todaySchedule,
+    loading: todayLoading,
+    error: todayError,
+    refetch: refetchToday,
+  } = useSchedule(getLocalDateString(0));
 
-  const nextPrayerInitial = useNextPrayer(todaySchedule, tomorrowSchedule);
-  const { countdown, tick } = useCountdown(nextPrayerInitial);
-  const nextPrayerResult = useNextPrayer(todaySchedule, tomorrowSchedule, tick);
+  const {
+    data: tomorrowSchedule,
+    error: tomorrowError,
+    refetch: refetchTomorrow,
+  } = useSchedule(getLocalDateString(1));
+
+  /* Single source of truth for all time-aware state */
+  const {
+    timeOfDay,
+    countdownMode,
+    nextPrayer,
+    nextSchedule,
+    countdown,
+    hijriDay,
+    tick,
+  } = usePrayerContext(todaySchedule, tomorrowSchedule);
 
   const isLoading = todayLoading;
-  const error = activeTab === 'today' ? todayError : tomorrowError;
-  const refetch = activeTab === 'today' ? refetchToday : refetchTomorrow;
+  const error     = activeTab === 'today' ? todayError : tomorrowError;
+  const refetch   = activeTab === 'today' ? refetchToday : refetchTomorrow;
+
+  /* nextPrayer is only "active" in the today table when the schedule matches */
+  const todayNextPrayer =
+    nextSchedule === todaySchedule ? (nextPrayer ?? null) : null;
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <OfflineBanner />
 
       <HeroBanner
-        nextPrayer={nextPrayerResult?.prayer ?? null}
+        nextPrayer={nextPrayer}
         countdown={countdown}
-        schedule={nextPrayerResult?.schedule ?? todaySchedule ?? null}
+        schedule={nextSchedule ?? todaySchedule ?? null}
+        timeOfDay={timeOfDay}
+        countdownMode={countdownMode}
+        hijriDay={hijriDay}
       />
 
+      {/* Prayer list — overlaps the hero bottom edge */}
       <div className="flex-1 -mt-4 relative z-10 flex flex-col max-w-lg w-full mx-auto">
+
         {/* Loading skeleton */}
         {isLoading && (
           <div className="bg-white rounded-t-3xl px-6 pt-6 pb-4">
@@ -56,7 +81,10 @@ export function PrayerViewerPage() {
         {/* Error state */}
         {error && !isLoading && (
           <div className="bg-white rounded-t-3xl px-6 pt-6">
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-center" role="alert">
+            <div
+              className="bg-red-50 border border-red-200 rounded-xl p-4 text-center"
+              role="alert"
+            >
               <p className="text-red-700 text-sm mb-3">{error.message}</p>
               <button
                 onClick={() => void refetch()}
@@ -73,9 +101,11 @@ export function PrayerViewerPage() {
           <PrayerTable
             todaySchedule={todaySchedule}
             tomorrowSchedule={tomorrowSchedule ?? null}
-            nextPrayer={nextPrayerResult?.schedule === todaySchedule ? (nextPrayerResult?.prayer ?? null) : null}
+            nextPrayer={todayNextPrayer}
             activeTab={activeTab}
             onTabChange={setActiveTab}
+            /* pass tick so DayRows re-evaluates isPast every second */
+            tick={tick}
           />
         )}
       </div>
