@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Full Dynamic Iqama UI</title>
+  <style>
+    /* --- 1. STATE MACHINE (CSS VARIABLES) --- */
+    :root {
+      /* Default to Dawn */
+      --sky-top: #2c1b3d;
+      --sky-mid: #6b4c5a;
+      --sky-bottom: #b08980;
+      
+      --sun-display: block;
+      --moon-display: none;
+      
+      --celestial-y: 50%;
+      --celestial-x: 25%;
+      --celestial-color: #fbc02d; 
+      
+      --mountain-back-top: #4a4053;
+      --mountain-back-bot: #2a2533;
+      --mountain-mid-top: #3a3545;
+      --mountain-mid-bot: #1c1a24;
+      --mountain-front-top: #2c2b36;
+      --mountain-front-bot: #11151c;
+    }
+
+    [data-phase="day"] {
+      --sky-top: #2980b9;
+      --sky-mid: #4eb1df;
+      --sky-bottom: #6dd5ed;
+      --celestial-y: 20%;
+      --celestial-x: 50%;
+      --celestial-color: #fff4ca;
+      --mountain-back-top: #5a7b9c; --mountain-back-bot: #2c3e50;
+      --mountain-mid-top: #3b5978; --mountain-mid-bot: #1a252f;
+      --mountain-front-top: #2c3e50; --mountain-front-bot: #111827;
+    }
+
+    [data-phase="dusk"] {
+      --sky-top: #2c3e50;
+      --sky-mid: #c06c84;
+      --sky-bottom: #f67280;
+      --celestial-y: 60%;
+      --celestial-x: 80%;
+      --celestial-color: #ffb88c;
+      --mountain-back-top: #4a3b4f; --mountain-back-bot: #2a1f2e;
+      --mountain-mid-top: #38293d; --mountain-mid-bot: #1c1121;
+      --mountain-front-top: #291e2e; --mountain-front-bot: #0f0a14;
+    }
+
+    [data-phase="night"] {
+      --sky-top: #0f2027;
+      --sky-mid: #162c36;
+      --sky-bottom: #203a43;
+      --sun-display: none;
+      --moon-display: block; 
+      --celestial-y: 30%;
+      --celestial-x: 75%;
+      --mountain-back-top: #1f2937; --mountain-back-bot: #111827;
+      --mountain-mid-top: #151e29; --mountain-mid-bot: #0b1016;
+      --mountain-front-top: #111827; --mountain-front-bot: #000000;
+    }
+
+    /* --- 2. BASE & FRAME --- */
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #e5e5e5; display: flex; justify-content: center; align-items: center; min-height: 100vh; flex-direction: column; padding: 20px;}
+    
+    .mobile-frame {
+      width: 390px;
+      height: 844px;
+      background: white;
+      border-radius: 40px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      border: 8px solid #1f2937;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* --- 3. DYNAMIC HERO --- */
+    .hero {
+      position: relative;
+      height: 320px;
+      background: linear-gradient(to bottom, var(--sky-top), var(--sky-mid), var(--sky-bottom));
+      transition: background 1.5s ease-in-out;
+      color: white;
+      padding: 32px 24px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .hero-header { display: flex; justify-content: space-between; align-items: flex-start; z-index: 10; text-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+    .prayer-info h2 { font-size: 1rem; font-weight: 400; opacity: 0.9; }
+    .prayer-info h1 { font-size: 3rem; font-weight: 700; margin-top: 4px; letter-spacing: -1px; }
+    .prayer-info p { font-size: 0.9rem; margin-top: 8px; opacity: 0.9;}
+    .countdown-info { text-align: right; }
+    .countdown-info p { font-size: 0.85rem; opacity: 0.9; }
+    .countdown-info .timer { font-size: 2.2rem; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+
+    /* --- 4. LANDSCAPE & CELESTIAL BODIES --- */
+    .landscape { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+
+    .sun {
+      position: absolute;
+      display: var(--sun-display);
+      width: 70px; height: 70px;
+      background: var(--celestial-color);
+      border-radius: 50%;
+      top: var(--celestial-y); left: var(--celestial-x);
+      transform: translate(-50%, -50%);
+      transition: all 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 40px var(--celestial-color);
+    }
+
+    .moon-container {
+      position: absolute;
+      display: var(--moon-display);
+      top: var(--celestial-y); left: var(--celestial-x);
+      transform: translate(-50%, -50%);
+      width: 80px; height: 80px;
+      transition: all 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+      filter: drop-shadow(0 0 15px rgba(255, 244, 202, 0.4));
+    }
+
+    /* THIS IS THE NEW CLASS TILTING THE MOON */
+    .moon-svg {
+      transform: rotate(-25deg); 
+    }
+
+    .mountains { position: absolute; bottom: -2px; width: 100%; height: 160px; transition: fill 1.5s ease-in-out; }
+
+    /* --- 5. PRAYER LIST --- */
+    .list-container { flex: 1; background: #fafafa; padding: 24px; overflow-y: auto; }
+    .date-header { display: flex; justify-content: space-between; margin-bottom: 24px; align-items: center; }
+    .date-text h3 { font-size: 1.2rem; color: #111827; }
+    .date-text p { font-size: 0.9rem; color: #6b7280; margin-top: 4px; }
+    
+    .toggle { display: flex; background: #f3f4f6; border-radius: 20px; padding: 4px; }
+    .toggle button { border: none; background: none; padding: 6px 14px; font-size: 0.85rem; border-radius: 16px; font-weight: 600; color: #6b7280; cursor: pointer; }
+    .toggle button.active { background: #dbeafe; color: #1d4ed8; }
+
+    .prayer-row { display: flex; justify-content: space-between; align-items: center; padding: 18px 12px; }
+    .prayer-row.done { opacity: 0.4; }
+    .prayer-row.active { background: #eff6ff; border-radius: 16px; }
+    .prayer-row.active .prayer-name { font-weight: 700; color: #1d4ed8; }
+    .prayer-row.active .times { color: #1d4ed8; font-weight: 700; }
+
+    .prayer-name { display: flex; align-items: center; gap: 16px; font-weight: 500; color: #6b7280; font-size: 1.05rem; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .status-pill { font-size: 0.75rem; padding: 4px 10px; border-radius: 12px; background: #f3f4f6; color: #9ca3af; font-weight: 600;}
+    .active .status-pill { background: #2563eb; color: white; display: flex; align-items: center; gap: 6px; }
+    .active .status-pill::before { content: ''; display: block; width: 6px; height: 6px; background: white; border-radius: 50%; animation: pulse 1.5s infinite; }
+    .times { display: flex; gap: 24px; color: #9ca3af; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 4px rgba(255, 255, 255, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+    }
+
+    /* --- 6. CONTROLS --- */
+    .controls-panel { margin-top: 24px; width: 390px; background: white; padding: 20px; border-radius: 16px; border: 1px solid #d1d5db; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+    .controls-panel button { padding: 10px; border-radius: 8px; border: 1px solid #e5e7eb; background: #f9fafb; cursor: pointer; font-weight: 500; color: #374151; }
+    .controls-panel button:hover { background: #f3f4f6; }
+    .slider-group { border-top: 1px solid #e5e7eb; padding-top: 16px; }
+    .slider-group label { display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: 600; color: #374151; margin-bottom: 8px; }
+    .slider-group input { width: 100%; cursor: pointer; }
+    .moon-phase-hint { text-align: center; font-size: 0.8rem; color: #6b7280; margin-top: 4px; }
+  </style>
+</head>
+<body data-phase="dawn"> 
+
+  <div class="mobile-frame">
+    <!-- HERO SECTION -->
+    <header class="hero">
+      <div class="hero-header">
+        <div class="prayer-info">
+          <h2>Next prayer</h2>
+          <h1 id="hero-prayer-name">Fajr</h1>
+          <p>Iqama at 05:00</p>
+        </div>
+        <div class="countdown-info">
+          <p>Time until azan</p>
+          <div class="timer">00:00:00</div>
+        </div>
+      </div>
+
+      <div class="landscape">
+        <!-- The Sun -->
+        <div class="sun"></div>
+        
+        <!-- The Moon (SVG Mask) -->
+        <div class="moon-container">
+          <!-- Added the .moon-svg class here to apply the tilt -->
+          <svg class="moon-svg" viewBox="0 0 100 100" width="100%" height="100%">
+            <defs>
+              <mask id="moon-mask">
+                <rect x="0" y="0" width="100" height="100" fill="white" />
+                <circle id="shadow-circle" cx="150" cy="50" r="50" fill="black" />
+              </mask>
+            </defs>
+            <circle cx="50" cy="50" r="45" fill="#fff4ca" mask="url(#moon-mask)" />
+          </svg>
+        </div>
+
+        <!-- Enhanced Mountain Gradients -->
+        <svg class="mountains" viewBox="0 0 100 40" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="grad-back" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="var(--mountain-back-top)" />
+              <stop offset="100%" stop-color="var(--mountain-back-bot)" />
+            </linearGradient>
+            <linearGradient id="grad-mid" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="var(--mountain-mid-top)" />
+              <stop offset="100%" stop-color="var(--mountain-mid-bot)" />
+            </linearGradient>
+            <linearGradient id="grad-front" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="var(--mountain-front-top)" />
+              <stop offset="100%" stop-color="var(--mountain-front-bot)" />
+            </linearGradient>
+          </defs>
+          <path fill="url(#grad-back)" d="M0,40 L0,15 Q15,5 30,12 T60,10 T90,18 T100,12 L100,40 Z" />
+          <path fill="url(#grad-mid)" d="M0,40 L0,22 Q18,12 35,20 T70,16 T100,24 L100,40 Z" />
+          <path fill="url(#grad-front)" d="M-10,40 L-10,28 Q25,18 45,28 T110,22 L110,40 Z" />
+        </svg>
+      </div>
+    </header>
+
+    <!-- LIST SECTION -->
+    <main class="list-container">
+      <div class="date-header">
+        <div class="date-text">
+          <h3>Sunday, May 3</h3>
+          <p>Thul-Qi'dah 16, 1447</p>
+        </div>
+        <div class="toggle">
+          <button class="active">Today</button>
+          <button>Tomorrow</button>
+        </div>
+      </div>
+
+      <div class="prayer-list">
+        <!-- Fajr (Active in this mockup) -->
+        <div class="prayer-row active">
+          <div class="prayer-name">
+            <div class="dot" style="background: #cbd5e1;"></div> Fajr <span class="status-pill">now</span>
+          </div>
+          <div class="times"><span>03:57</span><span>05:00</span></div>
+        </div>
+        
+        <div class="prayer-row">
+          <div class="prayer-name">
+            <div class="dot" style="background: #fde047;"></div> Sunrise
+          </div>
+          <div class="times"><span>05:45</span><span>--:--</span></div>
+        </div>
+        
+        <div class="prayer-row">
+          <div class="prayer-name">
+            <div class="dot" style="background: #93c5fd;"></div> Dhuhr
+          </div>
+          <div class="times"><span>13:09</span><span>13:45</span></div>
+        </div>
+        
+        <div class="prayer-row">
+          <div class="prayer-name">
+            <div class="dot" style="background: #fdba74;"></div> Asr
+          </div>
+          <div class="times"><span>17:11</span><span>18:00</span></div>
+        </div>
+        
+        <div class="prayer-row">
+          <div class="prayer-name">
+            <div class="dot" style="background: #2563eb;"></div> Maghrib
+          </div>
+          <div class="times"><span>20:31</span><span>20:40</span></div>
+        </div>
+
+        <div class="prayer-row">
+          <div class="prayer-name">
+            <div class="dot" style="background: #4b5563;"></div> Isha
+          </div>
+          <div class="times"><span>22:20</span><span>22:30</span></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- CONTROL PANEL -->
+  <div class="controls-panel">
+    <div class="btn-group">
+      <button onclick="setPhase('dawn')">Simulate Dawn</button>
+      <button onclick="setPhase('day')">Simulate Day</button>
+      <button onclick="setPhase('dusk')">Simulate Dusk</button>
+      <button onclick="setPhase('night')">Simulate Night (Moon)</button>
+    </div>
+    
+    <div class="slider-group">
+      <label for="hijri-day"><span>Hijri Calendar Day:</span> <span id="day-display">15</span></label>
+      <input type="range" id="hijri-day" min="1" max="30" value="15">
+      <div class="moon-phase-hint" id="phase-display">Full Moon</div>
+      <div class="moon-phase-hint" style="font-size: 0.7rem; color: #9ca3af;">(Only visible when Night is active)</div>
+    </div>
+  </div>
+
+  <script>
+    // --- State Machine Logic ---
+    function setPhase(phase) {
+      document.body.setAttribute('data-phase', phase);
+      const title = document.getElementById('hero-prayer-name');
+      if(phase === 'dawn') title.innerText = 'Fajr';
+      if(phase === 'day') title.innerText = 'Dhuhr';
+      if(phase === 'dusk') title.innerText = 'Maghrib';
+      if(phase === 'night') title.innerText = 'Isha';
+    }
+
+    // --- Moon Phase Logic ---
+    const slider = document.getElementById('hijri-day');
+    const dayDisplay = document.getElementById('day-display');
+    const phaseDisplay = document.getElementById('phase-display');
+    const shadowCircle = document.getElementById('shadow-circle');
+
+    function updateMoonPhase(day) {
+      dayDisplay.innerText = day;
+      let shadowX;
+      let phaseName = "";
+
+      if (day == 15) {
+        shadowX = 200; // Off-screen
+        phaseName = "Full Moon";
+      } else if (day < 15) {
+        let progress = day / 15;
+        shadowX = 50 + (progress * 100); 
+        if (day <= 3) phaseName = "New Moon / Thin Crescent";
+        else if (day <= 6) phaseName = "Waxing Crescent";
+        else if (day <= 9) phaseName = "First Quarter";
+        else phaseName = "Waxing Gibbous";
+      } else {
+        let progress = (day - 15) / 15;
+        shadowX = -50 + (progress * 100);
+        if (day <= 19) phaseName = "Waning Gibbous";
+        else if (day <= 23) phaseName = "Last Quarter";
+        else if (day <= 28) phaseName = "Waning Crescent";
+        else phaseName = "New Moon";
+      }
+
+      shadowCircle.setAttribute('cx', shadowX);
+      phaseDisplay.innerText = phaseName;
+    }
+
+    slider.addEventListener('input', (e) => updateMoonPhase(e.target.value));
+    updateMoonPhase(15); // Initialize
+  </script>
+</body>
+</html>

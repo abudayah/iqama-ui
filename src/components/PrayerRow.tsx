@@ -16,89 +16,65 @@ const PRAYER_LABELS: Record<string, string> = {
   sunrise: 'Sunrise',
 };
 
-/** Dot color per prayer */
+/** Dot color per prayer — matches the design */
 const DOT_COLORS: Record<string, string> = {
-  fajr: '#B5D4F4',
-  sunrise: '#FAC775',
-  dhuhr: '#185FA5',
-  asr: '#6B7280',
-  maghrib: '#6B7280',
-  isha: '#6B7280',
+  fajr: '#cbd5e1',
+  sunrise: '#fde047',
+  dhuhr: '#93c5fd',
+  asr: '#fdba74',
+  maghrib: '#2563eb',
+  isha: '#4b5563',
 };
 
 export function PrayerRow({ name, entry, isNext, isPast }: PrayerRowProps) {
   const isSunrise = name === 'sunrise';
-  const dotColor = isNext ? '#185FA5' : (DOT_COLORS[name] ?? '#6B7280');
-  const dotSize = isNext ? 8 : 6;
+  const dotColor = DOT_COLORS[name] ?? '#6b7280';
+  const iqamaValue = 'iqama' in entry && entry.iqama ? entry.iqama : null;
 
   return (
     <div
-      className={`grid items-center min-h-[44px] ${
-        isNext
-          ? 'bg-blue-50 border-l-[3px] border-blue-600'
-          : 'border-l-[3px] border-transparent'
-      } ${isPast ? 'opacity-45' : ''}`}
-      style={{ gridTemplateColumns: '1fr 72px 72px 28px' }}
+      className={`flex items-center justify-between px-3 py-[18px] ${
+        isNext ? 'bg-blue-50 rounded-2xl' : ''
+      } ${isPast ? 'opacity-40' : ''}`}
       data-testid={`prayer-row-${name}`}
       aria-current={isNext ? 'true' : undefined}
     >
-      {/* Prayer name + status */}
-      <div className="flex items-center gap-2.5 px-4 py-2.5">
+      {/* Left: dot + name + status pill */}
+      <div className="flex items-center gap-4">
         <span
           className="rounded-full flex-shrink-0"
-          style={{ width: dotSize, height: dotSize, background: dotColor }}
+          style={{ width: 12, height: 12, background: dotColor }}
         />
         <span
-          className={`${
+          className={`text-[1.05rem] ${
             isNext
-              ? 'text-base font-medium text-gray-900'
+              ? 'font-bold text-blue-700'
               : isSunrise
-                ? 'text-sm italic text-gray-500'
-                : isPast
-                  ? 'text-sm text-gray-800'
-                  : 'text-sm text-gray-800'
+                ? 'text-gray-500 italic'
+                : 'font-medium text-gray-600'
           }`}
         >
           {PRAYER_LABELS[name] ?? name}
         </span>
-        {isPast && !isSunrise && (
-          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200">
-            done
-          </span>
-        )}
-        {isNext && (
-          <span className="text-xs font-medium px-2 py-0.5 rounded-full text-white" style={{ background: '#185FA5' }}>
-            now
-          </span>
-        )}
+
       </div>
 
-      {/* Azan */}
-      <span
-        className={`text-center tabular-nums ${
-          isNext ? 'text-sm font-medium text-blue-600' : 'text-sm text-gray-500'
-        }`}
-      >
-        {entry.azan}
-      </span>
-
-      {/* Iqama */}
-      <span
-        className={`text-center tabular-nums ${
-          isNext ? 'text-sm font-medium text-blue-600' : 'text-sm text-gray-500'
-        }`}
-      >
-        {'iqama' in entry && entry.iqama ? entry.iqama : '—'}
-      </span>
-
-      {/* Clock icon for active prayer */}
-      <div className="flex justify-center pr-2">
-        {isNext && (
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <circle cx="8" cy="8" r="7" stroke="#185FA5" strokeWidth="1.5" />
-            <path d="M8 4.5v4l2.5 2.5" stroke="#185FA5" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-        )}
+      {/* Right: azan + iqama times */}
+      <div className="flex gap-6 tabular-nums">
+        <span
+          className={`text-[1.05rem] ${
+            isNext ? 'font-bold text-blue-700' : 'text-gray-400'
+          }`}
+        >
+          {entry.azan}
+        </span>
+        <span
+          className={`text-[1.05rem] ${
+            isNext ? 'font-bold text-blue-700' : 'text-gray-400'
+          }`}
+        >
+          {iqamaValue ?? '--:--'}
+        </span>
       </div>
     </div>
   );
