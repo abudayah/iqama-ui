@@ -27,7 +27,6 @@ export function PrayerViewerPage() {
 
   /* Single source of truth for all time-aware state */
   const {
-    timeOfDay,
     countdownMode,
     nextPrayer,
     nextSchedule,
@@ -55,9 +54,11 @@ export function PrayerViewerPage() {
         nextPrayer={nextPrayer}
         countdown={countdown}
         schedule={nextSchedule ?? todaySchedule ?? null}
-        timeOfDay={timeOfDay}
+        todaySchedule={todaySchedule ?? null}
         countdownMode={countdownMode}
         hijriDay={hijriDay}
+        tick={tick}
+        simulatedNow={isSimulating ? simNow : undefined}
       />
 
       {/* Prayer list — overlaps the hero bottom edge */}

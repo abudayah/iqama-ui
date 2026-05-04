@@ -1,15 +1,21 @@
-import { useRef, useEffect } from 'react';
-import type { TimeOfDay, CountdownMode } from '../hooks/usePrayerContext';
+import { useRef } from 'react';
+import type { CountdownMode } from '../hooks/usePrayerContext';
 import type { PrayerName, DailySchedule, CountdownState } from '../types/index';
 
 /* ─── Props ─────────────────────────────────────────────────────────────────── */
 interface HeroBannerProps {
   nextPrayer:    PrayerName | null;
   countdown:     CountdownState;
+  /** Schedule for the prayer being counted down to (may be tomorrow's) */
   schedule:      DailySchedule | null;
-  timeOfDay:     TimeOfDay;
+  /** Today's schedule — used for sky/sun/moon anchor times */
+  todaySchedule: DailySchedule | null;
   countdownMode: CountdownMode;
   hijriDay:      number;
+  /** Tick counter from usePrayerContext — drives per-second re-render */
+  tick:          number;
+  /** Optional simulated now (from simulator) */
+  simulatedNow?: Date | undefined;
 }
 
 /* ─── Constants ─────────────────────────────────────────────────────────────── */
@@ -17,37 +23,270 @@ const PRAYER_LABELS: Record<string, string> = {
   fajr: 'Fajr', dhuhr: 'Dhuhr', asr: 'Asr', maghrib: 'Maghrib', isha: 'Isha',
 };
 
-/** Sky gradient stops per phase — used inline so the browser transitions them */
-const PHASE_SKY: Record<TimeOfDay, { top: string; mid: string; bot: string }> = {
-  DAWN:  { top: '#2c1b3d', mid: '#6b4c5a', bot: '#b08980' },
-  DAY:   { top: '#2980b9', mid: '#4eb1df', bot: '#6dd5ed' },
-  DUSK:  { top: '#2c3e50', mid: '#c06c84', bot: '#f67280' },
-  NIGHT: { top: '#0f2027', mid: '#162c36', bot: '#203a43' },
-};
+/* ─── Time helpers ───────────────────────────────────────────────────────────── */
 
-/** Celestial body position + colour per phase */
-const PHASE_CELESTIAL: Record<TimeOfDay, {
-  top: string; left: string; color: string; showSun: boolean;
-}> = {
-  DAWN:  { top: '50%', left: '25%', color: '#fbc02d', showSun: true  },
-  DAY:   { top: '20%', left: '50%', color: '#fff4ca', showSun: true  },
-  DUSK:  { top: '60%', left: '80%', color: '#ffb88c', showSun: true  },
-  NIGHT: { top: '30%', left: '75%', color: '#fff4ca', showSun: false },
-};
+/** Parse "HH:mm" into minutes-since-midnight */
+function hhmm(s: string): number {
+  const [h, m] = s.split(':').map(Number);
+  return h! * 60 + m!;
+}
 
-/** Mountain gradient colours per phase */
-const PHASE_MTN: Record<TimeOfDay, {
+/** Current time as minutes-since-midnight (local) */
+function nowMinutes(now: Date): number {
+  return now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+}
+
+/** Linear interpolation */
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * Math.max(0, Math.min(1, t));
+}
+
+/** Interpolate between two hex colours by t ∈ [0,1] */
+function lerpColor(c1: string, c2: string, t: number): string {
+  const parse = (hex: string) => {
+    const n = parseInt(hex.replace('#', ''), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255] as [number, number, number];
+  };
+  const [r1, g1, b1] = parse(c1);
+  const [r2, g2, b2] = parse(c2);
+  const r = Math.round(lerp(r1!, r2!, t));
+  const g = Math.round(lerp(g1!, g2!, t));
+  const b = Math.round(lerp(b1!, b2!, t));
+  return `rgb(${r},${g},${b})`;
+}
+
+/* ─── Sky colour keyframes ───────────────────────────────────────────────────
+ *
+ * Each keyframe is { t: minutes-since-midnight, top, mid, bot }.
+ * We interpolate between the two surrounding keyframes for the current time.
+ *
+ * Anchor points (filled in with real schedule times at runtime):
+ *   0:00  → deep night
+ *   fajr  → first light / dawn
+ *   sunrise → full day
+ *   solar noon → peak day
+ *   maghrib-30min → golden hour begins
+ *   maghrib → sunset / dusk peak
+ *   maghrib+40min → dusk fading
+ *   isha  → full night
+ *   24:00 → deep night (same as 0:00)
+ */
+interface SkyKeyframe {
+  t:   number;   // minutes since midnight
+  top: string;
+  mid: string;
+  bot: string;
+}
+
+function buildSkyKeyframes(
+  fajrMin: number,
+  sunriseMin: number,
+  maghribMin: number,
+  ishaMin: number,
+): SkyKeyframe[] {
+  const solarNoon = (sunriseMin + maghribMin) / 2;
+  const goldenStart = maghribMin - 30;
+  const duskEnd = maghribMin + 40;
+
+  return [
+    { t: 0,           top: '#0f2027', mid: '#162c36', bot: '#203a43' }, // deep night
+    { t: fajrMin,     top: '#2c1b3d', mid: '#6b4c5a', bot: '#b08980' }, // first light
+    { t: sunriseMin,  top: '#1a6b9a', mid: '#e8956d', bot: '#f5c07a' }, // sunrise glow
+    { t: sunriseMin + 30, top: '#2980b9', mid: '#4eb1df', bot: '#6dd5ed' }, // morning blue
+    { t: solarNoon,   top: '#1a6fa8', mid: '#3da0d0', bot: '#5cc8e8' }, // peak day
+    { t: goldenStart, top: '#2c3e50', mid: '#d4845a', bot: '#f0a070' }, // golden hour
+    { t: maghribMin,  top: '#2c3e50', mid: '#c06c84', bot: '#f67280' }, // sunset peak
+    { t: duskEnd,     top: '#1a1a2e', mid: '#2d1b3d', bot: '#4a2040' }, // dusk fading
+    { t: ishaMin,     top: '#0f2027', mid: '#162c36', bot: '#203a43' }, // full night
+    { t: 24 * 60,     top: '#0f2027', mid: '#162c36', bot: '#203a43' }, // midnight wrap
+  ];
+}
+
+function interpolateSky(
+  keyframes: SkyKeyframe[],
+  t: number,
+): { top: string; mid: string; bot: string } {
+  // Find surrounding keyframes
+  let lo = keyframes[0]!;
+  let hi = keyframes[keyframes.length - 1]!;
+  for (let i = 0; i < keyframes.length - 1; i++) {
+    if (t >= keyframes[i]!.t && t <= keyframes[i + 1]!.t) {
+      lo = keyframes[i]!;
+      hi = keyframes[i + 1]!;
+      break;
+    }
+  }
+  const span = hi.t - lo.t;
+  const frac = span > 0 ? (t - lo.t) / span : 0;
+  return {
+    top: lerpColor(lo.top, hi.top, frac),
+    mid: lerpColor(lo.mid, hi.mid, frac),
+    bot: lerpColor(lo.bot, hi.bot, frac),
+  };
+}
+
+/* ─── Mountain colours ───────────────────────────────────────────────────────
+ * Same keyframe approach for mountain layer tints.
+ */
+interface MtnKeyframe {
+  t: number;
   backTop: string; backBot: string;
   midTop:  string; midBot:  string;
   frtTop:  string; frtBot:  string;
-}> = {
-  DAWN:  { backTop:'#4a4053',backBot:'#2a2533', midTop:'#3a3545',midBot:'#1c1a24', frtTop:'#2c2b36',frtBot:'#11151c' },
-  DAY:   { backTop:'#5a7b9c',backBot:'#2c3e50', midTop:'#3b5978',midBot:'#1a252f', frtTop:'#2c3e50',frtBot:'#111827' },
-  DUSK:  { backTop:'#4a3b4f',backBot:'#2a1f2e', midTop:'#38293d',midBot:'#1c1121', frtTop:'#291e2e',frtBot:'#0f0a14' },
-  NIGHT: { backTop:'#1f2937',backBot:'#111827', midTop:'#151e29',midBot:'#0b1016', frtTop:'#111827',frtBot:'#000000' },
-};
+}
 
-/* ─── Moon phase helpers ─────────────────────────────────────────────────────
+function buildMtnKeyframes(
+  fajrMin: number,
+  sunriseMin: number,
+  maghribMin: number,
+  ishaMin: number,
+): MtnKeyframe[] {
+  const goldenStart = maghribMin - 30;
+  const duskEnd = maghribMin + 40;
+  return [
+    { t: 0,               backTop:'#1f2937',backBot:'#111827', midTop:'#151e29',midBot:'#0b1016', frtTop:'#111827',frtBot:'#000000' },
+    { t: fajrMin,         backTop:'#4a4053',backBot:'#2a2533', midTop:'#3a3545',midBot:'#1c1a24', frtTop:'#2c2b36',frtBot:'#11151c' },
+    { t: sunriseMin + 30, backTop:'#5a7b9c',backBot:'#2c3e50', midTop:'#3b5978',midBot:'#1a252f', frtTop:'#2c3e50',frtBot:'#111827' },
+    { t: goldenStart,     backTop:'#6b5a4a',backBot:'#3a2e24', midTop:'#4a3d30',midBot:'#221a12', frtTop:'#352a1e',frtBot:'#120d08' },
+    { t: maghribMin,      backTop:'#4a3b4f',backBot:'#2a1f2e', midTop:'#38293d',midBot:'#1c1121', frtTop:'#291e2e',frtBot:'#0f0a14' },
+    { t: duskEnd,         backTop:'#252535',backBot:'#141420', midTop:'#1c1c2e',midBot:'#0d0d18', frtTop:'#181828',frtBot:'#060610' },
+    { t: ishaMin,         backTop:'#1f2937',backBot:'#111827', midTop:'#151e29',midBot:'#0b1016', frtTop:'#111827',frtBot:'#000000' },
+    { t: 24 * 60,         backTop:'#1f2937',backBot:'#111827', midTop:'#151e29',midBot:'#0b1016', frtTop:'#111827',frtBot:'#000000' },
+  ];
+}
+
+function interpolateMtn(keyframes: MtnKeyframe[], t: number): Omit<MtnKeyframe, 't'> {
+  let lo = keyframes[0]!;
+  let hi = keyframes[keyframes.length - 1]!;
+  for (let i = 0; i < keyframes.length - 1; i++) {
+    if (t >= keyframes[i]!.t && t <= keyframes[i + 1]!.t) {
+      lo = keyframes[i]!;
+      hi = keyframes[i + 1]!;
+      break;
+    }
+  }
+  const span = hi.t - lo.t;
+  const frac = span > 0 ? (t - lo.t) / span : 0;
+  return {
+    backTop: lerpColor(lo.backTop, hi.backTop, frac),
+    backBot: lerpColor(lo.backBot, hi.backBot, frac),
+    midTop:  lerpColor(lo.midTop,  hi.midTop,  frac),
+    midBot:  lerpColor(lo.midBot,  hi.midBot,  frac),
+    frtTop:  lerpColor(lo.frtTop,  hi.frtTop,  frac),
+    frtBot:  lerpColor(lo.frtBot,  hi.frtBot,  frac),
+  };
+}
+
+/* ─── Sun arc ────────────────────────────────────────────────────────────────
+ *
+ * The sun travels a parabolic arc from left to right:
+ *   - Rises at sunrise: left=5%, top=85% (just above horizon)
+ *   - Peaks at solar noon: left=50%, top=15%
+ *   - Sets at maghrib: left=95%, top=85%
+ *
+ * t=0 → sunrise, t=1 → maghrib
+ * We use a quadratic Bezier: P = (1-t)²·P0 + 2(1-t)t·P1 + t²·P2
+ *   P0 = rise point, P1 = apex control, P2 = set point
+ */
+interface CelestialState {
+  leftPct: number;   // 0–100
+  topPct:  number;   // 0–100
+  color:   string;
+  opacity: number;   // 0–1 for fade in/out near horizon
+  showSun: boolean;
+}
+
+/*
+ * The card is 300px tall. The mountain layer occupies roughly the bottom 100px,
+ * so the visual horizon sits at ~200px from the top = 67% of card height.
+ * Rise/set points are placed at y=67 so the sun/moon dip behind the mountains
+ * rather than disappearing at the card edge.
+ * The arc apex is kept high (y=8) for a natural sky sweep.
+ */
+const HORIZON_PCT = 67; // % from top where sun/moon meet the mountain line
+
+function sunArc(t: number): { leftPct: number; topPct: number } {
+  // Quadratic bezier: rise(5, HORIZON) → apex(50, 8) → set(95, HORIZON)
+  const p0 = { x: 5,  y: HORIZON_PCT };
+  const p1 = { x: 50, y: 8           };
+  const p2 = { x: 95, y: HORIZON_PCT };
+  const tc = Math.max(0, Math.min(1, t));
+  const mt = 1 - tc;
+  return {
+    leftPct: mt * mt * p0.x + 2 * mt * tc * p1.x + tc * tc * p2.x,
+    topPct:  mt * mt * p0.y + 2 * mt * tc * p1.y + tc * tc * p2.y,
+  };
+}
+
+function moonArc(t: number): { leftPct: number; topPct: number } {
+  // Moon travels the opposite arc: rises right, peaks left-center
+  // t=0 → maghrib (rises right), t=1 → fajr next day (sets left)
+  const p0 = { x: 90, y: HORIZON_PCT };
+  const p1 = { x: 45, y: 10          };
+  const p2 = { x: 10, y: HORIZON_PCT };
+  const tc = Math.max(0, Math.min(1, t));
+  const mt = 1 - tc;
+  return {
+    leftPct: mt * mt * p0.x + 2 * mt * tc * p1.x + tc * tc * p2.x,
+    topPct:  mt * mt * p0.y + 2 * mt * tc * p1.y + tc * tc * p2.y,
+  };
+}
+
+function computeCelestial(
+  nowMin: number,
+  fajrMin: number,
+  sunriseMin: number,
+  maghribMin: number,
+  ishaMin: number,
+): CelestialState {
+  const FADE_MINS = 20; // minutes to fade in/out near horizon
+
+  // ── Sun: visible from fajr to maghrib ──
+  if (nowMin >= fajrMin && nowMin <= maghribMin) {
+    // t=0 at sunrise, t=1 at maghrib (sun is below horizon before sunrise)
+    const daySpan = maghribMin - sunriseMin;
+    const rawT = daySpan > 0 ? (nowMin - sunriseMin) / daySpan : 0;
+    const { leftPct, topPct } = sunArc(rawT);
+
+    // Fade in from fajr→sunrise, fade out near maghrib
+    let opacity = 1;
+    if (nowMin < sunriseMin) {
+      opacity = Math.max(0, (nowMin - fajrMin) / FADE_MINS);
+    } else if (nowMin > maghribMin - FADE_MINS) {
+      opacity = Math.max(0, (maghribMin - nowMin) / FADE_MINS);
+    }
+
+    // Sun colour: warm orange near horizon, white-yellow at peak
+    const horizonProximity = Math.abs(topPct - HORIZON_PCT) / (HORIZON_PCT - 8); // 0=horizon, 1=peak
+    const color = lerpColor('#ffb347', '#fff4ca', horizonProximity);
+
+    return { leftPct, topPct, color, opacity, showSun: true };
+  }
+
+  // ── Moon: visible from maghrib to fajr ──
+  // Normalise time so maghrib=0, fajr(next day)=1
+  const nightSpan = (fajrMin + 24 * 60) - maghribMin;
+  const nightElapsed = nowMin >= maghribMin
+    ? nowMin - maghribMin
+    : nowMin + 24 * 60 - maghribMin;
+  const moonT = nightSpan > 0 ? nightElapsed / nightSpan : 0;
+  const { leftPct, topPct } = moonArc(moonT);
+
+  // Fade in after maghrib, fade out before fajr
+  let opacity = 1;
+  const ishaFadeIn = ishaMin - maghribMin;
+  if (nowMin < ishaMin && nowMin >= maghribMin) {
+    opacity = ishaFadeIn > 0 ? (nowMin - maghribMin) / ishaFadeIn : 1;
+  } else if (nowMin < fajrMin && nowMin >= 0) {
+    opacity = Math.max(0, (nowMin - (fajrMin - FADE_MINS)) < 0
+      ? 1
+      : 1 - (nowMin - (fajrMin - FADE_MINS)) / FADE_MINS);
+  }
+
+  return { leftPct, topPct, color: '#fff4ca', opacity, showSun: false };
+}
+
+/* ─── Moon phase shadow ──────────────────────────────────────────────────────
  * Converts a Hijri day (1–30) to the SVG shadow-circle cx value.
  *   day 15  → cx 200  (full moon — shadow off-screen right)
  *   day < 15 → waxing: shadow slides right as day increases
@@ -55,8 +294,8 @@ const PHASE_MTN: Record<TimeOfDay, {
  */
 function moonShadowCx(day: number): number {
   if (day === 15) return 200;
-  if (day < 15)  return 50 + (day / 15) * 100;          // ~50 → ~150
-  return -50 + ((day - 15) / 15) * 100;                  // ~-50 → ~50
+  if (day < 15)  return 50 + (day / 15) * 100;
+  return -50 + ((day - 15) / 15) * 100;
 }
 
 /* ─── Component ─────────────────────────────────────────────────────────────── */
@@ -64,14 +303,31 @@ export function HeroBanner({
   nextPrayer,
   countdown,
   schedule,
-  timeOfDay,
+  todaySchedule,
   countdownMode,
   hijriDay,
+  tick: _tick,   // consumed to trigger re-render each second
+  simulatedNow,
 }: HeroBannerProps) {
-  /* ── Sky gradient ── */
-  const sky = PHASE_SKY[timeOfDay];
-  const cel = PHASE_CELESTIAL[timeOfDay];
-  const mtn = PHASE_MTN[timeOfDay];
+  const now = simulatedNow ?? new Date();
+  const nowMin = nowMinutes(now);
+
+  /* ── Resolve anchor times from today's schedule ── */
+  const fajrMin    = todaySchedule ? hhmm(todaySchedule.fajr.azan)    : 5  * 60;
+  const sunriseMin = todaySchedule ? hhmm(todaySchedule.sunrise)       : 6  * 60;
+  const maghribMin = todaySchedule ? hhmm(todaySchedule.maghrib.azan)  : 20 * 60;
+  const ishaMin    = todaySchedule ? hhmm(todaySchedule.isha.azan)     : 21 * 60;
+
+  /* ── Continuous sky ── */
+  const skyKeyframes = buildSkyKeyframes(fajrMin, sunriseMin, maghribMin, ishaMin);
+  const sky = interpolateSky(skyKeyframes, nowMin);
+
+  /* ── Continuous mountains ── */
+  const mtnKeyframes = buildMtnKeyframes(fajrMin, sunriseMin, maghribMin, ishaMin);
+  const mtn = interpolateMtn(mtnKeyframes, nowMin);
+
+  /* ── Celestial body ── */
+  const cel = computeCelestial(nowMin, fajrMin, sunriseMin, maghribMin, ishaMin);
 
   /* ── Prayer data ── */
   const prayerLabel = nextPrayer ? (PRAYER_LABELS[nextPrayer] ?? nextPrayer) : '—';
@@ -87,30 +343,19 @@ export function HeroBanner({
     ? (iqamaTime ? `${prayerLabel} · Iqama at ${iqamaTime}` : prayerLabel)
     : (azanTime  ? `${prayerLabel} · Azan at ${azanTime}`   : prayerLabel);
 
-  /* ── Smooth sky transition via inline style ──
-   * We update a data-phase attribute on the wrapper so the CSS vars in
-   * index.css transition. We also set the gradient directly so it works
-   * even in browsers that don't support @property transitions.
-   */
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (wrapperRef.current) {
-      wrapperRef.current.setAttribute('data-phase', timeOfDay);
-    }
-  }, [timeOfDay]);
-
   /* ── Moon shadow cx ── */
   const shadowCx = moonShadowCx(hijriDay);
+
+  /* ── Wrapper ref (kept for potential future CSS var transitions) ── */
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   return (
     <div
       ref={wrapperRef}
-      data-phase={timeOfDay}
-      className="relative overflow-hidden text-white hero-sky"
+      className="relative overflow-hidden text-white"
       style={{
         height: 300,
         background: `linear-gradient(to bottom, ${sky.top}, ${sky.mid}, ${sky.bot})`,
-        transition: 'background 1.5s ease-in-out',
       }}
       aria-label="Prayer hero banner"
     >
@@ -141,7 +386,6 @@ export function HeroBanner({
             aria-live="polite"
             aria-atomic="true"
           >
-            {/* HH:mm in large type, :ss in smaller superscript */}
             {countdown.display.slice(0, 5)}
             <span className="text-2xl font-semibold opacity-70">
               &nbsp;:&nbsp;{countdown.display.slice(6)}
@@ -155,41 +399,44 @@ export function HeroBanner({
         </p>
       </div>
 
-      {/* ── Landscape layer (z-index 1, behind text) ── */}
+      {/* ── Landscape layer ── */}
       <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
 
-        {/* Sun — shown during DAWN / DAY / DUSK */}
+        {/* Sun */}
         {cel.showSun && (
           <div
-            className="celestial-body absolute rounded-full"
+            className="absolute rounded-full"
             style={{
-              top:       cel.top,
-              left:      cel.left,
-              transform: 'translate(-50%, -50%)',
-              width:     70,
-              height:    70,
+              top:        `${cel.topPct}%`,
+              left:       `${cel.leftPct}%`,
+              transform:  'translate(-50%, -50%)',
+              width:      70,
+              height:     70,
               background: cel.color,
-              boxShadow: `0 0 50px 10px ${cel.color}`,
+              boxShadow:  `0 0 50px 14px ${cel.color}`,
+              opacity:    cel.opacity,
+              transition: 'top 1s linear, left 1s linear, opacity 20s linear, background 60s linear',
             }}
             aria-hidden="true"
           />
         )}
 
-        {/* Moon — shown during NIGHT only */}
+        {/* Moon */}
         {!cel.showSun && (
           <div
-            className="celestial-body absolute"
+            className="absolute"
             style={{
-              top:       cel.top,
-              left:      cel.left,
-              transform: 'translate(-50%, -50%)',
-              width:     80,
-              height:    80,
-              filter:    'drop-shadow(0 0 18px rgba(255,244,202,0.45))',
+              top:        `${cel.topPct}%`,
+              left:       `${cel.leftPct}%`,
+              transform:  'translate(-50%, -50%)',
+              width:      80,
+              height:     80,
+              filter:     `drop-shadow(0 0 18px rgba(255,244,202,${cel.opacity * 0.45}))`,
+              opacity:    cel.opacity,
+              transition: 'top 1s linear, left 1s linear, opacity 30s linear',
             }}
             aria-hidden="true"
           >
-            {/* The entire SVG is tilted -25° for a natural crescent angle */}
             <svg
               viewBox="0 0 100 100"
               width="100%"
@@ -197,15 +444,6 @@ export function HeroBanner({
               style={{ transform: 'rotate(-25deg)' }}
             >
               <defs>
-                {/*
-                  Moon phase mask:
-                  - White rect = visible area
-                  - Black circle = shadow that hides part of the moon
-                  cx is driven by hijriDay:
-                    day 15 → cx 200 (full moon, shadow off-screen)
-                    day < 15 → waxing (shadow moves right)
-                    day > 15 → waning (shadow comes from left)
-                */}
                 <mask id="moon-phase-mask">
                   <rect x="0" y="0" width="100" height="100" fill="white" />
                   <circle cx={shadowCx} cy="50" r="50" fill="black" />
@@ -216,7 +454,7 @@ export function HeroBanner({
           </div>
         )}
 
-        {/* Mountains SVG — three receding ranges with atmospheric gradients */}
+        {/* Mountains SVG */}
         <svg
           viewBox="0 0 100 40"
           preserveAspectRatio="none"
@@ -224,51 +462,32 @@ export function HeroBanner({
           aria-hidden="true"
         >
           <defs>
-            {/* Back range — lightest (most atmospheric haze) */}
             <linearGradient id="hb-grad-back" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stopColor={mtn.backTop} />
               <stop offset="100%" stopColor={mtn.backBot} />
             </linearGradient>
-            {/* Mid range */}
             <linearGradient id="hb-grad-mid" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stopColor={mtn.midTop} />
               <stop offset="100%" stopColor={mtn.midBot} />
             </linearGradient>
-            {/* Front range — darkest */}
             <linearGradient id="hb-grad-front" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stopColor={mtn.frtTop} />
               <stop offset="100%" stopColor={mtn.frtBot} />
             </linearGradient>
-            {/* Mist layer — faint white-to-transparent veil between back and mid */}
             <linearGradient id="hb-grad-mist" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stopColor="rgba(255,255,255,0.07)" />
               <stop offset="100%" stopColor="rgba(255,255,255,0)" />
             </linearGradient>
           </defs>
 
-          {/* Back mountains */}
-          <path
-            fill="url(#hb-grad-back)"
-            d="M0,40 L0,15 Q15,5 30,12 T60,10 T90,18 T100,12 L100,40 Z"
-          />
-
-          {/* Mist veil — sits between back and mid ranges */}
-          <path
-            fill="url(#hb-grad-mist)"
-            d="M0,40 L0,18 Q20,10 40,16 T80,14 T100,20 L100,40 Z"
-          />
-
-          {/* Mid mountains */}
-          <path
-            fill="url(#hb-grad-mid)"
-            d="M0,40 L0,22 Q18,12 35,20 T70,16 T100,24 L100,40 Z"
-          />
-
-          {/* Front mountains */}
-          <path
-            fill="url(#hb-grad-front)"
-            d="M-10,40 L-10,28 Q25,18 45,28 T110,22 L110,40 Z"
-          />
+          <path fill="url(#hb-grad-back)"
+            d="M0,40 L0,15 Q15,5 30,12 T60,10 T90,18 T100,12 L100,40 Z" />
+          <path fill="url(#hb-grad-mist)"
+            d="M0,40 L0,18 Q20,10 40,16 T80,14 T100,20 L100,40 Z" />
+          <path fill="url(#hb-grad-mid)"
+            d="M0,40 L0,22 Q18,12 35,20 T70,16 T100,24 L100,40 Z" />
+          <path fill="url(#hb-grad-front)"
+            d="M-10,40 L-10,28 Q25,18 45,28 T110,22 L110,40 Z" />
         </svg>
       </div>
     </div>
