@@ -66,7 +66,7 @@ function DayRows({
   const activePrayer = isToday && countdownMode === 'to_iqama' ? nextPrayer : null;
 
   const canPeekPrayer = (prayer: PrayerName) =>
-    !!onPeekPrayer && !isPrayerPast(schedule, prayer, now);
+    !!onPeekPrayer && !isPrayerPast(schedule, prayer, now) && activePrayer !== prayer;
 
   const canPeekSunrise = () =>
     !!onPeekPrayer && !isSunrisePast(schedule, now);
