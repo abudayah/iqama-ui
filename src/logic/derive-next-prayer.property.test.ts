@@ -37,7 +37,7 @@ const nowArb = fc.integer({ min: 0, max: 23 * 60 + 59 }).map(totalMinutes => {
 });
 
 describe('deriveNextPrayer — Property 1: Next prayer is always in the future (or null)', () => {
-  it('returns null or a prayer whose azan is strictly after now', () => {
+  it('returns null or a prayer whose azan is after now, or whose iqama window contains now', () => {
     fc.assert(
       fc.property(scheduleArb, nowArb, (schedule, now) => {
         const result = deriveNextPrayer(schedule, now);
@@ -47,13 +47,14 @@ describe('deriveNextPrayer — Property 1: Next prayer is always in the future (
           return true;
         }
 
-        // Parse the returned prayer's azan time on the same date
         const entry = schedule[result];
-        const [hoursStr, minutesStr] = entry.azan.split(':');
-        const azanDate = new Date(2025, 0, 15, Number(hoursStr), Number(minutesStr), 0, 0); // local time
+        const [ah, am] = entry.azan.split(':').map(Number);
+        const [ih, im] = entry.iqama.split(':').map(Number);
+        const azanDate  = new Date(2025, 0, 15, ah!, am!, 0, 0);
+        const iqamaDate = new Date(2025, 0, 15, ih!, im!, 0, 0);
 
-        // The azan time must be strictly after now
-        return azanDate > now;
+        // Either: azan is in the future, OR we're in the iqama window
+        return azanDate > now || (now >= azanDate && now < iqamaDate);
       }),
       { numRuns: 100 },
     );

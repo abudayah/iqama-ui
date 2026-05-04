@@ -27,12 +27,12 @@ describe('deriveNextPrayer', () => {
   });
 
   it('returns asr when now is after fajr and dhuhr azan but before asr azan (mid-day)', () => {
-    const now = makeDate(13, 0); // 13:00, after dhuhr at 12:15, before asr at 15:30
+    const now = makeDate(13, 0); // 13:00, after dhuhr iqama at 12:30, before asr at 15:30
     expect(deriveNextPrayer(schedule, now)).toBe('asr');
   });
 
   it('returns null when now is after isha azan (all prayers passed)', () => {
-    const now = makeDate(22, 0); // 22:00, after isha at 19:15
+    const now = makeDate(22, 0); // 22:00, after isha iqama at 19:30
     expect(deriveNextPrayer(schedule, now)).toBeNull();
   });
 
@@ -41,8 +41,18 @@ describe('deriveNextPrayer', () => {
     expect(deriveNextPrayer(schedule, now)).toBe('fajr');
   });
 
-  it('returns dhuhr when now is exactly at fajr azan time (fajr has passed, next is dhuhr)', () => {
-    const now = makeDate(5, 30); // exactly 05:30, fajr azan time
+  it('returns fajr when now is exactly at fajr azan time (in iqama window)', () => {
+    const now = makeDate(5, 30); // exactly 05:30 — between fajr azan and iqama (05:45)
+    expect(deriveNextPrayer(schedule, now)).toBe('fajr');
+  });
+
+  it('returns dhuhr when now is after fajr iqama but before dhuhr azan', () => {
+    const now = makeDate(5, 46); // 05:46, after fajr iqama at 05:45
+    expect(deriveNextPrayer(schedule, now)).toBe('dhuhr');
+  });
+
+  it('returns dhuhr when now is between dhuhr azan and iqama (iqama window)', () => {
+    const now = makeDate(12, 20); // 12:20, between dhuhr azan (12:15) and iqama (12:30)
     expect(deriveNextPrayer(schedule, now)).toBe('dhuhr');
   });
 });

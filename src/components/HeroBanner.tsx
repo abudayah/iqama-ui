@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import type { CountdownMode } from '../hooks/usePrayerContext';
 import type { PrayerName, DailySchedule, CountdownState } from '../types/index';
 
@@ -227,17 +227,14 @@ function sunArc(t: number): { leftPct: number; topPct: number } {
 }
 
 function moonArc(t: number): { leftPct: number; topPct: number } {
-  // Moon travels the opposite arc: rises right, peaks left-center
-  // t=0 → maghrib (rises right), t=1 → fajr next day (sets left)
-  const p0 = { x: 90, y: HORIZON_PCT };
-  const p1 = { x: 45, y: 10          };
-  const p2 = { x: 10, y: HORIZON_PCT };
-  const tc = Math.max(0, Math.min(1, t));
-  const mt = 1 - tc;
-  return {
-    leftPct: mt * mt * p0.x + 2 * mt * tc * p1.x + tc * tc * p2.x,
-    topPct:  mt * mt * p0.y + 2 * mt * tc * p1.y + tc * tc * p2.y,
-  };
+  // Moon is fixed horizontally at 72% from left.
+  // t=0 → horizon (daytime, hidden behind mountains)
+  // t=0.5 → peak position in the night sky
+  // t=1 → horizon (sunrise, sinking behind mountains)
+  // CSS 2s transition fires when t changes between these states.
+  const PEAK_TOP = 20;
+  const topPct = t === 0.5 ? PEAK_TOP : HORIZON_PCT;
+  return { leftPct: 72, topPct };
 }
 
 function computeCelestial(
@@ -245,12 +242,11 @@ function computeCelestial(
   fajrMin: number,
   sunriseMin: number,
   maghribMin: number,
-  ishaMin: number,
 ): CelestialState {
-  const FADE_MINS = 20; // minutes to fade in/out near horizon
+  const SUN_FADE_MINS  = 20; // fade in/out near horizon for the sun
 
-  // ── Sun: visible from fajr to maghrib ──
-  if (nowMin >= fajrMin && nowMin <= maghribMin) {
+  // ── Sun: visible from fajr up to (but not including) maghrib ──
+  if (nowMin >= fajrMin && nowMin < maghribMin) {
     // t=0 at sunrise, t=1 at maghrib (sun is below horizon before sunrise)
     const daySpan = maghribMin - sunriseMin;
     const rawT = daySpan > 0 ? (nowMin - sunriseMin) / daySpan : 0;
@@ -259,9 +255,9 @@ function computeCelestial(
     // Fade in from fajr→sunrise, fade out near maghrib
     let opacity = 1;
     if (nowMin < sunriseMin) {
-      opacity = Math.max(0, (nowMin - fajrMin) / FADE_MINS);
-    } else if (nowMin > maghribMin - FADE_MINS) {
-      opacity = Math.max(0, (maghribMin - nowMin) / FADE_MINS);
+      opacity = Math.max(0, (nowMin - fajrMin) / SUN_FADE_MINS);
+    } else if (nowMin > maghribMin - SUN_FADE_MINS) {
+      opacity = Math.max(0, (maghribMin - nowMin) / SUN_FADE_MINS);
     }
 
     // Sun colour: warm orange near horizon, white-yellow at peak
@@ -271,27 +267,19 @@ function computeCelestial(
     return { leftPct, topPct, color, opacity, showSun: true };
   }
 
-  // ── Moon: visible from maghrib to fajr ──
-  // Normalise time so maghrib=0, fajr(next day)=1
-  const nightSpan = (fajrMin + 24 * 60) - maghribMin;
-  const nightElapsed = nowMin >= maghribMin
-    ? nowMin - maghribMin
-    : nowMin + 24 * 60 - maghribMin;
-  const moonT = nightSpan > 0 ? nightElapsed / nightSpan : 0;
+  // ── Moon: rises from behind mountains at maghrib, sets behind them at sunrise ──
+  // Three states: hidden (day), up (night), descending (near sunrise)
+  // The CSS 2s transition handles the rise/set animation.
+  const isDaytime = nowMin >= sunriseMin && nowMin < maghribMin;
+  const nearSunrise = !isDaytime && (
+    nowMin < sunriseMin
+      ? nowMin >= sunriseMin - 1          // within 1 min before sunrise
+      : nowMin >= sunriseMin + 24 * 60 - 1 // wrapping past midnight
+  );
+  const moonT = isDaytime ? 0 : nearSunrise ? 1 : 0.5;
   const { leftPct, topPct } = moonArc(moonT);
 
-  // Fade in after maghrib, fade out before fajr
-  let opacity = 1;
-  const ishaFadeIn = ishaMin - maghribMin;
-  if (nowMin < ishaMin && nowMin >= maghribMin) {
-    opacity = ishaFadeIn > 0 ? (nowMin - maghribMin) / ishaFadeIn : 1;
-  } else if (nowMin < fajrMin && nowMin >= 0) {
-    opacity = Math.max(0, (nowMin - (fajrMin - FADE_MINS)) < 0
-      ? 1
-      : 1 - (nowMin - (fajrMin - FADE_MINS)) / FADE_MINS);
-  }
-
-  return { leftPct, topPct, color: '#fff4ca', opacity, showSun: false };
+  return { leftPct, topPct, color: '#fff4ca', opacity: 1, showSun: false };
 }
 
 /* ─── Moon phase shadow ──────────────────────────────────────────────────────
@@ -352,7 +340,7 @@ export function HeroBanner({
   const mtn = interpolateMtn(mtnKeyframes, skyMin);
 
   /* ── Celestial body ── */
-  const cel = computeCelestial(skyMin, fajrMin, sunriseMin, maghribMin, ishaMin);
+  const cel = computeCelestial(skyMin, fajrMin, sunriseMin, maghribMin);
 
   /* ── Prayer data — peek overrides default ── */
   const displayPrayer   = isPeeking ? peekPrayer!  : nextPrayer;
@@ -407,6 +395,20 @@ export function HeroBanner({
 
   /* ── Wrapper ref (kept for potential future CSS var transitions) ── */
   const wrapperRef = useRef<HTMLDivElement>(null);
+
+  /*
+   * On first render the moon has no previous position to transition from,
+   * so we start it at the horizon and flip `moonReady` after one frame.
+   * This gives the CSS transition something to animate from on every mount
+   * (including simulator loads).
+   */
+  const [moonReady, setMoonReady] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMoonReady(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  const moonTopPct = moonReady ? cel.topPct : HORIZON_PCT;
 
   return (
     <div
@@ -482,21 +484,21 @@ export function HeroBanner({
           />
         )}
 
-        {/* Moon */}
+        {/* Moon — fixed horizontal position, rises/sets behind mountains */}
         {!cel.showSun && (
           <div
             className="absolute"
             style={{
-              top:        `${cel.topPct}%`,
+              top:        `${moonTopPct}%`,
               left:       `${cel.leftPct}%`,
               transform:  'translate(-50%, -50%)',
               width:      80,
               height:     80,
-              filter:     `drop-shadow(0 0 18px rgba(255,244,202,${cel.opacity * 0.45}))`,
-              opacity:    cel.opacity,
+              filter:     `drop-shadow(0 0 18px rgba(255,244,202,0.45))`,
+              opacity:    1,
               transition: isPeeking
-                ? 'top 0.6s ease-out, left 0.6s ease-out'
-                : 'top 1s linear, left 1s linear, opacity 30s linear',
+                ? 'top 0.6s ease-out'
+                : 'top 2s ease-out',
             }}
             aria-hidden="true"
           >

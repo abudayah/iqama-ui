@@ -59,13 +59,12 @@ export function PrayerRow({ name, entry, isNext, isPast, isActive, isPeeked, onT
         />
 
         <span
-          className={`text-[1.05rem] ${
-            isNext
-              ? 'font-bold text-blue-700'
-              : isSunrise
-                ? 'text-gray-500 italic'
-                : 'font-medium text-gray-600'
-          }`}
+          className="text-[1.05rem]"
+          style={{
+            fontWeight: isNext ? 700 : 500,
+            color: isNext ? '#1e6c93' : isSunrise ? '#6b7280' : '#374151',
+            fontStyle: isSunrise ? 'italic' : undefined,
+          }}
         >
           {PRAYER_LABELS[name] ?? name}
         </span>
@@ -73,7 +72,7 @@ export function PrayerRow({ name, entry, isNext, isPast, isActive, isPeeked, onT
         {/* "now" pill — only shown during the azan→iqama window */}
         {isActive && (
           <span
-            className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-600 text-white"
+            className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-green-500 text-white"
             aria-label="Current prayer"
           >
             <span
@@ -93,16 +92,14 @@ export function PrayerRow({ name, entry, isNext, isPast, isActive, isPeeked, onT
       {/* Right: azan + iqama times */}
       <div className="flex gap-6 tabular-nums">
         <span
-          className={`text-[1.05rem] ${
-            isNext ? 'font-bold text-blue-700' : 'text-gray-400'
-          }`}
+          className="text-[1.05rem] font-semibold"
+          style={{ color: isNext ? '#1e6c93' : '#1e6c93', opacity: isNext ? 1 : 0.55 }}
         >
           {entry.azan}
         </span>
         <span
-          className={`text-[1.05rem] ${
-            isNext ? 'font-bold text-blue-700' : 'text-gray-400'
-          }`}
+          className="text-[1.05rem] font-semibold"
+          style={{ color: isNext ? '#2ca58d' : '#2ca58d', opacity: isNext ? 1 : 0.55 }}
         >
           {iqamaValue ?? ''}
         </span>

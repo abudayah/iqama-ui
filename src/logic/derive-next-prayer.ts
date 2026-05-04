@@ -3,20 +3,28 @@ import type { DailySchedule, PrayerName } from '../types/index';
 const PRAYER_ORDER: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
 /**
- * Returns the first prayer whose azan time is strictly after `now`.
- * Returns null if all prayers have passed.
- *
- * The azan time is parsed as HH:mm on the same date as schedule.date.
+ * Returns the current or next relevant prayer for `now`:
+ * - If now is between a prayer's azan and iqama, that prayer is returned
+ *   (we're in the iqama window — it's still "active").
+ * - Otherwise returns the first prayer whose azan is strictly after now.
+ * - Returns null if all prayers have passed.
  */
 export function deriveNextPrayer(schedule: DailySchedule, now: Date): PrayerName | null {
+  const [year, month, day] = schedule.date.split('-').map(Number);
+
   for (const prayer of PRAYER_ORDER) {
     const entry = schedule[prayer];
-    const parts = entry.azan.split(':');
-    const hours = Number(parts[0]);
-    const minutes = Number(parts[1]);
-    // Parse YYYY-MM-DD as local time (not UTC) by splitting manually
-    const [year, month, day] = schedule.date.split('-').map(Number);
-    const azanDate = new Date(year!, month! - 1, day!, hours, minutes, 0, 0);
+    const [ah, am] = entry.azan.split(':').map(Number);
+    const [ih, im] = entry.iqama.split(':').map(Number);
+    const azanDate  = new Date(year!, month! - 1, day!, ah!, am!, 0, 0);
+    const iqamaDate = new Date(year!, month! - 1, day!, ih!, im!, 0, 0);
+
+    // Still in the iqama window for this prayer
+    if (now >= azanDate && now < iqamaDate) {
+      return prayer;
+    }
+
+    // Azan hasn't happened yet — this is the next prayer
     if (azanDate > now) {
       return prayer;
     }

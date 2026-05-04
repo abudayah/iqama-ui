@@ -93,7 +93,7 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   IQAMA WARNING — pulsing amber colour for State 2 super-title
+   IQAMA WARNING — pulsing green colour for State 2 super-title
 ───────────────────────────────────────────────────────────────────────────── */
 @keyframes iqama-pulse {
   0%, 100% { opacity: 1; }
@@ -101,16 +101,16 @@
 }
 .iqama-warning-label {
   animation: iqama-pulse 1.8s ease-in-out infinite;
-  color: #fbbf24; /* amber-400 */
+  color: #4ade80; /* green-400 */
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
    ACTIVE PRAYER DOT — soft pulse ring
 ───────────────────────────────────────────────────────────────────────────── */
 @keyframes dot-pulse {
-  0%   { box-shadow: 0 0 0 0   rgba(37, 99, 235, 0.6); }
-  70%  { box-shadow: 0 0 0 6px rgba(37, 99, 235, 0);   }
-  100% { box-shadow: 0 0 0 0   rgba(37, 99, 235, 0);   }
+  0%   { box-shadow: 0 0 0 0   rgba(34, 197, 94, 0.6); }
+  70%  { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);   }
+  100% { box-shadow: 0 0 0 0   rgba(34, 197, 94, 0);   }
 }
 .active-dot {
   animation: dot-pulse 1.8s ease-out infinite;
