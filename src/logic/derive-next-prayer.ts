@@ -23,3 +23,20 @@ export function deriveNextPrayer(schedule: DailySchedule, now: Date): PrayerName
   }
   return null;
 }
+
+/**
+ * Like deriveNextPrayer but falls back to tomorrow's Fajr when today's
+ * schedule is exhausted. Returns { schedule, prayer } so the caller knows
+ * which schedule the prayer belongs to.
+ */
+export function deriveNextPrayerWithFallback(
+  todaySchedule: DailySchedule,
+  tomorrowSchedule: DailySchedule | null,
+  now: Date,
+): { schedule: DailySchedule; prayer: PrayerName } | null {
+  const todayPrayer = deriveNextPrayer(todaySchedule, now);
+  if (todayPrayer) return { schedule: todaySchedule, prayer: todayPrayer };
+  if (!tomorrowSchedule) return null;
+  // All of today's prayers are done — next up is tomorrow's Fajr
+  return { schedule: tomorrowSchedule, prayer: 'fajr' };
+}

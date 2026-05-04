@@ -10,10 +10,15 @@ function getDefaultRange(): { start: string; end: string } {
   const today = new Date();
   const end = new Date(today);
   end.setDate(today.getDate() + 6);
-  return {
-    start: today.toISOString().split('T')[0]!,
-    end: end.toISOString().split('T')[0]!,
+
+  const fmt = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
   };
+
+  return { start: fmt(today), end: fmt(end) };
 }
 
 export function ScheduleRangePage() {

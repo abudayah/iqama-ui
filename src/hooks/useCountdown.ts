@@ -1,15 +1,19 @@
 import { useState, useEffect } from 'react';
 import { deriveCountdown } from '../logic/derive-countdown';
 import type { DailySchedule, PrayerName, CountdownState } from '../types/index';
+import type { NextPrayerResult } from './useNextPrayer';
 
 const DONE_STATE: CountdownState = { phase: 'done', display: 'All prayers complete' };
 
 export function useCountdown(
-  schedule: DailySchedule | null,
-  nextPrayer: PrayerName | null
+  nextPrayerResult: NextPrayerResult | null,
 ): { countdown: CountdownState; tick: number } {
   const [countdown, setCountdown] = useState<CountdownState>(DONE_STATE);
   const [tick, setTick] = useState(0);
+
+  // Stable references for the effect
+  const schedule: DailySchedule | null = nextPrayerResult?.schedule ?? null;
+  const nextPrayer: PrayerName | null = nextPrayerResult?.prayer ?? null;
 
   useEffect(() => {
     if (!schedule || !nextPrayer) {
@@ -23,7 +27,7 @@ export function useCountdown(
     const id = setInterval(() => {
       setCountdown(deriveCountdown(schedule, nextPrayer, new Date()));
       setTick(t => t + 1);
-    }, 10_000);
+    }, 1_000);
 
     return () => clearInterval(id);
   }, [schedule, nextPrayer]);
