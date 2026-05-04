@@ -7,6 +7,10 @@ interface PrayerRowProps {
   isPast:   boolean;
   /** True only during the azan→iqama window for this prayer — shows "now" badge */
   isActive: boolean;
+  /** True when this prayer is currently being peeked in the hero */
+  isPeeked: boolean;
+  /** Called when the row is tapped (only provided for future prayers) */
+  onTap?:  (() => void) | undefined;
 }
 
 const PRAYER_LABELS: Record<string, string> = {
@@ -24,17 +28,23 @@ const DOT_COLORS: Record<string, string> = {
   isha:    '#4b5563',
 };
 
-export function PrayerRow({ name, entry, isNext, isPast, isActive }: PrayerRowProps) {
+export function PrayerRow({ name, entry, isNext, isPast, isActive, isPeeked, onTap }: PrayerRowProps) {
   const isSunrise  = name === 'sunrise';
   const dotColor   = DOT_COLORS[name] ?? '#6b7280';
   const iqamaValue = 'iqama' in entry && entry.iqama ? entry.iqama : null;
 
   return (
     <div
+      role={onTap ? 'button' : undefined}
+      aria-pressed={onTap ? isPeeked : undefined}
+      aria-label={onTap ? `Preview ${PRAYER_LABELS[name] ?? name} prayer time` : undefined}
+      onClick={onTap}
       className={[
         'flex items-center justify-between px-3 py-[18px]',
-        isNext  ? 'bg-blue-50 rounded-2xl' : '',
-        isPast  ? 'opacity-40'             : '',
+        isNext   ? 'bg-blue-50 rounded-2xl'                          : '',
+        isPeeked ? 'bg-indigo-50 rounded-2xl ring-1 ring-indigo-200' : '',
+        isPast   ? 'opacity-40'                                       : '',
+        onTap    ? 'cursor-pointer active:opacity-70'                 : '',
       ].join(' ')}
       data-testid={`prayer-row-${name}`}
       aria-current={isNext ? 'true' : undefined}

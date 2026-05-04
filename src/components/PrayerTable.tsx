@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback } from 'react';
 import type { DailySchedule, PrayerName } from '../types/index';
 import type { CountdownMode } from '../hooks/usePrayerContext';
+import type { PeekTarget } from './HeroBanner';
 import { PrayerRow } from './PrayerRow';
 
 interface PrayerTableProps {
@@ -16,6 +17,10 @@ interface PrayerTableProps {
    * When 'to_iqama', the nextPrayer row shows the "now" badge.
    */
   countdownMode?:   CountdownMode;
+  /** Called when a future prayer row is tapped */
+  onPeekPrayer?:   ((prayer: PeekTarget, schedule: DailySchedule) => void) | undefined;
+  /** Currently peeked prayer — used to highlight the row */
+  peekedPrayer?:   PeekTarget | null | undefined;
 }
 
 const PRAYERS: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
@@ -47,15 +52,24 @@ function DayRows({
   nextPrayer,
   isToday,
   countdownMode,
+  onPeekPrayer,
+  peekedPrayer,
 }: {
   schedule:      DailySchedule;
   nextPrayer:    PrayerName | null;
   isToday:       boolean;
   countdownMode: CountdownMode;
+  onPeekPrayer?: ((prayer: PeekTarget, schedule: DailySchedule) => void) | undefined;
+  peekedPrayer?: PeekTarget | null | undefined;
 }) {
   const now = new Date();
-  // "now" badge only appears during the azan→iqama window
   const activePrayer = isToday && countdownMode === 'to_iqama' ? nextPrayer : null;
+
+  const canPeekPrayer = (prayer: PrayerName) =>
+    !!onPeekPrayer && !isPrayerPast(schedule, prayer, now);
+
+  const canPeekSunrise = () =>
+    !!onPeekPrayer && !isSunrisePast(schedule, now);
 
   return (
     <div className="px-3 pb-4 space-y-1">
@@ -66,15 +80,19 @@ function DayRows({
         isNext={isToday && nextPrayer === 'fajr'}
         isActive={activePrayer === 'fajr'}
         isPast={isToday && isPrayerPast(schedule, 'fajr', now) && nextPrayer !== 'fajr'}
+        isPeeked={peekedPrayer === 'fajr'}
+        onTap={canPeekPrayer('fajr') ? () => onPeekPrayer!('fajr', schedule) : undefined}
       />
 
-      {/* Sunrise — no iqama */}
+      {/* Sunrise — peekable, no iqama */}
       <PrayerRow
         name="sunrise"
         entry={{ azan: schedule.sunrise }}
         isNext={false}
         isActive={false}
         isPast={isToday && isSunrisePast(schedule, now)}
+        isPeeked={peekedPrayer === 'sunrise'}
+        onTap={canPeekSunrise() ? () => onPeekPrayer!('sunrise', schedule) : undefined}
       />
 
       {/* Remaining prayers */}
@@ -86,6 +104,8 @@ function DayRows({
           isNext={isToday && nextPrayer === prayer}
           isActive={activePrayer === prayer}
           isPast={isToday && isPrayerPast(schedule, prayer, now) && nextPrayer !== prayer}
+          isPeeked={peekedPrayer === prayer}
+          onTap={canPeekPrayer(prayer) ? () => onPeekPrayer!(prayer, schedule) : undefined}
         />
       ))}
     </div>
@@ -100,6 +120,8 @@ export function PrayerTable({
   onTabChange,
   tick: _tick = 0,
   countdownMode = 'done',
+  onPeekPrayer,
+  peekedPrayer,
 }: PrayerTableProps) {
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -219,6 +241,8 @@ export function PrayerTable({
               nextPrayer={nextPrayer}
               isToday={true}
               countdownMode={countdownMode}
+              onPeekPrayer={onPeekPrayer}
+              peekedPrayer={peekedPrayer}
             />
           </div>
 
@@ -230,6 +254,8 @@ export function PrayerTable({
                 nextPrayer={null}
                 isToday={false}
                 countdownMode="done"
+                onPeekPrayer={onPeekPrayer}
+                peekedPrayer={peekedPrayer}
               />
             ) : (
               <div className="px-6 py-8 text-center text-gray-400 text-sm">

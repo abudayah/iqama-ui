@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
+import type { DailySchedule } from '../types/index';
+import type { PeekTarget } from '../components/HeroBanner';
 import { useSchedule } from '../hooks/useSchedule';
 import { usePrayerContext } from '../hooks/usePrayerContext';
 import { useSimulator } from '../hooks/useSimulator';
@@ -7,8 +9,42 @@ import { PrayerTable } from '../components/PrayerTable';
 import { HeroBanner } from '../components/HeroBanner';
 import { SimulatorBanner } from '../components/SimulatorBanner';
 
+const PEEK_DURATION_MS = 4_000;
+
 export function PrayerViewerPage() {
   const [activeTab, setActiveTab] = useState<'today' | 'tomorrow'>('today');
+
+  /* ── Peek state ── */
+  const [peekedPrayer,   setPeekedPrayer]   = useState<PeekTarget | null>(null);
+  const [peekedSchedule, setPeekedSchedule] = useState<DailySchedule | null>(null);
+  const peekTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearPeek = useCallback(() => {
+    if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
+    setPeekedPrayer(null);
+    setPeekedSchedule(null);
+  }, []);
+
+  const handleTabChange = useCallback((tab: 'today' | 'tomorrow') => {
+    clearPeek();
+    setActiveTab(tab);
+  }, [clearPeek]);
+
+  const handlePeek = useCallback((prayer: PeekTarget, schedule: DailySchedule) => {
+    if (peekedPrayer === prayer) {
+      if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
+      setPeekedPrayer(null);
+      setPeekedSchedule(null);
+      return;
+    }
+    if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
+    setPeekedPrayer(prayer);
+    setPeekedSchedule(schedule);
+    peekTimerRef.current = setTimeout(() => {
+      setPeekedPrayer(null);
+      setPeekedSchedule(null);
+    }, PEEK_DURATION_MS);
+  }, [peekedPrayer]);
 
   const { simNow, simDateStr, simTomorrowStr, isSimulating } = useSimulator();
 
@@ -59,6 +95,8 @@ export function PrayerViewerPage() {
         hijriDay={hijriDay}
         tick={tick}
         simulatedNow={isSimulating ? simNow : undefined}
+        peekPrayer={peekedPrayer}
+        peekSchedule={peekedSchedule}
       />
 
       {/* Prayer list — overlaps the hero bottom edge */}
@@ -102,9 +140,11 @@ export function PrayerViewerPage() {
             tomorrowSchedule={tomorrowSchedule ?? null}
             nextPrayer={todayNextPrayer}
             activeTab={activeTab}
-            onTabChange={setActiveTab}
+            onTabChange={handleTabChange}
             countdownMode={countdownMode}
             tick={tick}
+            onPeekPrayer={handlePeek}
+            peekedPrayer={peekedPrayer}
           />
         )}
       </div>

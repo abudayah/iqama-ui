@@ -52,6 +52,7 @@ describe('PrayerRow — unit tests', () => {
         isNext={true}
         isActive={false}
         isPast={false}
+        isPeeked={false}
       />,
     );
 
@@ -68,6 +69,7 @@ describe('PrayerRow — unit tests', () => {
         isNext={false}
         isActive={false}
         isPast={false}
+        isPeeked={false}
       />,
     );
 
@@ -84,6 +86,7 @@ describe('PrayerRow — unit tests', () => {
         isNext={false}
         isActive={false}
         isPast={true}
+        isPeeked={false}
       />,
     );
 
@@ -99,6 +102,7 @@ describe('PrayerRow — unit tests', () => {
         isNext={true}
         isActive={false}
         isPast={false}
+        isPeeked={false}
       />,
     );
     expect(screen.queryByLabelText('Current prayer')).not.toBeInTheDocument();
@@ -110,6 +114,7 @@ describe('PrayerRow — unit tests', () => {
         isNext={true}
         isActive={true}
         isPast={false}
+        isPeeked={false}
       />,
     );
     expect(screen.getByLabelText('Current prayer')).toBeInTheDocument();

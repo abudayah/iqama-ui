@@ -2,6 +2,9 @@ import { useRef } from 'react';
 import type { CountdownMode } from '../hooks/usePrayerContext';
 import type { PrayerName, DailySchedule, CountdownState } from '../types/index';
 
+/** Prayers + sunrise — anything that can be peeked */
+export type PeekTarget = PrayerName | 'sunrise';
+
 /* ─── Props ─────────────────────────────────────────────────────────────────── */
 interface HeroBannerProps {
   nextPrayer:    PrayerName | null;
@@ -16,11 +19,16 @@ interface HeroBannerProps {
   tick:          number;
   /** Optional simulated now (from simulator) */
   simulatedNow?: Date | undefined;
+  /** Peeked target — when set, hero shows that target's countdown */
+  peekPrayer?:   PeekTarget | null;
+  /** Schedule that contains the peeked target */
+  peekSchedule?: DailySchedule | null;
 }
 
 /* ─── Constants ─────────────────────────────────────────────────────────────── */
 const PRAYER_LABELS: Record<string, string> = {
   fajr: 'Fajr', dhuhr: 'Dhuhr', asr: 'Asr', maghrib: 'Maghrib', isha: 'Isha',
+  sunrise: 'Sunrise',
 };
 
 /* ─── Time helpers ───────────────────────────────────────────────────────────── */
@@ -308,9 +316,26 @@ export function HeroBanner({
   hijriDay,
   tick: _tick,   // consumed to trigger re-render each second
   simulatedNow,
+  peekPrayer,
+  peekSchedule,
 }: HeroBannerProps) {
   const now = simulatedNow ?? new Date();
   const nowMin = nowMinutes(now);
+
+  /* ── Peek mode: override display with the peeked target's countdown ── */
+  const isPeeking = !!peekPrayer && !!peekSchedule;
+
+  // Resolve the azan time string for the peeked target
+  const peekTimeStr: string | null = isPeeking && peekSchedule
+    ? peekPrayer === 'sunrise'
+      ? peekSchedule.sunrise
+      : peekSchedule[peekPrayer!].azan
+    : null;
+
+  const peekAzanMin: number | null = peekTimeStr !== null ? hhmm(peekTimeStr) : null;
+
+  // Sky is driven by peek time when peeking, otherwise real now
+  const skyMin = isPeeking && peekAzanMin !== null ? peekAzanMin : nowMin;
 
   /* ── Resolve anchor times from today's schedule ── */
   const fajrMin    = todaySchedule ? hhmm(todaySchedule.fajr.azan)    : 5  * 60;
@@ -318,30 +343,64 @@ export function HeroBanner({
   const maghribMin = todaySchedule ? hhmm(todaySchedule.maghrib.azan)  : 20 * 60;
   const ishaMin    = todaySchedule ? hhmm(todaySchedule.isha.azan)     : 21 * 60;
 
-  /* ── Continuous sky ── */
+  /* ── Continuous sky — driven by skyMin (peek azan time or real now) ── */
   const skyKeyframes = buildSkyKeyframes(fajrMin, sunriseMin, maghribMin, ishaMin);
-  const sky = interpolateSky(skyKeyframes, nowMin);
+  const sky = interpolateSky(skyKeyframes, skyMin);
 
   /* ── Continuous mountains ── */
   const mtnKeyframes = buildMtnKeyframes(fajrMin, sunriseMin, maghribMin, ishaMin);
-  const mtn = interpolateMtn(mtnKeyframes, nowMin);
+  const mtn = interpolateMtn(mtnKeyframes, skyMin);
 
   /* ── Celestial body ── */
-  const cel = computeCelestial(nowMin, fajrMin, sunriseMin, maghribMin, ishaMin);
+  const cel = computeCelestial(skyMin, fajrMin, sunriseMin, maghribMin, ishaMin);
 
-  /* ── Prayer data ── */
-  const prayerLabel = nextPrayer ? (PRAYER_LABELS[nextPrayer] ?? nextPrayer) : '—';
-  const azanTime    = nextPrayer && schedule ? schedule[nextPrayer]?.azan  : null;
-  const iqamaTime   = nextPrayer && schedule ? schedule[nextPrayer]?.iqama : null;
+  /* ── Prayer data — peek overrides default ── */
+  const displayPrayer   = isPeeking ? peekPrayer!  : nextPrayer;
+  const displaySchedule = isPeeking ? peekSchedule! : schedule;
+
+  const displayCountdown: CountdownState = isPeeking && peekSchedule && peekTimeStr
+    ? (() => {
+        const [h, m] = peekTimeStr.split(':').map(Number);
+        const [y, mo, d] = peekSchedule.date.split('-').map(Number);
+        const targetDate = new Date(y!, mo! - 1, d!, h!, m!, 0, 0);
+        const diffMs = targetDate.getTime() - now.getTime();
+        if (diffMs <= 0) return { phase: 'done' as const, display: 'All prayers complete' };
+        const total = Math.floor(diffMs / 1000);
+        const hh = Math.floor(total / 3600);
+        const mm = Math.floor((total % 3600) / 60);
+        const ss = total % 60;
+        return {
+          phase: 'to_azan' as const,
+          display: `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`,
+        };
+      })()
+    : countdown;
+
+  const prayerLabel = displayPrayer ? (PRAYER_LABELS[displayPrayer] ?? displayPrayer) : '—';
+  // Sunrise has no iqama — for all other peeked targets use the schedule entry
+  const azanTime  = isPeeking
+    ? peekTimeStr
+    : (displayPrayer && displaySchedule && displayPrayer !== 'sunrise'
+        ? displaySchedule[displayPrayer as PrayerName]?.azan
+        : null);
+  const iqamaTime = (displayPrayer && displaySchedule && displayPrayer !== 'sunrise')
+    ? displaySchedule[displayPrayer as PrayerName]?.iqama
+    : null;
 
   /* ── Countdown display ── */
-  const isIqamaWindow = countdownMode === 'to_iqama';
-  const isDone        = countdownMode === 'done';
+  // When peeking, always show "azan" mode regardless of real countdownMode
+  const effectiveMode = isPeeking ? 'to_azan' : countdownMode;
+  const isIqamaWindow = effectiveMode === 'to_iqama';
+  const isDone        = effectiveMode === 'done';
 
-  const superTitle = isIqamaWindow ? 'TIME UNTIL IQAMA' : 'NEXT PRAYER';
-  const subLine    = isIqamaWindow
-    ? (iqamaTime ? `${prayerLabel} · Iqama at ${iqamaTime}` : prayerLabel)
-    : (azanTime  ? `${prayerLabel} · Azan at ${azanTime}`   : prayerLabel);
+  const superTitle = isPeeking
+    ? (peekPrayer === 'sunrise' ? 'SUNRISE IN' : 'AZAN IN')
+    : isIqamaWindow ? 'TIME UNTIL IQAMA' : 'NEXT PRAYER';
+  const subLine = isPeeking
+    ? (azanTime ? `${prayerLabel} · at ${azanTime}` : prayerLabel)
+    : isIqamaWindow
+      ? (iqamaTime ? `${prayerLabel} · Iqama at ${iqamaTime}` : prayerLabel)
+      : (azanTime  ? `${prayerLabel} · Azan at ${azanTime}`   : prayerLabel);
 
   /* ── Moon shadow cx ── */
   const shadowCx = moonShadowCx(hijriDay);
@@ -386,9 +445,9 @@ export function HeroBanner({
             aria-live="polite"
             aria-atomic="true"
           >
-            {countdown.display.slice(0, 5)}
+            {displayCountdown.display.slice(0, 5)}
             <span className="text-2xl font-semibold opacity-70">
-              &nbsp;:&nbsp;{countdown.display.slice(6)}
+              &nbsp;:&nbsp;{displayCountdown.display.slice(6)}
             </span>
           </p>
         )}
@@ -415,7 +474,9 @@ export function HeroBanner({
               background: cel.color,
               boxShadow:  `0 0 50px 14px ${cel.color}`,
               opacity:    cel.opacity,
-              transition: 'top 1s linear, left 1s linear, opacity 20s linear, background 60s linear',
+              transition: isPeeking
+                ? 'top 0.6s ease-out, left 0.6s ease-out'
+                : 'top 1s linear, left 1s linear, opacity 20s linear, background 60s linear',
             }}
             aria-hidden="true"
           />
@@ -433,7 +494,9 @@ export function HeroBanner({
               height:     80,
               filter:     `drop-shadow(0 0 18px rgba(255,244,202,${cel.opacity * 0.45}))`,
               opacity:    cel.opacity,
-              transition: 'top 1s linear, left 1s linear, opacity 30s linear',
+              transition: isPeeking
+                ? 'top 0.6s ease-out, left 0.6s ease-out'
+                : 'top 1s linear, left 1s linear, opacity 30s linear',
             }}
             aria-hidden="true"
           >
