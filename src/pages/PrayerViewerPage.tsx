@@ -1,34 +1,29 @@
 import { useState } from 'react';
 import { useSchedule } from '../hooks/useSchedule';
 import { usePrayerContext } from '../hooks/usePrayerContext';
+import { useSimulator } from '../hooks/useSimulator';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { PrayerTable } from '../components/PrayerTable';
 import { HeroBanner } from '../components/HeroBanner';
-
-function getLocalDateString(offset = 0): string {
-  const d = new Date();
-  d.setDate(d.getDate() + offset);
-  const y  = d.getFullYear();
-  const m  = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
+import { SimulatorBanner } from '../components/SimulatorBanner';
 
 export function PrayerViewerPage() {
   const [activeTab, setActiveTab] = useState<'today' | 'tomorrow'>('today');
+
+  const { simNow, simDateStr, simTomorrowStr, isSimulating } = useSimulator();
 
   const {
     data: todaySchedule,
     loading: todayLoading,
     error: todayError,
     refetch: refetchToday,
-  } = useSchedule(getLocalDateString(0));
+  } = useSchedule(simDateStr);
 
   const {
     data: tomorrowSchedule,
     error: tomorrowError,
     refetch: refetchTomorrow,
-  } = useSchedule(getLocalDateString(1));
+  } = useSchedule(simTomorrowStr);
 
   /* Single source of truth for all time-aware state */
   const {
@@ -39,7 +34,7 @@ export function PrayerViewerPage() {
     countdown,
     hijriDay,
     tick,
-  } = usePrayerContext(todaySchedule, tomorrowSchedule);
+  } = usePrayerContext(todaySchedule, tomorrowSchedule, isSimulating ? simNow : undefined);
 
   const isLoading = todayLoading;
   const error     = activeTab === 'today' ? todayError : tomorrowError;
@@ -52,6 +47,9 @@ export function PrayerViewerPage() {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <OfflineBanner />
+      {isSimulating && (
+        <SimulatorBanner simDateStr={simDateStr} simNow={simNow} />
+      )}
 
       <HeroBanner
         nextPrayer={nextPrayer}

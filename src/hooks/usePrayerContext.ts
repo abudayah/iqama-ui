@@ -61,16 +61,21 @@ const DONE_STATE: CountdownState = { phase: 'done', display: 'All prayers comple
 export function usePrayerContext(
   todaySchedule: DailySchedule | null,
   tomorrowSchedule: DailySchedule | null,
+  /** Optional simulated "now". When provided, the countdown is frozen at that
+   *  moment and does not tick forward — useful for the URL-param simulator. */
+  simulatedNow?: Date,
 ): PrayerContextResult {
   const [tick, setTick] = useState(0);
   const [countdown, setCountdown] = useState<CountdownState>(DONE_STATE);
 
+  const getNow = () => simulatedNow ?? new Date();
+
   // Derive next prayer — re-runs on every tick so it advances automatically
   const nextPrayerResult = useMemo(() => {
     if (!todaySchedule) return null;
-    return deriveNextPrayerWithFallback(todaySchedule, tomorrowSchedule, new Date());
+    return deriveNextPrayerWithFallback(todaySchedule, tomorrowSchedule, getNow());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [todaySchedule, tomorrowSchedule, tick]);
+  }, [todaySchedule, tomorrowSchedule, tick, simulatedNow]);
 
   const nextPrayer = nextPrayerResult?.prayer ?? null;
   const nextSchedule = nextPrayerResult?.schedule ?? null;
@@ -83,15 +88,18 @@ export function usePrayerContext(
     }
 
     // Compute immediately on mount / dependency change
-    setCountdown(deriveCountdown(nextSchedule, nextPrayer, new Date()));
+    setCountdown(deriveCountdown(nextSchedule, nextPrayer, getNow()));
 
+    // When simulating a frozen time, still tick so the UI stays responsive,
+    // but getNow() always returns the same simulated moment.
     const id = setInterval(() => {
-      setCountdown(deriveCountdown(nextSchedule, nextPrayer, new Date()));
+      setCountdown(deriveCountdown(nextSchedule, nextPrayer, getNow()));
       setTick(t => t + 1);
     }, 1_000);
 
     return () => clearInterval(id);
-  }, [nextSchedule, nextPrayer]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nextSchedule, nextPrayer, simulatedNow]);
 
   const timeOfDay = prayerToTimeOfDay(nextPrayer);
   const countdownMode: CountdownMode = countdown.phase;
