@@ -14,6 +14,8 @@
  *   - simTomorrowStr: YYYY-MM-DD for "tomorrow" in the simulation
  *   - isSimulating: true when any sim param is active
  */
+import { useMemo } from 'react';
+
 export interface SimulatorState {
   simNow: Date;
   simDateStr: string;
@@ -52,18 +54,21 @@ export function useSimulator(): SimulatorState {
   const isSimulating = hasDate || hasTime;
 
   const simDateStr = hasDate ? rawDate : todayLocalStr();
+  const simTomorrowStr = addDays(simDateStr, 1);
 
-  // Build the simulated Date: use sim_date as the date base, sim_time as the clock
-  const simNow = (() => {
+  // Memoize simNow so it's a stable Date reference for the same URL params.
+  // Without this, a new Date is created on every render, causing infinite
+  // re-render loops in hooks that depend on simulatedNow.
+  const simNow = useMemo(() => {
     const [y, mo, d] = simDateStr.split('-').map(Number);
     const real = new Date();
     const hours   = hasTime ? parseInt(rawTime.slice(0, 2), 10) : real.getHours();
     const minutes = hasTime ? parseInt(rawTime.slice(3, 5), 10) : real.getMinutes();
     const seconds = hasTime ? 0 : real.getSeconds();
     return new Date(y!, mo! - 1, d!, hours, minutes, seconds, 0);
-  })();
-
-  const simTomorrowStr = addDays(simDateStr, 1);
+  // rawDate and rawTime are primitives — stable as long as the URL doesn't change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawDate, rawTime]);
 
   return { simNow, simDateStr, simTomorrowStr, isSimulating };
 }

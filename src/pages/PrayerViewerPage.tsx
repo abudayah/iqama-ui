@@ -68,6 +68,7 @@ export function PrayerViewerPage() {
     nextSchedule,
     countdown,
     hijriDay,
+    hijriMonth,
     tick,
   } = usePrayerContext(todaySchedule, tomorrowSchedule, isSimulating ? simNow : undefined);
 
@@ -93,6 +94,7 @@ export function PrayerViewerPage() {
         todaySchedule={todaySchedule ?? null}
         countdownMode={countdownMode}
         hijriDay={hijriDay}
+        hijriMonth={hijriMonth}
         tick={tick}
         simulatedNow={isSimulating ? simNow : undefined}
         peekPrayer={peekedPrayer}

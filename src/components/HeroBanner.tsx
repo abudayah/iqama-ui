@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import type { CountdownMode } from '../hooks/usePrayerContext';
 import type { PrayerName, DailySchedule, CountdownState } from '../types/index';
+import { IslamicEventBanner } from './IslamicEventBanner';
 
 /** Prayers + sunrise — anything that can be peeked */
 export type PeekTarget = PrayerName | 'sunrise';
@@ -15,6 +16,7 @@ interface HeroBannerProps {
   todaySchedule: DailySchedule | null;
   countdownMode: CountdownMode;
   hijriDay:      number;
+  hijriMonth:    number;
   /** Tick counter from usePrayerContext — drives per-second re-render */
   tick:          number;
   /** Optional simulated now (from simulator) */
@@ -302,6 +304,7 @@ export function HeroBanner({
   todaySchedule,
   countdownMode,
   hijriDay,
+  hijriMonth,
   tick: _tick,   // consumed to trigger re-render each second
   simulatedNow,
   peekPrayer,
@@ -413,7 +416,7 @@ export function HeroBanner({
   return (
     <div
       ref={wrapperRef}
-      className="relative overflow-hidden text-white"
+      className="relative text-white"
       style={{
         height: 300,
         background: `linear-gradient(to bottom, ${sky.top}, ${sky.mid}, ${sky.bot})`,
@@ -461,7 +464,7 @@ export function HeroBanner({
       </div>
 
       {/* ── Landscape layer ── */}
-      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1 }}>
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 1 }}>
 
         {/* Sun */}
         {cel.showSun && (
@@ -555,6 +558,8 @@ export function HeroBanner({
             d="M-10,40 L-10,28 Q25,18 45,28 T110,22 L110,40 Z" />
         </svg>
       </div>
+      {/* ── Islamic event greeting banner ── */}
+      <IslamicEventBanner hijriMonth={hijriMonth} hijriDay={hijriDay} />
     </div>
   );
 }

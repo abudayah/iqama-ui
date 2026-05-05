@@ -13,6 +13,8 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "dayjs": "^1.11.13",
+    "dayjs-hijri": "^1.0.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^6.0.0"

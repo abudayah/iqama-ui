@@ -3,6 +3,24 @@ import { deriveNextPrayerWithFallback } from '../logic/derive-next-prayer';
 import { deriveCountdown } from '../logic/derive-countdown';
 import type { DailySchedule, PrayerName, CountdownState } from '../types/index';
 
+// dayjs ships an `export =` declaration which conflicts with ESM default imports
+// when esModuleInterop is off. We cast through unknown to keep the runtime ESM
+// import while satisfying the type checker.
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import _dayjs from 'dayjs';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import _dayjsHijri from 'dayjs-hijri';
+
+interface HijriDayjs { month(): number; date(): number }
+interface DayjsFn {
+  (date?: Date | string | number): { calendar(type: 'hijri' | 'gregory'): HijriDayjs };
+  extend(plugin: unknown): void;
+}
+const dayjs = _dayjs as unknown as DayjsFn;
+dayjs.extend(_dayjsHijri);
+
 export type TimeOfDay = 'DAWN' | 'DAY' | 'DUSK' | 'NIGHT';
 export type CountdownMode = 'to_azan' | 'to_iqama' | 'done';
 
@@ -19,19 +37,25 @@ export interface PrayerContextResult {
   countdown: CountdownState;
   /** Hijri day 1–30 extracted from today's schedule */
   hijriDay: number;
+  /** Hijri month 1–12 extracted from today's schedule */
+  hijriMonth: number;
   /** Tick counter — increments every second, use as dep for derived values */
   tick: number;
 }
 
 /**
- * Parses the day number from a hijri_date string like "Dhul Hijjah 25, 1446".
- * Returns 15 (full moon) as a safe default.
+ * Returns the current Hijri { month (1–12), day (1–30) } for a given
+ * Gregorian date using dayjs-hijri (Umm al-Qura calculations).
+ * Falls back to { month: 1, day: 15 } if conversion fails.
  */
-function parseHijriDay(hijriDate: string): number {
-  const match = hijriDate.match(/(\d{1,2}),/);
-  if (!match) return 15;
-  const day = parseInt(match[1]!, 10);
-  return day >= 1 && day <= 30 ? day : 15;
+function getHijriDate(date: Date): { month: number; day: number } {
+  try {
+    const h = dayjs(date).calendar('hijri');
+    // dayjs month() is 0-indexed; day() is 1-indexed
+    return { month: (h.month() as number) + 1, day: h.date() as number };
+  } catch {
+    return { month: 1, day: 15 };
+  }
 }
 
 /**
@@ -70,15 +94,21 @@ export function usePrayerContext(
 
   const getNow = () => simulatedNow ?? new Date();
 
-  // Derive next prayer — re-runs on every tick so it advances automatically
-  const nextPrayerResult = useMemo(() => {
+  // Derive next prayer — re-runs on every tick so it advances automatically.
+  // We destructure prayer and schedule separately so each has a stable
+  // identity in the dependency array: prayer is a primitive string, and
+  // schedule is the same object reference as todaySchedule/tomorrowSchedule.
+  const nextPrayer = useMemo((): PrayerName | null => {
     if (!todaySchedule) return null;
-    return deriveNextPrayerWithFallback(todaySchedule, tomorrowSchedule, getNow());
+    return deriveNextPrayerWithFallback(todaySchedule, tomorrowSchedule, getNow())?.prayer ?? null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [todaySchedule, tomorrowSchedule, tick, simulatedNow]);
 
-  const nextPrayer = nextPrayerResult?.prayer ?? null;
-  const nextSchedule = nextPrayerResult?.schedule ?? null;
+  const nextSchedule = useMemo((): DailySchedule | null => {
+    if (!todaySchedule) return null;
+    return deriveNextPrayerWithFallback(todaySchedule, tomorrowSchedule, getNow())?.schedule ?? null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [todaySchedule, tomorrowSchedule, tick, simulatedNow]);
 
   // Tick + countdown update every second
   useEffect(() => {
@@ -104,7 +134,14 @@ export function usePrayerContext(
   const timeOfDay = prayerToTimeOfDay(nextPrayer);
   const countdownMode: CountdownMode = countdown.phase;
 
-  const hijriDay = todaySchedule ? parseHijriDay(todaySchedule.hijri_date) : 15;
+  // Derive Hijri date from the effective "now" (simulated or real).
+  // Memoized so it only recomputes when simulatedNow or the tick crosses
+  // a day boundary (tick is included so it stays accurate at midnight).
+  const { month: hijriMonth, day: hijriDay } = useMemo(
+    () => getHijriDate(getNow()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [simulatedNow, tick],
+  );
 
   return {
     timeOfDay,
@@ -113,6 +150,7 @@ export function usePrayerContext(
     nextSchedule,
     countdown,
     hijriDay,
+    hijriMonth,
     tick,
   };
 }
