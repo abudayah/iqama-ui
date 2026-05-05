@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
 import { deriveNextPrayerWithFallback } from '../logic/derive-next-prayer';
-import type { DailySchedule, PrayerName } from '../types/index';
+import type { PrayerEvent } from '../logic/derive-next-prayer';
+import type { DailySchedule } from '../types/index';
 
 export interface NextPrayerResult {
-  prayer: PrayerName;
+  prayer: PrayerEvent;
   /** The schedule the prayer belongs to — may be tomorrow's when today is exhausted. */
   schedule: DailySchedule;
 }

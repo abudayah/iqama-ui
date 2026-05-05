@@ -93,18 +93,6 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   IQAMA WARNING — pulsing green colour for State 2 super-title
-───────────────────────────────────────────────────────────────────────────── */
-@keyframes iqama-pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.55; }
-}
-.iqama-warning-label {
-  animation: iqama-pulse 1.8s ease-in-out infinite;
-  color: #4ade80; /* green-400 */
-}
-
-/* ─────────────────────────────────────────────────────────────────────────────
    ACTIVE PRAYER DOT — soft pulse ring
 ───────────────────────────────────────────────────────────────────────────── */
 @keyframes dot-pulse {

@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback } from 'react';
 import type { DailySchedule, PrayerName } from '../types/index';
+import type { PrayerEvent } from '../logic/derive-next-prayer';
 import type { CountdownMode } from '../hooks/usePrayerContext';
 import type { PeekTarget } from './HeroBanner';
 import { PrayerRow } from './PrayerRow';
@@ -7,7 +8,7 @@ import { PrayerRow } from './PrayerRow';
 interface PrayerTableProps {
   todaySchedule:    DailySchedule;
   tomorrowSchedule: DailySchedule | null;
-  nextPrayer:       PrayerName | null;
+  nextPrayer:       PrayerEvent | null;
   activeTab:        'today' | 'tomorrow';
   onTabChange:      (tab: 'today' | 'tomorrow') => void;
   /** Increments every second — forces isPast recalculation */
@@ -18,7 +19,7 @@ interface PrayerTableProps {
    */
   countdownMode?:   CountdownMode;
   /** Called when a future prayer row is tapped */
-  onPeekPrayer?:   ((prayer: PeekTarget, schedule: DailySchedule) => void) | undefined;
+  onPeekPrayer?:   ((prayer: PeekTarget, schedule: DailySchedule, label?: string) => void) | undefined;
   /** Currently peeked prayer — used to highlight the row */
   peekedPrayer?:   PeekTarget | null | undefined;
 }
@@ -56,14 +57,17 @@ function DayRows({
   peekedPrayer,
 }: {
   schedule:      DailySchedule;
-  nextPrayer:    PrayerName | null;
+  nextPrayer:    PrayerEvent | null;
   isToday:       boolean;
   countdownMode: CountdownMode;
-  onPeekPrayer?: ((prayer: PeekTarget, schedule: DailySchedule) => void) | undefined;
+  onPeekPrayer?: ((prayer: PeekTarget, schedule: DailySchedule, label?: string) => void) | undefined;
   peekedPrayer?: PeekTarget | null | undefined;
 }) {
   const now = new Date();
-  const activePrayer = isToday && countdownMode === 'to_iqama' ? nextPrayer : null;
+  const activePrayer: PrayerName | null =
+    isToday && countdownMode === 'to_iqama' && nextPrayer !== null && nextPrayer !== 'sunrise' && nextPrayer !== 'eid-prayer-1' && nextPrayer !== 'eid-prayer-2'
+      ? (nextPrayer as PrayerName)
+      : null;
 
   const canPeekPrayer = (prayer: PrayerName) =>
     !!onPeekPrayer && !isPrayerPast(schedule, prayer, now) && activePrayer !== prayer;
@@ -84,16 +88,46 @@ function DayRows({
         onTap={canPeekPrayer('fajr') ? () => onPeekPrayer!('fajr', schedule) : undefined}
       />
 
-      {/* Sunrise — peekable, no iqama */}
+      {/* Sunrise — treated like a prayer: highlights when next, dims when past */}
       <PrayerRow
         name="sunrise"
         entry={{ azan: schedule.sunrise }}
-        isNext={false}
+        isNext={isToday && nextPrayer === 'sunrise'}
         isActive={false}
-        isPast={isToday && isSunrisePast(schedule, now)}
+        isPast={isToday && isSunrisePast(schedule, now) && nextPrayer !== 'sunrise'}
         isPeeked={peekedPrayer === 'sunrise'}
         onTap={canPeekSunrise() ? () => onPeekPrayer!('sunrise', schedule) : undefined}
       />
+
+      {/* Eid prayer rows — injected by backend when date is an Eid day */}
+      {schedule.eid_prayer_1 && (
+        <PrayerRow
+          name="fajr"
+          label="1st Eid Prayer"
+          entry={{ azan: schedule.eid_prayer_1, iqama: '' }}
+          isNext={isToday && nextPrayer === 'eid-prayer-1'}
+          isActive={false}
+          isPast={false}
+          isPeeked={peekedPrayer === 'eid-prayer-1'}
+          onTap={onPeekPrayer
+            ? () => onPeekPrayer('eid-prayer-1', { ...schedule, sunrise: schedule.eid_prayer_1! }, '1st Prayer')
+            : undefined}
+        />
+      )}
+      {schedule.eid_prayer_2 && (
+        <PrayerRow
+          name="fajr"
+          label="2nd Eid Prayer"
+          entry={{ azan: schedule.eid_prayer_2, iqama: '' }}
+          isNext={isToday && nextPrayer === 'eid-prayer-2'}
+          isActive={false}
+          isPast={false}
+          isPeeked={peekedPrayer === 'eid-prayer-2'}
+          onTap={onPeekPrayer
+            ? () => onPeekPrayer('eid-prayer-2', { ...schedule, sunrise: schedule.eid_prayer_2! }, '2nd Prayer')
+            : undefined}
+        />
+      )}
 
       {/* Remaining prayers */}
       {PRAYERS.filter(p => p !== 'fajr').map(prayer => (
@@ -108,6 +142,19 @@ function DayRows({
           onTap={canPeekPrayer(prayer) ? () => onPeekPrayer!(prayer, schedule) : undefined}
         />
       ))}
+
+      {/* Qiyam al-Layl row — injected by backend on Hijri days 20–29 of Ramadan */}
+      {schedule.qiyam_time && (
+        <PrayerRow
+          name="isha"
+          label="Qiyam"
+          entry={{ azan: schedule.qiyam_time, iqama: '' }}
+          isNext={false}
+          isActive={false}
+          isPast={false}
+          isPeeked={false}
+        />
+      )}
     </div>
   );
 }
@@ -183,9 +230,9 @@ export function PrayerTable({
       <div className="flex items-center justify-between px-6 pt-6 pb-4 flex-shrink-0">
         <div>
           <h3 className="text-xl font-bold text-gray-900">
-            {formatDisplayDate(activeSchedule.date, activeSchedule.day_of_week)}
+            {activeSchedule.hijri_date}
           </h3>
-          <p className="text-sm text-gray-500 mt-1">{activeSchedule.hijri_date}</p>
+          <p className="text-sm text-gray-500 mt-1">{formatDisplayDate(activeSchedule.date, activeSchedule.day_of_week)}</p>
         </div>
 
         {/* Tab toggle */}

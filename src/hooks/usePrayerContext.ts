@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
-import { deriveNextPrayerWithFallback } from '../logic/derive-next-prayer';
+import { deriveNextPrayerWithFallback, PrayerEvent } from '../logic/derive-next-prayer';
 import { deriveCountdown } from '../logic/derive-countdown';
-import type { DailySchedule, PrayerName, CountdownState } from '../types/index';
+import type { DailySchedule, CountdownState } from '../types/index';
 
 // dayjs ships an `export =` declaration which conflicts with ESM default imports
 // when esModuleInterop is off. We cast through unknown to keep the runtime ESM
@@ -29,8 +29,8 @@ export interface PrayerContextResult {
   timeOfDay: TimeOfDay;
   /** Which countdown window we're in */
   countdownMode: CountdownMode;
-  /** The next (or current) prayer name */
-  nextPrayer: PrayerName | null;
+  /** The next (or current) prayer/event name */
+  nextPrayer: PrayerEvent | null;
   /** The schedule the next prayer belongs to */
   nextSchedule: DailySchedule | null;
   /** Live countdown display string (HH:mm:ss) */
@@ -69,14 +69,17 @@ function getHijriDate(date: Date): { month: number; day: number } {
  *   isha    → NIGHT (deep dark sky)
  *   null    → NIGHT (all prayers done for the day)
  */
-function prayerToTimeOfDay(prayer: PrayerName | null): TimeOfDay {
+function prayerToTimeOfDay(prayer: PrayerEvent | null): TimeOfDay {
   if (!prayer) return 'NIGHT';
   switch (prayer) {
-    case 'fajr':    return 'DAWN';
-    case 'dhuhr':   return 'DAY';
-    case 'asr':     return 'DAY';
-    case 'maghrib': return 'DUSK';
-    case 'isha':    return 'NIGHT';
+    case 'fajr':         return 'DAWN';
+    case 'sunrise':      return 'DAWN';
+    case 'eid-prayer-1': return 'DAY';
+    case 'eid-prayer-2': return 'DAY';
+    case 'dhuhr':        return 'DAY';
+    case 'asr':          return 'DAY';
+    case 'maghrib':      return 'DUSK';
+    case 'isha':         return 'NIGHT';
   }
 }
 
@@ -98,7 +101,7 @@ export function usePrayerContext(
   // We destructure prayer and schedule separately so each has a stable
   // identity in the dependency array: prayer is a primitive string, and
   // schedule is the same object reference as todaySchedule/tomorrowSchedule.
-  const nextPrayer = useMemo((): PrayerName | null => {
+  const nextPrayer = useMemo((): PrayerEvent | null => {
     if (!todaySchedule) return null;
     return deriveNextPrayerWithFallback(todaySchedule, tomorrowSchedule, getNow())?.prayer ?? null;
     // eslint-disable-next-line react-hooks/exhaustive-deps

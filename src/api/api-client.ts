@@ -37,6 +37,13 @@ export async function apiFetch<T>(
     return undefined as T;
   }
 
+  // Skip JSON parsing for responses with no content body
+  const contentLength = response.headers.get('content-length');
+  const contentType = response.headers.get('content-type');
+  if (contentLength === '0' || !contentType || !contentType.includes('application/json')) {
+    return undefined as T;
+  }
+
   try {
     return await response.json() as T;
   } catch (err) {

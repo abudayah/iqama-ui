@@ -46,8 +46,13 @@ describe('deriveNextPrayer', () => {
     expect(deriveNextPrayer(schedule, now)).toBe('fajr');
   });
 
-  it('returns dhuhr when now is after fajr iqama but before dhuhr azan', () => {
-    const now = makeDate(5, 46); // 05:46, after fajr iqama at 05:45
+  it('returns sunrise when now is after fajr iqama but before sunrise', () => {
+    const now = makeDate(5, 46); // 05:46, after fajr iqama at 05:45, before sunrise at 07:00
+    expect(deriveNextPrayer(schedule, now)).toBe('sunrise');
+  });
+
+  it('returns dhuhr when now is after sunrise but before dhuhr azan', () => {
+    const now = makeDate(7, 1); // 07:01, after sunrise at 07:00, before dhuhr at 12:15
     expect(deriveNextPrayer(schedule, now)).toBe('dhuhr');
   });
 

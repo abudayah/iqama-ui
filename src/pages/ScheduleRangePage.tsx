@@ -3,8 +3,6 @@ import { useScheduleRange } from '../hooks/useScheduleRange';
 import { useOverrides } from '../hooks/useOverrides';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { ScheduleRangeTable } from '../components/ScheduleRangeTable';
-import { OverrideFormModal } from '../components/OverrideFormModal';
-import type { PrayerName, OverridePayload } from '../types/index';
 
 function getDefaultRange(): { start: string; end: string } {
   const today = new Date();
@@ -25,26 +23,13 @@ export function ScheduleRangePage() {
   const defaultRange = getDefaultRange();
   const [start, setStart] = useState(defaultRange.start);
   const [end, setEnd] = useState(defaultRange.end);
-  const [prefillDate, setPrefillDate] = useState<string | null>(null);
-  const [prefillPrayer, setPrefillPrayer] = useState<PrayerName | null>(null);
 
   const { data: schedules, loading, error } = useScheduleRange(start, end);
-  const { overrides, create } = useOverrides();
+  const { overrides } = useOverrides();
 
   const handleRangeChange = (newStart: string, newEnd: string) => {
     setStart(newStart);
     setEnd(newEnd);
-  };
-
-  const handleCellTap = (date: string, prayer: PrayerName) => {
-    setPrefillDate(date);
-    setPrefillPrayer(prayer);
-  };
-
-  const handleSave = async (payload: OverridePayload) => {
-    await create(payload);
-    setPrefillDate(null);
-    setPrefillPrayer(null);
   };
 
   return (
@@ -56,23 +41,8 @@ export function ScheduleRangePage() {
           overrides={overrides}
           loading={loading}
           error={error}
-          onCellTap={handleCellTap}
         />
       </div>
-      {prefillDate && prefillPrayer && (
-        <OverrideFormModal
-          initial={{
-            id: 0,
-            prayer: prefillPrayer,
-            overrideType: 'FIXED',
-            value: '',
-            startDate: prefillDate,
-            endDate: prefillDate,
-          }}
-          onSave={handleSave}
-          onClose={() => { setPrefillDate(null); setPrefillPrayer(null); }}
-        />
-      )}
     </div>
   );
 }

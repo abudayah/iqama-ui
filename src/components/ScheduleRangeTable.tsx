@@ -1,4 +1,4 @@
-import type { DailySchedule, Override, PrayerName } from '../types/index';
+import type { DailySchedule, Override } from '../types/index';
 import { ScheduleRangeRow } from './ScheduleRangeRow';
 
 interface ScheduleRangeTableProps {
@@ -6,10 +6,9 @@ interface ScheduleRangeTableProps {
   overrides: Override[];
   loading: boolean;
   error: Error | null;
-  onCellTap: (date: string, prayer: PrayerName) => void;
 }
 
-export function ScheduleRangeTable({ schedules, overrides, loading, error, onCellTap }: ScheduleRangeTableProps) {
+export function ScheduleRangeTable({ schedules, overrides, loading, error }: ScheduleRangeTableProps) {
   if (loading) {
     return (
       <div className="animate-pulse space-y-2 p-4">
@@ -39,11 +38,10 @@ export function ScheduleRangeTable({ schedules, overrides, loading, error, onCel
   return (
     <div className="bg-white rounded-lg shadow overflow-hidden">
       {schedules.map(schedule => (
-        <ScheduleRangeRow
+      <ScheduleRangeRow
           key={schedule.date}
           schedule={schedule}
           overrides={overrides}
-          onCellTap={onCellTap}
         />
       ))}
     </div>

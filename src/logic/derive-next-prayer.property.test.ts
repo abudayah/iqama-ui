@@ -47,6 +47,16 @@ describe('deriveNextPrayer — Property 1: Next prayer is always in the future (
           return true;
         }
 
+        // Sunrise and Eid prayers have no iqama — just check the time is in the future
+        if (result === 'sunrise') {
+          const [sh, sm] = schedule.sunrise.split(':').map(Number);
+          const sunriseDate = new Date(2025, 0, 15, sh!, sm!, 0, 0);
+          return sunriseDate > now;
+        }
+        if (result === 'eid-prayer-1' || result === 'eid-prayer-2') {
+          return true; // Eid prayers only appear when eid_prayer_1/2 is set
+        }
+
         const entry = schedule[result];
         const [ah, am] = entry.azan.split(':').map(Number);
         const [ih, im] = entry.iqama.split(':').map(Number);

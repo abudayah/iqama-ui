@@ -1,14 +1,15 @@
 import { useRef, useState, useEffect } from 'react';
 import type { CountdownMode } from '../hooks/usePrayerContext';
 import type { PrayerName, DailySchedule, CountdownState } from '../types/index';
+import type { PrayerEvent } from '../logic/derive-next-prayer';
 import { IslamicEventBanner } from './IslamicEventBanner';
 
-/** Prayers + sunrise — anything that can be peeked */
-export type PeekTarget = PrayerName | 'sunrise';
+/** Prayers + sunrise + Eid prayers — anything that can be peeked */
+export type PeekTarget = PrayerName | 'sunrise' | 'eid-prayer-1' | 'eid-prayer-2';
 
 /* ─── Props ─────────────────────────────────────────────────────────────────── */
 interface HeroBannerProps {
-  nextPrayer:    PrayerName | null;
+  nextPrayer:    PrayerEvent | null;
   countdown:     CountdownState;
   /** Schedule for the prayer being counted down to (may be tomorrow's) */
   schedule:      DailySchedule | null;
@@ -25,12 +26,16 @@ interface HeroBannerProps {
   peekPrayer?:   PeekTarget | null;
   /** Schedule that contains the peeked target */
   peekSchedule?: DailySchedule | null;
+  /** Optional label override for the peeked target (used for Eid prayer rows) */
+  peekLabel?:    string | null;
 }
 
 /* ─── Constants ─────────────────────────────────────────────────────────────── */
 const PRAYER_LABELS: Record<string, string> = {
   fajr: 'Fajr', dhuhr: 'Dhuhr', asr: 'Asr', maghrib: 'Maghrib', isha: 'Isha',
   sunrise: 'Sunrise',
+  'eid-prayer-1': '1st Prayer',
+  'eid-prayer-2': '2nd Prayer',
 };
 
 /* ─── Time helpers ───────────────────────────────────────────────────────────── */
@@ -305,10 +310,11 @@ export function HeroBanner({
   countdownMode,
   hijriDay,
   hijriMonth,
-  tick: _tick,   // consumed to trigger re-render each second
+  tick: _tick,
   simulatedNow,
   peekPrayer,
   peekSchedule,
+  peekLabel,
 }: HeroBannerProps) {
   const now = simulatedNow ?? new Date();
   const nowMin = nowMinutes(now);
@@ -316,11 +322,14 @@ export function HeroBanner({
   /* ── Peek mode: override display with the peeked target's countdown ── */
   const isPeeking = !!peekPrayer && !!peekSchedule;
 
-  // Resolve the azan time string for the peeked target
+  const isEidPeek = peekPrayer === 'eid-prayer-1' || peekPrayer === 'eid-prayer-2';
+
+  // Resolve the azan time string for the peeked target.
+  // Eid peeks use peekSchedule.sunrise (we inject the Eid time there).
   const peekTimeStr: string | null = isPeeking && peekSchedule
-    ? peekPrayer === 'sunrise'
+    ? (peekPrayer === 'sunrise' || isEidPeek)
       ? peekSchedule.sunrise
-      : peekSchedule[peekPrayer!].azan
+      : peekSchedule[peekPrayer as PrayerName].azan
     : null;
 
   const peekAzanMin: number | null = peekTimeStr !== null ? hhmm(peekTimeStr) : null;
@@ -367,31 +376,45 @@ export function HeroBanner({
       })()
     : countdown;
 
-  const prayerLabel = displayPrayer ? (PRAYER_LABELS[displayPrayer] ?? displayPrayer) : '—';
-  // Sunrise has no iqama — for all other peeked targets use the schedule entry
-  const azanTime  = isPeeking
+  const prayerLabel = peekLabel ?? (displayPrayer ? (PRAYER_LABELS[displayPrayer] ?? displayPrayer) : '—');
+
+  const isNonAzanEvent = (p: typeof displayPrayer) =>
+    p === 'sunrise' || p === 'eid-prayer-1' || p === 'eid-prayer-2';
+
+  // Resolve azan time for display in the sub-line
+  const azanTime: string | null = isPeeking
     ? peekTimeStr
-    : (displayPrayer && displaySchedule && displayPrayer !== 'sunrise'
-        ? displaySchedule[displayPrayer as PrayerName]?.azan
-        : null);
-  const iqamaTime = (displayPrayer && displaySchedule && displayPrayer !== 'sunrise')
-    ? displaySchedule[displayPrayer as PrayerName]?.iqama
-    : null;
+    : displayPrayer && displaySchedule && !isNonAzanEvent(displayPrayer)
+      ? displaySchedule[displayPrayer as PrayerName]?.azan ?? null
+      : null;
+
+  // Eid prayers and sunrise have no iqama
+  const iqamaTime: string | null =
+    displayPrayer && displaySchedule && !isNonAzanEvent(displayPrayer)
+      ? displaySchedule[displayPrayer as PrayerName]?.iqama ?? null
+      : null;
 
   /* ── Countdown display ── */
-  // When peeking, always show "azan" mode regardless of real countdownMode
   const effectiveMode = isPeeking ? 'to_azan' : countdownMode;
   const isIqamaWindow = effectiveMode === 'to_iqama';
   const isDone        = effectiveMode === 'done';
 
+  // Determine super-title based on what's being displayed
   const superTitle = isPeeking
-    ? (peekPrayer === 'sunrise' ? 'SUNRISE IN' : 'AZAN IN')
-    : isIqamaWindow ? 'TIME UNTIL IQAMA' : 'NEXT PRAYER';
+    ? (isEidPeek ? 'EID PRAYER IN' : peekPrayer === 'sunrise' ? 'SUNRISE IN' : 'AZAN IN')
+    : displayPrayer === 'sunrise'
+      ? 'SUNRISE IN'
+      : displayPrayer === 'eid-prayer-1' || displayPrayer === 'eid-prayer-2'
+        ? 'NEXT PRAYER'
+        : isIqamaWindow ? 'TIME UNTIL IQAMA' : 'NEXT PRAYER';
+
   const subLine = isPeeking
     ? (azanTime ? `${prayerLabel} · at ${azanTime}` : prayerLabel)
     : isIqamaWindow
       ? (iqamaTime ? `${prayerLabel} · Iqama at ${iqamaTime}` : prayerLabel)
-      : (azanTime  ? `${prayerLabel} · Azan at ${azanTime}`   : prayerLabel);
+      : displayPrayer === 'sunrise'
+        ? (azanTime ? `${prayerLabel} · at ${azanTime}` : prayerLabel)
+        : (azanTime ? `${prayerLabel} · Azan at ${azanTime}` : prayerLabel);
 
   /* ── Moon shadow cx ── */
   const shadowCx = moonShadowCx(hijriDay);
@@ -429,15 +452,9 @@ export function HeroBanner({
         style={{ textShadow: '0 2px 12px rgba(0,0,0,0.45)' }}
       >
         {/* Super-title */}
-        {isIqamaWindow ? (
-          <p className="iqama-warning-label text-xs font-bold uppercase tracking-[0.18em]">
-            {superTitle}
-          </p>
-        ) : (
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/60">
-            {superTitle}
-          </p>
-        )}
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/60">
+          {superTitle}
+        </p>
 
         {/* Timer */}
         {isDone ? (

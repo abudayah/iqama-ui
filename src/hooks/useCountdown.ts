@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { deriveCountdown } from '../logic/derive-countdown';
-import type { DailySchedule, PrayerName, CountdownState } from '../types/index';
+import type { PrayerEvent } from '../logic/derive-next-prayer';
+import type { DailySchedule, CountdownState } from '../types/index';
 import type { NextPrayerResult } from './useNextPrayer';
 
 const DONE_STATE: CountdownState = { phase: 'done', display: 'All prayers complete' };
@@ -13,7 +14,7 @@ export function useCountdown(
 
   // Stable references for the effect
   const schedule: DailySchedule | null = nextPrayerResult?.schedule ?? null;
-  const nextPrayer: PrayerName | null = nextPrayerResult?.prayer ?? null;
+  const nextPrayer: PrayerEvent | null = nextPrayerResult?.prayer ?? null;
 
   useEffect(() => {
     if (!schedule || !nextPrayer) {

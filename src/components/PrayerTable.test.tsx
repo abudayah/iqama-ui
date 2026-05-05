@@ -49,6 +49,10 @@ const scheduleArb: fc.Arbitrary<DailySchedule> = fc.record({
   }),
 });
 
+const validHHmmArbitrary = fc
+  .tuple(fc.integer({ min: 0, max: 23 }), fc.integer({ min: 0, max: 59 }))
+  .map(([h, m]) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+
 /** Helper: render PrayerTable with the new API using sensible defaults */
 function renderTable(schedule: DailySchedule) {
   return render(
@@ -107,6 +111,109 @@ describe('PrayerTable — Property 8: renders all required fields for any schedu
         for (const prayer of ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha']) {
           expect(screen.getByTestId(`prayer-row-${prayer}`)).toBeInTheDocument();
         }
+
+        unmount();
+      }),
+      { numRuns: 100 },
+    );
+  });
+});
+
+// ─── Task 12.2 — Qiyam row unit tests ────────────────────────────────────────
+// Feature: ramadan-eid-admin-redesign
+// Validates: Requirements 10.1, 10.4
+
+describe('PrayerTable — Qiyam row unit tests', () => {
+  it('renders Qiyam row when qiyam_time is set', () => {
+    const schedule: DailySchedule = {
+      ...fixtureSchedule,
+      qiyam_time: '01:30',
+    };
+    renderTable(schedule);
+
+    // PrayerTable renders both today and tomorrow panels (200% wide strip)
+    // so the Qiyam row appears in both panels
+    expect(screen.getAllByText('Qiyam').length).toBeGreaterThan(0);
+  });
+
+  it('does not render Qiyam row when qiyam_time is absent', () => {
+    // fixtureSchedule has no qiyam_time
+    renderTable(fixtureSchedule);
+
+    expect(screen.queryByText('Qiyam')).not.toBeInTheDocument();
+  });
+
+  it('does not display an iqama value in the Qiyam row', () => {
+    const schedule: DailySchedule = {
+      ...fixtureSchedule,
+      qiyam_time: '01:30',
+    };
+    renderTable(schedule);
+
+    // Find the first row containing the "Qiyam" label
+    const qiyamLabels = screen.getAllByText('Qiyam');
+    const row = qiyamLabels[0]!.closest('[data-testid="prayer-row-isha"]');
+    expect(row).not.toBeNull();
+
+    // The iqama span renders an empty string — confirm no iqama time is shown
+    const timeSpans = row!.querySelectorAll('.tabular-nums span');
+    expect(timeSpans[0]?.textContent).toBe('01:30');
+    expect(timeSpans[1]?.textContent).toBe('');
+  });
+});
+
+// ─── Task 12.3 — Property 3 + 4: Qiyam row property-based tests ──────────────
+// Feature: ramadan-eid-admin-redesign
+// Property 3: for any valid HH:mm qiyam_time, Qiyam row is present and shows that time
+// Property 4: for any schedule without qiyam_time, no Qiyam row is rendered
+// Validates: Requirements 10.1, 10.2, 10.4
+
+describe('PrayerTable — Property 3: Qiyam row present for any valid qiyam_time', () => {
+  /**
+   * **Validates: Requirements 10.1, 10.2**
+   *
+   * For any valid HH:mm qiyam_time, the PrayerTable SHALL render a "Qiyam" row
+   * and display that exact time string.
+   */
+  it('always renders Qiyam row and displays the exact time when qiyam_time is set', () => {
+    fc.assert(
+      fc.property(validHHmmArbitrary, (qiyamTime) => {
+        const schedule: DailySchedule = {
+          ...fixtureSchedule,
+          qiyam_time: qiyamTime,
+        };
+        const { unmount } = renderTable(schedule);
+
+        // Qiyam label must be present (may appear in both today/tomorrow panels)
+        const qiyamLabels = screen.getAllByText('Qiyam');
+        expect(qiyamLabels.length).toBeGreaterThan(0);
+
+        // The azan time displayed must match the qiyam_time exactly
+        const row = qiyamLabels[0]!.closest('[data-testid="prayer-row-isha"]');
+        expect(row).not.toBeNull();
+        const timeSpans = row!.querySelectorAll('.tabular-nums span');
+        expect(timeSpans[0]?.textContent).toBe(qiyamTime);
+
+        unmount();
+      }),
+      { numRuns: 100 },
+    );
+  });
+});
+
+describe('PrayerTable — Property 4: no Qiyam row when qiyam_time is absent', () => {
+  /**
+   * **Validates: Requirements 10.4**
+   *
+   * For any schedule without qiyam_time, the PrayerTable SHALL NOT render a Qiyam row.
+   */
+  it('never renders Qiyam row when schedule has no qiyam_time', () => {
+    fc.assert(
+      fc.property(scheduleArb, (schedule) => {
+        // scheduleArb does not include qiyam_time, so it will always be absent
+        const { unmount } = renderTable(schedule);
+
+        expect(screen.queryByText('Qiyam')).not.toBeInTheDocument();
 
         unmount();
       }),

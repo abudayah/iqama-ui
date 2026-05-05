@@ -5,6 +5,7 @@ import { PrayerViewerPage } from './pages/PrayerViewerPage';
 import { AdminPage } from './pages/AdminPage';
 import { OverridesPage } from './pages/OverridesPage';
 import { ScheduleRangePage } from './pages/ScheduleRangePage';
+import { RamadanEidPage } from './pages/RamadanEidPage';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
           >
             <Route index element={<OverridesPage />} />
             <Route path="schedule" element={<ScheduleRangePage />} />
+            <Route path="eid" element={<RamadanEidPage />} />
           </Route>
         </Routes>
       </ConfigGate>

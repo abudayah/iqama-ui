@@ -94,20 +94,8 @@ describe('PrayerRow — unit tests', () => {
     expect(row.className).toContain('opacity-40');
   });
 
-  it('shows "now" badge only when isActive is true', () => {
-    const { rerender } = render(
-      <PrayerRow
-        name="fajr"
-        entry={{ azan: '05:30', iqama: '05:45' }}
-        isNext={true}
-        isActive={false}
-        isPast={false}
-        isPeeked={false}
-      />,
-    );
-    expect(screen.queryByLabelText('Current prayer')).not.toBeInTheDocument();
-
-    rerender(
+  it('"now" badge has been removed', () => {
+    render(
       <PrayerRow
         name="fajr"
         entry={{ azan: '05:30', iqama: '05:45' }}
@@ -117,7 +105,7 @@ describe('PrayerRow — unit tests', () => {
         isPeeked={false}
       />,
     );
-    expect(screen.getByLabelText('Current prayer')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Current prayer')).not.toBeInTheDocument();
   });
 });
 

@@ -9,6 +9,8 @@ interface PrayerRowProps {
   isActive: boolean;
   /** True when this prayer is currently being peeked in the hero */
   isPeeked: boolean;
+  /** Override the display label (used for Eid prayer rows) */
+  label?:   string;
   /** Called when the row is tapped (only provided for future prayers) */
   onTap?:  (() => void) | undefined;
 }
@@ -28,7 +30,7 @@ const DOT_COLORS: Record<string, string> = {
   isha:    '#4b5563',
 };
 
-export function PrayerRow({ name, entry, isNext, isPast, isActive, isPeeked, onTap }: PrayerRowProps) {
+export function PrayerRow({ name, entry, isNext, isPast, isActive, isPeeked, label, onTap }: PrayerRowProps) {
   const isSunrise  = name === 'sunrise';
   const dotColor   = DOT_COLORS[name] ?? '#6b7280';
   const iqamaValue = 'iqama' in entry && entry.iqama ? entry.iqama : null;
@@ -66,27 +68,10 @@ export function PrayerRow({ name, entry, isNext, isPast, isActive, isPeeked, onT
             fontStyle: isSunrise ? 'italic' : undefined,
           }}
         >
-          {PRAYER_LABELS[name] ?? name}
+          {label ?? (PRAYER_LABELS[name] ?? name)}
         </span>
 
-        {/* "now" pill — only shown during the azan→iqama window */}
-        {isActive && (
-          <span
-            className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-green-500 text-white"
-            aria-label="Current prayer"
-          >
-            <span
-              className="block rounded-full bg-white"
-              style={{
-                width: 6,
-                height: 6,
-                animation: 'dot-pulse 1.8s ease-out infinite',
-              }}
-              aria-hidden="true"
-            />
-            now
-          </span>
-        )}
+        {/* "now" pill removed per user preference */}
       </div>
 
       {/* Right: azan + iqama times */}

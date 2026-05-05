@@ -125,6 +125,7 @@ export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModa
         {overrideType === 'FIXED' ? (
           <input
             type="time"
+            step={300}
             value={value}
             onChange={e => setValue(e.target.value)}
             className="w-full border border-gray-300 rounded px-3 py-3 text-sm mb-1 min-h-[44px]"
@@ -132,10 +133,8 @@ export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModa
         ) : (
           <div className="mb-1">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-xs text-gray-500">{OFFSET_MIN} min</span>
-              <span className={`text-lg font-bold tabular-nums ${
-                offsetNum > 0 ? 'text-blue-600' : offsetNum < 0 ? 'text-red-500' : 'text-gray-600'
-              }`}>
+              <span className="text-xs text-gray-500">-{Math.abs(OFFSET_MIN)} min</span>
+              <span className="text-lg font-bold tabular-nums text-blue-600">
                 {formatOffset(offsetNum)} min
               </span>
               <span className="text-xs text-gray-500">+{OFFSET_MAX} min</span>
