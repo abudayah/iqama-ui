@@ -141,3 +141,34 @@
     opacity: 0.9;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SHOOTING STARS — streak across the sky then stay invisible for a long pause.
+   The streak travels in ~10% of the cycle, then stays hidden for the rest —
+   giving a natural random-feeling interval between shots.
+───────────────────────────────────────────────────────────────────────────── */
+@keyframes shooting-star {
+  0% {
+    opacity: 0;
+    transform: translateX(0) translateY(0);
+  }
+  2% {
+    opacity: 1;
+  }
+  8% {
+    opacity: 0.6;
+    transform: translateX(7%) translateY(5%);
+  }
+  12% {
+    opacity: 0;
+    transform: translateX(11%) translateY(8%);
+  }
+  12.01% {
+    opacity: 0;
+    transform: translateX(0) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(0) translateY(0);
+  }
+}

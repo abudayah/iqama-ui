@@ -461,8 +461,9 @@ export function HeroBanner({
   const mtnKeyframes = buildMtnKeyframes(fajrMin, sunriseMin, maghribMin, ishaMin);
   const mtn = interpolateMtn(mtnKeyframes, skyMin);
 
-  /* ── Celestial body ── */
-  const cel = computeCelestial(skyMin, fajrMin, sunriseMin, maghribMin);
+  /* ── Celestial body — rounded to nearest minute so position only updates once/min ── */
+  const celMin = isPeeking ? skyMin : Math.floor(nowMin);
+  const cel = computeCelestial(celMin, fajrMin, sunriseMin, maghribMin);
 
   /* ── Stars — only computed once schedule is available ── */
   const showStars = todaySchedule ? isNight(skyMin, sunriseMin, maghribMin) : false;
@@ -635,6 +636,31 @@ export function HeroBanner({
                 }}
               />
             ))}
+
+            {/* Shooting stars — 4 independent streaks, each on its own long cycle */}
+            {[
+              { x: 72, y: 8, angle: 35, interval: 9, delay: -1 },
+              { x: 30, y: 5, angle: 28, interval: 14, delay: -5 },
+              { x: 55, y: 12, angle: 40, interval: 11, delay: -8 },
+              { x: 85, y: 4, angle: 32, interval: 17, delay: -3 },
+            ].map((s, i) => (
+              <line
+                key={`shoot-${i}`}
+                x1={`${s.x}%`}
+                y1={`${s.y}%`}
+                x2={`${s.x + 3}%`}
+                y2={`${s.y + 2}%`}
+                stroke="white"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+                style={{
+                  animation: `shooting-star ${s.interval}s linear infinite`,
+                  animationDelay: `${s.delay}s`,
+                  transformOrigin: `${s.x}% ${s.y}%`,
+                  transform: `rotate(${s.angle}deg)`,
+                }}
+              />
+            ))}
           </svg>
         )}
 
@@ -653,7 +679,7 @@ export function HeroBanner({
               opacity: cel.opacity,
               transition: isPeeking
                 ? 'top 0.6s ease-out, left 0.6s ease-out'
-                : 'top 1s linear, left 1s linear, opacity 20s linear, background 60s linear',
+                : 'top 62s linear, left 62s linear, opacity 20s linear, background 62s linear',
             }}
             aria-hidden="true"
           />
