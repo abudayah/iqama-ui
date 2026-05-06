@@ -30,7 +30,7 @@ A React-based display app for the Iqama Engine. Shows live prayer times, countdo
 ### Prerequisites
 
 - Node.js 18+
-- A running [Iqama Engine](../iqama-engine/README.md) instance
+- A running [Iqama Engine](https://github.com/abudayah/iqama-engine) instance
 
 ### Setup
 
@@ -167,4 +167,8 @@ iqama-ui/
 
 ## License
 
-UNLICENSED — Private project
+MIT
+
+---
+
+Built with [React](https://react.dev/) + [Vite](https://vitejs.dev/) • Powered by [iqama-engine](https://github.com/abudayah/iqama-engine)
