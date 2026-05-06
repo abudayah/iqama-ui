@@ -71,18 +71,18 @@ function DaySection({
   const sectionId = isToday ? 'widget-today' : 'widget-tomorrow';
 
   return (
-    <section id={sectionId} className="">
+    <section id={sectionId} className="flex flex-col min-h-0 flex-1">
       {/* Section header — two columns: label left, dates right */}
       <div
         id={`${sectionId}-header`}
-        className="px-4 pt-5 pb-3 flex items-baseline justify-between gap-4"
+        className="px-4 pt-3 pb-2 flex items-baseline justify-between gap-4"
       >
-        <h2 className="text-xl font-bold text-gray-900 shrink-0">
+        <h2 className="text-base font-bold text-gray-900 shrink-0">
           <span>{label}</span>
           {' / '}
           <span lang="ar">{labelAr}</span>
         </h2>
-        <p className="text-sm text-gray-500 text-right">
+        <p className="text-xs text-gray-500 text-right">
           {schedule.hijri_date}
           {' · '}
           {formatWidgetDate(schedule.date, schedule.day_of_week)}
@@ -90,8 +90,8 @@ function DaySection({
       </div>
 
       {/* Horizontal prayer table — prayers as columns, Azan/Iqama as rows */}
-      <div className="overflow-x-auto">
-        <table id={`${sectionId}-table`} className="w-full border-collapse min-w-[520px]">
+      <div className="overflow-x-auto flex-1">
+        <table id={`${sectionId}-table`} className="w-full h-full border-collapse min-w-[520px]">
           <thead>
             <tr id={`${sectionId}-col-headers`}>
               {/* Row-label header cell (top-left corner) */}
@@ -192,11 +192,6 @@ function DaySection({
           </tbody>
         </table>
       </div>
-
-      {/* Next Jumuah notice — shown only in the Tomorrow section when tomorrow is Friday */}
-      {!isToday && schedule.day_of_week === 'Friday' && (
-        <p className="px-4 py-3 text-sm text-gray-600 italic">Next Jumuah Prayers</p>
-      )}
     </section>
   );
 }
@@ -211,32 +206,39 @@ export function WidgetPrayerTable({
   tick: _tick,
 }: WidgetPrayerTableProps) {
   return (
-    <div id="widget-schedule" className="divide-y divide-gray-100">
-      {/* Today section — always rendered when this component mounts */}
-      <DaySection
-        label="Today"
-        labelAr="اليوم"
-        schedule={todaySchedule}
-        nextPrayer={nextPrayer}
-        countdownMode={countdownMode}
-        isToday={true}
-      />
-
-      {/* Tomorrow section — or loading placeholder */}
-      {tomorrowSchedule !== null ? (
+    <div id="widget-schedule" className="flex flex-col flex-1 min-h-0">
+      {/* Today section — takes half the available space */}
+      <div className="flex-1 min-h-0 flex flex-col">
         <DaySection
-          label="Tomorrow"
-          labelAr="الغد"
-          schedule={tomorrowSchedule}
-          nextPrayer={null}
-          countdownMode="done"
-          isToday={false}
+          label="Today"
+          labelAr="اليوم"
+          schedule={todaySchedule}
+          nextPrayer={nextPrayer}
+          countdownMode={countdownMode}
+          isToday={true}
         />
-      ) : (
-        <div className="px-4 py-6 text-center text-gray-400 text-sm animate-pulse">
-          Loading tomorrow…
-        </div>
-      )}
+      </div>
+
+      {/* Divider */}
+      <div className="border-t border-gray-100 shrink-0" />
+
+      {/* Tomorrow section — takes the other half */}
+      <div className="flex-1 min-h-0 flex flex-col">
+        {tomorrowSchedule !== null ? (
+          <DaySection
+            label="Tomorrow"
+            labelAr="الغد"
+            schedule={tomorrowSchedule}
+            nextPrayer={null}
+            countdownMode="done"
+            isToday={false}
+          />
+        ) : (
+          <div className="px-4 py-6 text-center text-gray-400 text-sm animate-pulse">
+            Loading tomorrow…
+          </div>
+        )}
+      </div>
     </div>
   );
 }

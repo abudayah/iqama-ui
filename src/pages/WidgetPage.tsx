@@ -18,8 +18,14 @@ export function WidgetPage() {
   );
 
   return (
-    <main id="widget-root" style={{ overflowX: 'hidden' }} className="w-full mx-auto">
-      <div id="widget-hero">
+    <main
+      id="widget-root"
+      style={{ overflowX: 'hidden', height: '100dvh' }}
+      className="w-full mx-auto flex flex-col"
+    >
+      {/* Hero — constrained to 28vh; inline style override targets the banner's hardcoded height */}
+      <style>{`#widget-hero #prayer-hero-banner { height: 100% !important; }`}</style>
+      <div id="widget-hero" className="shrink-0 overflow-hidden" style={{ height: '28vh' }}>
         <HeroBanner
           nextPrayer={nextPrayer}
           countdown={countdown}
@@ -33,8 +39,8 @@ export function WidgetPage() {
         />
       </div>
 
-      {/* Carved card — pulls up over the hero with rounded top corners */}
-      <div className="relative z-10 bg-white rounded-t-3xl -mt-6 shadow-[0_-4px_24px_rgba(0,0,0,0.15)]">
+      {/* Carved card — pulls up over the hero, fills all remaining height */}
+      <div className="relative z-10 bg-white rounded-t-3xl -mt-6 shadow-[0_-4px_24px_rgba(0,0,0,0.15)] flex flex-col flex-1 min-h-0">
         {/* Loading skeleton */}
         {todayLoading && (
           <div id="widget-loading" className="px-6 pt-6 pb-4">
@@ -62,9 +68,9 @@ export function WidgetPage() {
           </div>
         )}
 
-        {/* Prayer table — rendered once today's data is ready */}
+        {/* Prayer table — grows to fill remaining card height */}
         {todaySchedule && !todayLoading && (
-          <div id="widget-prayer-table">
+          <div id="widget-prayer-table" className="flex-1 min-h-0 flex flex-col">
             <WidgetPrayerTable
               todaySchedule={todaySchedule}
               tomorrowSchedule={tomorrowSchedule ?? null}
@@ -80,7 +86,7 @@ export function WidgetPage() {
           id="widget-footer"
           aria-label="Widget footer"
           style={{ borderTop: '1px solid #f0f0f0' }}
-          className="px-4 py-2.5 text-center"
+          className="px-4 py-2.5 text-center shrink-0"
         >
           <p style={{ fontSize: '11px', color: '#999', letterSpacing: '0.02em' }}>
             Get prayer times on your mobile: <span style={{ color: '#666' }}>iqama.theisbc.ca</span>
