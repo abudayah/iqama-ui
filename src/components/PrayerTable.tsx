@@ -166,6 +166,7 @@ function DayRows({
         <PrayerRow
           key={prayer}
           name={prayer}
+          label={prayer === 'dhuhr' && schedule.day_of_week === 'Friday' ? 'Friday' : undefined}
           entry={schedule[prayer]}
           isNext={isToday && nextPrayer === prayer}
           isActive={activePrayer === prayer}
