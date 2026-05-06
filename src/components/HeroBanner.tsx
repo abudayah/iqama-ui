@@ -398,16 +398,35 @@ function isNight(skyMin: number, sunriseMin: number, maghribMin: number): boolea
   return skyMin >= maghribMin || skyMin < sunriseMin;
 }
 
-/* ─── Moon phase shadow ──────────────────────────────────────────────────────
- * Converts a Hijri day (1–30) to the SVG shadow-circle cx value.
- *   day 15  → cx 200  (full moon — shadow off-screen right)
- *   day < 15 → waxing: shadow slides right as day increases
- *   day > 15 → waning: shadow slides in from the left
+/* ─── Moon phase ─────────────────────────────────────────────────────────────
+ * Converts a Hijri day (1–30) to phase rendering parameters:
+ *   shadowSide: which side the shadow falls on ('left' = waxing, 'right' = waning, 'none' = full moon)
+ *   shadowCx:   SVG cx of the shadow circle
+ *   opacity:    opacity of the lit disc (fades near new moon)
  */
-function moonShadowCx(day: number): number {
-  if (day === 15) return 200;
-  if (day < 15) return 50 + (day / 15) * 100;
-  return -50 + ((day - 15) / 15) * 100;
+export function getMoonPhase(day: number): {
+  shadowSide: 'left' | 'right' | 'none';
+  shadowCx: number;
+  opacity: number;
+} {
+  if (day >= 28 || day <= 1) {
+    return { shadowSide: 'left', shadowCx: 50, opacity: day <= 1 ? 0.05 : 0.1 };
+  }
+  if (day < 15) {
+    // t=0 at day 2 (thin crescent) → t=1 at day 14 (gibbous)
+    // Shadow moves leftward off-screen: cx goes from ~0 (covering disc) to ~-40 (mostly off-screen)
+    const t = (day - 1) / 14;
+    const cx = 0 - 40 * t; // 0 → -40
+    return { shadowSide: 'left', shadowCx: cx, opacity: 0.9 + t * 0.1 };
+  }
+  if (day === 15) {
+    return { shadowSide: 'none', shadowCx: 200, opacity: 1 };
+  }
+  // t=0 at day 16 (gibbous) → t=1 at day 27 (thin crescent)
+  // Shadow moves rightward onto disc: cx goes from ~100 (mostly off-screen) to ~50 (covering disc)
+  const t = (day - 15) / 14;
+  const cx = 100 - 50 * t; // 100 → 50
+  return { shadowSide: 'right', shadowCx: cx, opacity: 1 - t * 0.9 };
 }
 
 /* ─── Component ─────────────────────────────────────────────────────────────── */
@@ -546,8 +565,10 @@ export function HeroBanner({
           ? `${prayerLabel} · Azan at ${azanTime}`
           : prayerLabel;
 
-  /* ── Moon shadow cx ── */
-  const shadowCx = moonShadowCx(hijriDay);
+  /* ── Moon phase ── */
+  const phase = getMoonPhase(hijriDay);
+  const glowIntensity = 1 - Math.abs(hijriDay - 15) / 15;
+  const glowFilter = `drop-shadow(0 0 ${8 + glowIntensity * 20}px rgba(255,244,202,${0.2 + glowIntensity * 0.5}))`;
 
   /* ── Wrapper ref (kept for potential future CSS var transitions) ── */
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -695,7 +716,7 @@ export function HeroBanner({
               transform: 'translate(-50%, -50%)',
               width: 80,
               height: 80,
-              filter: `drop-shadow(0 0 18px rgba(255,244,202,0.45))`,
+              filter: glowFilter,
               opacity: 1,
               transition: isPeeking ? 'top 0.6s ease-out' : 'top 2s ease-out',
             }}
@@ -710,10 +731,20 @@ export function HeroBanner({
               <defs>
                 <mask id="moon-phase-mask">
                   <rect x="0" y="0" width="100" height="100" fill="white" />
-                  <circle cx={shadowCx} cy="50" r="50" fill="black" />
+                  {phase.shadowSide !== 'none' && (
+                    <circle cx={phase.shadowCx} cy="50" r="46" fill="black" />
+                  )}
                 </mask>
               </defs>
-              <circle cx="50" cy="50" r="45" fill="#fff4ca" mask="url(#moon-phase-mask)" />
+              <circle cx="50" cy="50" r="45" fill="#1a1a2e" opacity="0.3" />
+              <circle
+                cx="50"
+                cy="50"
+                r="45"
+                fill="#fff4ca"
+                mask="url(#moon-phase-mask)"
+                opacity={phase.opacity}
+              />
             </svg>
           </div>
         )}
