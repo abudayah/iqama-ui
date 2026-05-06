@@ -79,12 +79,44 @@ Visible from **Maghrib** to **Sunrise** (i.e. when the sun is not shown).
   - `moonT = 0` → at horizon (hidden behind mountains) — daytime
   - `moonT = 0.5` → at top=20% — night sky
   - `moonT = 1` → at horizon — near sunrise
-- **Transition**: `top 2s ease-out` for a smooth rise/set animation
-- **Phase**: SVG mask with a shadow circle whose `cx` is computed from the Hijri day:
-  - Day 15 → `cx=200` (full moon, shadow off-screen)
-  - Day < 15 → waxing (shadow slides right)
-  - Day > 15 → waning (shadow slides in from left)
+- **Transition**: `top 2s ease-out` for a smooth rise/set animation; `top 0.6s ease-out` in peek mode
+- **Phase**: computed by `getMoonPhase(hijriDay)` in `src/components/moon-phase.ts` — returns `{ shadowSide, shadowCx, opacity }`
 - **Mount guard**: `moonReady` state delays the first render by one animation frame so the CSS transition has a starting position to animate from
+
+### Moon Phase SVG
+
+The moon is an SVG with a mask. A white `<rect>` covers the full viewBox; a black shadow `<circle>` punches out the dark side. The lit disc (`fill="#fff4ca"`, `r=45`, `cx=50`) sits behind the mask. A dark-side disc (`fill="#1a1a2e"`, `opacity=0.3`) sits behind the lit disc to keep the moon silhouette visible near new moon.
+
+**Shadow circle**: `r=46` (1px larger than the disc for clean edge coverage), conditionally rendered — absent on full moon (day 15).
+
+**Islamic crescent convention** — the crescent opens to the right in the Northern Hemisphere:
+- **Waxing** (days 2–14): `shadowSide: 'right'` — shadow on right, lit sliver on left
+- **Waning** (days 16–27): `shadowSide: 'left'` — shadow on left, lit sliver on right
+- **Full moon** (day 15): `shadowSide: 'none'` — no shadow circle rendered
+- **New moon** (days 28–30): shadow centered (`cx=50`), disc at 10% opacity — nearly invisible
+- **Day 1** (first crescent): `cx=55`, `opacity=0.8` — thin crescent visible, faint (first sighting of the new month)
+
+**`shadowCx` geometry** (disc spans x=5→95, shadow `r=46`):
+
+| Day | cx | Shadow covers | Lit area |
+|---|---|---|---|
+| 1 | 55 | 9→101 | x=5→9 (thin crescent left) |
+| 2 | 57 | 11→103 | x=5→11 (thin crescent left) |
+| 7 | ~96 | 50→142 | x=5→50 (quarter moon) |
+| 14 | 150 | 104→196 | fully lit (gibbous) |
+| 15 | — | none | fully lit (full moon) |
+| 16 | −50 | −96→−4 | fully lit (gibbous) |
+| 22 | ~1 | −45→47 | x=47→95 (quarter moon) |
+| 27 | 43 | −3→89 | x=89→95 (thin crescent right) |
+
+**Formulas:**
+- Waxing `t = (day − 2) / 12`, `cx = 57 + 93 * t`
+- Waning `t = (day − 16) / 11`, `cx = −50 + 93 * t`
+
+**Glow filter**: dynamic, computed in `HeroBanner.tsx` from `glowIntensity = 1 − |hijriDay − 15| / 15`:
+- Day 15 (full moon): `blur=28px, alpha=0.7` (maximum)
+- Day 1/29 (new moon): `blur≈9px, alpha≈0.27` (minimum)
+- Formula: `drop-shadow(0 0 ${8 + glowIntensity * 20}px rgba(255,244,202,${0.2 + glowIntensity * 0.5}))`
 
 ---
 
@@ -155,3 +187,7 @@ When the user taps a future prayer row, `peekPrayer` and `peekSchedule` are set.
 4. **`moonReady` guard** — always keep the one-frame delay before showing the moon. Without it, the moon has no previous CSS position to transition from on mount.
 5. **Shooting star direction** — streaks travel right-to-left (negative `translateX`). The `<line>` tail (`x2`) is to the right of the head (`x1`) so it trails naturally behind the direction of travel.
 6. **Deterministic star positions** — `generateStars` uses a fixed LCG seed (`0xdeadbeef`). Do not use `Math.random()` — positions must be stable across re-renders to avoid layout thrashing.
+7. **Moon phase logic lives in `moon-phase.ts`** — do not inline phase calculations in `HeroBanner.tsx`. `HeroBanner.tsx` only imports `getMoonPhase` and computes `glowIntensity`/`glowFilter` from it.
+8. **Shadow circle `r=46`, not `r=50`** — the disc is `r=45`; the shadow must be `r=46` for clean crescent/gibbous geometry. A larger radius causes the shadow to bleed outside the disc boundary.
+9. **Islamic crescent convention** — waxing shadow is on the RIGHT (lit on left), waning shadow is on the LEFT (lit on right). Do not swap these.
+10. **Full moon has no shadow circle** — day 15 returns `shadowSide: 'none'`; the shadow `<circle>` must not be rendered. Conditionally render it: `{phase.shadowSide !== 'none' && <circle ... />}`.

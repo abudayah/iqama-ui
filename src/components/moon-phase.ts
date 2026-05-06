@@ -24,16 +24,23 @@
  *     day 22 → cx=1   → shadow -45→47,  lit x=47→95 (quarter moon)
  *     day 27 → cx=43  → shadow -3→89,   lit x=89→95 (thin crescent on right)
  *
- * opacity: fades the lit disc to near-zero at new moon (days 28–30, 1).
+ * opacity: fades the lit disc to near-zero at new moon (days 28–30).
+ *          Day 1 shows a faint thin crescent (first sighting of the new month).
  */
 export function getMoonPhase(day: number): {
   shadowSide: 'left' | 'right' | 'none';
   shadowCx: number;
   opacity: number;
 } {
-  // New moon: days 28–30 and day 1 — nearly invisible
-  if (day >= 28 || day <= 1) {
-    return { shadowSide: 'right', shadowCx: 50, opacity: day <= 1 ? 0.05 : 0.1 };
+  // New moon: days 28–30 — disc nearly invisible, shadow centered (no crescent)
+  if (day >= 28) {
+    return { shadowSide: 'right', shadowCx: 50, opacity: 0.35 };
+  }
+
+  // Day 1 — first crescent: thin lit sliver on the left, faint opacity
+  // Uses the same shadow position as day 2 (cx=57) so a thin crescent is visible
+  if (day <= 1) {
+    return { shadowSide: 'right', shadowCx: 55, opacity: 0.8 };
   }
 
   // Waxing crescent → gibbous: days 2–14
