@@ -6,6 +6,7 @@ import { AdminPage } from './pages/AdminPage';
 import { OverridesPage } from './pages/OverridesPage';
 import { ScheduleRangePage } from './pages/ScheduleRangePage';
 import { RamadanEidPage } from './pages/RamadanEidPage';
+import { WidgetPage } from './pages/WidgetPage';
 import { useFavicon } from './hooks/useFavicon';
 
 function AppRoutes() {
@@ -14,6 +15,7 @@ function AppRoutes() {
     <ConfigGate>
       <Routes>
         <Route path="/" element={<PrayerViewerPage />} />
+        <Route path="/widget" element={<WidgetPage />} />
         <Route
           path="/admin"
           element={

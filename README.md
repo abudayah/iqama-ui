@@ -2,6 +2,21 @@
 
 A React-based display app for the Iqama Engine. Shows live prayer times, countdown to the next prayer, and a dynamic sky scene that reflects the time of day.
 
+## Screenshots
+
+### Mobile App
+
+<p float="left">
+  <img src="demo/mobile 1.png" alt="Mobile view — prayer times" width="300" />
+  <img src="demo/mobile 2.png" alt="Mobile view — hero banner" width="300" />
+</p>
+
+### Embeddable Widget
+
+<img src="demo/widget.png" alt="Embeddable prayer widget" width="500" />
+
+---
+
 ## Features
 
 - Live countdown to the next Azan and Iqama
