@@ -14,6 +14,7 @@ import { SightingCard } from '../components/SightingCard';
 import { EidPrayerModal } from '../components/EidPrayerModal';
 import { calculateEidDate } from '../logic/calculate-eid-date';
 import { submitOverride } from '../services/hijri-calendar-service';
+import { PublicFooter } from '../components/PublicFooter';
 
 const PEEK_DURATION_MS = 4_000;
 
@@ -240,6 +241,8 @@ export function PrayerViewerPage() {
           onClose={() => setEidModalOpen(false)}
         />
       )}
+
+      <PublicFooter />
     </div>
   );
 }

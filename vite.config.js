@@ -56,27 +56,9 @@ export default defineConfig(({ mode }) => {
             VitePWA({
                 registerType: 'autoUpdate',
                 strategies: 'generateSW',
-                manifest: {
-                    name: 'Iqama Times',
-                    short_name: 'Iqama',
-                    description: 'Prayer and iqama times viewer',
-                    start_url: '/',
-                    display: 'standalone',
-                    background_color: '#ffffff',
-                    theme_color: '#1e3a5f',
-                    icons: [
-                        {
-                            src: '/icons/icon-192x192.png',
-                            sizes: '192x192',
-                            type: 'image/png',
-                        },
-                        {
-                            src: '/icons/icon-512x512.png',
-                            sizes: '512x512',
-                            type: 'image/png',
-                        },
-                    ],
-                },
+                // Manifest is handled dynamically in index.html via useFavicon hook
+                // so the public app gets /favicon/site.webmanifest and admin gets /favicon-admin/site.webmanifest
+                manifest: false,
                 workbox: {
                     runtimeCaching: [],
                 },
