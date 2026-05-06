@@ -53,9 +53,8 @@ export function useQiyamConfig(): UseQiyamConfigResult {
     setSaveSuccess(false);
 
     try {
-      const updated = await saveQiyamConfig(startTime);
+      await saveQiyamConfig(startTime);
       setSaving(false);
-      setConfig(updated);
       setSaveSuccess(true);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

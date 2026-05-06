@@ -48,9 +48,11 @@ function makeDefaultStatus(
 ) {
   return {
     gregorianDate: '2025-03-29',
+    hijriYear: 1446,
     hijriMonth: overrides.hijriMonth ?? 9,
     hijriDay: overrides.hijriDay ?? 29,
     hasOverride: overrides.hasOverride ?? false,
+    overrideLength: null as 29 | 30 | null,
     ...overrides,
   };
 }
@@ -60,6 +62,7 @@ function setupDefaultMocks(statusOverrides: Parameters<typeof makeDefaultStatus>
     status: makeDefaultStatus(statusOverrides),
     loading: false,
     error: null,
+    refetch: vi.fn(),
   });
 
   mockUseEidPrayers.mockReturnValue({
@@ -102,6 +105,7 @@ describe('RamadanEidPage — unit tests', () => {
       status: null,
       loading: true,
       error: null,
+      refetch: vi.fn(),
     });
     render(<RamadanEidPage />);
     expect(screen.getByTestId('sighting-card')).toBeInTheDocument();
@@ -112,6 +116,7 @@ describe('RamadanEidPage — unit tests', () => {
       status: null,
       loading: false,
       error: new Error('Network error'),
+      refetch: vi.fn(),
     });
     render(<RamadanEidPage />);
     expect(screen.getByTestId('sighting-card')).toBeInTheDocument();
@@ -257,6 +262,7 @@ describe('RamadanEidPage — unit tests', () => {
       status: null,
       loading: true,
       error: null,
+      refetch: vi.fn(),
     });
     render(<RamadanEidPage />);
     expect(screen.getByTestId('status-skeleton')).toBeInTheDocument();
@@ -267,6 +273,7 @@ describe('RamadanEidPage — unit tests', () => {
       status: null,
       loading: false,
       error: new Error('Failed to fetch'),
+      refetch: vi.fn(),
     });
     render(<RamadanEidPage />);
     expect(screen.getByTestId('status-error')).toBeInTheDocument();
@@ -478,12 +485,15 @@ describe('Property 5: Action Card always visible for any Hijri day', () => {
         mockUseSightingStatus.mockReturnValue({
           status: {
             gregorianDate: '2025-03-29',
+            hijriYear: 1446,
             hijriMonth: 9,
             hijriDay,
             hasOverride: false,
+            overrideLength: null,
           },
           loading: false,
           error: null,
+          refetch: vi.fn(),
         });
 
         const { unmount } = render(<RamadanEidPage />);
@@ -505,6 +515,7 @@ describe('Property 5: Action Card always visible for any Hijri day', () => {
           status: null,
           loading: true,
           error: null,
+          refetch: vi.fn(),
         });
 
         const { unmount } = render(<RamadanEidPage />);
@@ -646,12 +657,15 @@ describe('Property 7: Non-Eid months dispatch POST directly on confirm', () => {
           mockUseSightingStatus.mockReturnValue({
             status: {
               gregorianDate: '2025-03-29',
+              hijriYear: 1446,
               hijriMonth,
               hijriDay: 29,
               hasOverride: false,
+              overrideLength: null,
             },
             loading: false,
             error: null,
+            refetch: vi.fn(),
           });
 
           const { unmount } = render(<RamadanEidPage />);

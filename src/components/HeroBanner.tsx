@@ -360,6 +360,44 @@ function computeCelestial(
   return { leftPct, topPct, color: '#fff4ca', opacity: 1, showSun: false };
 }
 
+/* ─── Stars ──────────────────────────────────────────────────────────────────
+ * Fixed star positions generated once (deterministic pseudo-random).
+ * Each star has its own twinkle duration and delay so they fade in/out
+ * independently — at any moment only a fraction are bright, like real stars.
+ */
+interface Star {
+  x: number; // 0–100 (% of banner width)
+  y: number; // 0–58  (% of banner height, above mountain horizon)
+  r: number; // radius px
+  duration: number; // twinkle cycle duration (s)
+  delay: number; // animation start delay (s)
+}
+
+function generateStars(count: number): Star[] {
+  let seed = 0xdeadbeef;
+  const rand = () => {
+    seed = (seed * 1664525 + 1013904223) & 0xffffffff;
+    return (seed >>> 0) / 0xffffffff;
+  };
+  return Array.from({ length: count }, () => ({
+    x: rand() * 100,
+    y: rand() * 58,
+    r: 0.4 + rand() * 1.2,
+    duration: 2 + rand() * 5, // 2–7s per cycle
+    delay: -(rand() * 10), // negative delay = start mid-cycle, so they're not all in sync
+  }));
+}
+
+const STARS = generateStars(80);
+
+/**
+ * Returns true when stars should be visible: after Maghrib or before Sunrise.
+ * Requires todaySchedule to be loaded — returns false otherwise.
+ */
+function isNight(skyMin: number, sunriseMin: number, maghribMin: number): boolean {
+  return skyMin >= maghribMin || skyMin < sunriseMin;
+}
+
 /* ─── Moon phase shadow ──────────────────────────────────────────────────────
  * Converts a Hijri day (1–30) to the SVG shadow-circle cx value.
  *   day 15  → cx 200  (full moon — shadow off-screen right)
@@ -425,6 +463,9 @@ export function HeroBanner({
 
   /* ── Celestial body ── */
   const cel = computeCelestial(skyMin, fajrMin, sunriseMin, maghribMin);
+
+  /* ── Stars — only computed once schedule is available ── */
+  const showStars = todaySchedule ? isNight(skyMin, sunriseMin, maghribMin) : false;
 
   /* ── Prayer data — peek overrides default ── */
   const displayPrayer = isPeeking ? peekPrayer! : nextPrayer;
@@ -569,6 +610,34 @@ export function HeroBanner({
 
       {/* ── Landscape layer ── */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 1 }}>
+        {/* Stars — each twinkles independently; only shown at night */}
+        {showStars && (
+          <svg
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              pointerEvents: 'none',
+            }}
+          >
+            {STARS.map((star, i) => (
+              <circle
+                key={i}
+                cx={`${star.x}%`}
+                cy={`${star.y}%`}
+                r={star.r}
+                fill="white"
+                style={{
+                  animation: `hero-twinkle ${star.duration}s ease-in-out infinite alternate`,
+                  animationDelay: `${star.delay}s`,
+                }}
+              />
+            ))}
+          </svg>
+        )}
+
         {/* Sun */}
         {cel.showSun && (
           <div

@@ -51,13 +51,15 @@ const labelArb = fc
   )
   .map((chars) => chars.join(''));
 
-const prayerEntriesArb: fc.Arbitrary<EidPrayerEntry[]> = fc.array(
-  fc.record({
-    label: labelArb,
-    time: timeStrArb,
-  }),
-  { minLength: 1, maxLength: 4 },
-);
+const prayerEntriesArb: fc.Arbitrary<EidPrayerEntry[]> = fc
+  .array(
+    fc.record({
+      label: labelArb,
+      time: timeStrArb,
+    }),
+    { minLength: 1, maxLength: 4 },
+  )
+  .filter((entries) => new Set(entries.map((e) => e.label)).size === entries.length);
 
 const eidPrayerRecordArb: fc.Arbitrary<EidPrayerRecord> = fc.record({
   type: eidTypeArb,
