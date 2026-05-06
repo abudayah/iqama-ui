@@ -1,6 +1,6 @@
 ---
 inclusion: fileMatch
-fileMatchPattern: 'src/components/HeroBanner*'
+fileMatchPattern: 'src/components/HeroBanner*,src/components/moon-phase*'
 ---
 
 # HeroBanner — Animation & Behaviour Guide

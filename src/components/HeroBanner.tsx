@@ -3,6 +3,7 @@ import type { CountdownMode } from '../hooks/usePrayerContext';
 import type { PrayerName, DailySchedule, CountdownState } from '../types/index';
 import type { PrayerEvent } from '../logic/derive-next-prayer';
 import { IslamicEventBanner } from './IslamicEventBanner';
+import { getMoonPhase } from './moon-phase';
 
 /** Prayers + sunrise + Eid prayers — anything that can be peeked */
 export type PeekTarget = PrayerName | 'sunrise' | 'eid-prayer-1' | 'eid-prayer-2';
@@ -398,37 +399,6 @@ function isNight(skyMin: number, sunriseMin: number, maghribMin: number): boolea
   return skyMin >= maghribMin || skyMin < sunriseMin;
 }
 
-/* ─── Moon phase ─────────────────────────────────────────────────────────────
- * Converts a Hijri day (1–30) to phase rendering parameters:
- *   shadowSide: which side the shadow falls on ('left' = waxing, 'right' = waning, 'none' = full moon)
- *   shadowCx:   SVG cx of the shadow circle
- *   opacity:    opacity of the lit disc (fades near new moon)
- */
-export function getMoonPhase(day: number): {
-  shadowSide: 'left' | 'right' | 'none';
-  shadowCx: number;
-  opacity: number;
-} {
-  if (day >= 28 || day <= 1) {
-    return { shadowSide: 'left', shadowCx: 50, opacity: day <= 1 ? 0.05 : 0.1 };
-  }
-  if (day < 15) {
-    // t=0 at day 2 (thin crescent) → t=1 at day 14 (gibbous)
-    // Shadow moves leftward off-screen: cx goes from ~0 (covering disc) to ~-40 (mostly off-screen)
-    const t = (day - 1) / 14;
-    const cx = 0 - 40 * t; // 0 → -40
-    return { shadowSide: 'left', shadowCx: cx, opacity: 0.9 + t * 0.1 };
-  }
-  if (day === 15) {
-    return { shadowSide: 'none', shadowCx: 200, opacity: 1 };
-  }
-  // t=0 at day 16 (gibbous) → t=1 at day 27 (thin crescent)
-  // Shadow moves rightward onto disc: cx goes from ~100 (mostly off-screen) to ~50 (covering disc)
-  const t = (day - 15) / 14;
-  const cx = 100 - 50 * t; // 100 → 50
-  return { shadowSide: 'right', shadowCx: cx, opacity: 1 - t * 0.9 };
-}
-
 /* ─── Component ─────────────────────────────────────────────────────────────── */
 export function HeroBanner({
   nextPrayer,
@@ -736,7 +706,7 @@ export function HeroBanner({
                   )}
                 </mask>
               </defs>
-              <circle cx="50" cy="50" r="45" fill="#1a1a2e" opacity="0.3" />
+              <circle cx="50" cy="50" r="45" fill="#1a1a2e" opacity="0.15" />
               <circle
                 cx="50"
                 cy="50"
