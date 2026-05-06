@@ -147,7 +147,7 @@ export function PrayerViewerPage() {
       {/* Prayer list — overlaps the hero bottom edge */}
       <div
         id="prayer-list"
-        className="flex-1 -mt-4 relative z-10 flex flex-col max-w-lg w-full mx-auto"
+        className="flex-1 -mt-5 relative z-10 flex flex-col max-w-lg w-full mx-auto"
       >
         {/* Loading skeleton */}
         {isLoading && (
