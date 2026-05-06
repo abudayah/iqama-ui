@@ -30,14 +30,14 @@ export function OverrideList({ overrides, today, onUpdate, onRemove }: OverrideL
 
   return (
     <>
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        {overrides.map(override => (
+      <div id="override-list" className="bg-white rounded-lg shadow overflow-hidden">
+        {overrides.map((override) => (
           <OverrideRow
             key={override.id}
             override={override}
             today={today}
             onEdit={setEditingOverride}
-            onDelete={id => void handleDelete(id)}
+            onDelete={(id) => void handleDelete(id)}
           />
         ))}
       </div>

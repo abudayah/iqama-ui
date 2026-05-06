@@ -6,22 +6,24 @@ import type { PeekTarget } from './HeroBanner';
 import { PrayerRow } from './PrayerRow';
 
 interface PrayerTableProps {
-  todaySchedule:    DailySchedule;
+  todaySchedule: DailySchedule;
   tomorrowSchedule: DailySchedule | null;
-  nextPrayer:       PrayerEvent | null;
-  activeTab:        'today' | 'tomorrow';
-  onTabChange:      (tab: 'today' | 'tomorrow') => void;
+  nextPrayer: PrayerEvent | null;
+  activeTab: 'today' | 'tomorrow';
+  onTabChange: (tab: 'today' | 'tomorrow') => void;
   /** Increments every second — forces isPast recalculation */
-  tick?:            number;
+  tick?: number;
   /**
    * Current countdown phase from usePrayerContext.
    * When 'to_iqama', the nextPrayer row shows the "now" badge.
    */
-  countdownMode?:   CountdownMode;
+  countdownMode?: CountdownMode;
   /** Called when a future prayer row is tapped */
-  onPeekPrayer?:   ((prayer: PeekTarget, schedule: DailySchedule, label?: string) => void) | undefined;
+  onPeekPrayer?:
+    | ((prayer: PeekTarget, schedule: DailySchedule, label?: string) => void)
+    | undefined;
   /** Currently peeked prayer — used to highlight the row */
-  peekedPrayer?:   PeekTarget | null | undefined;
+  peekedPrayer?: PeekTarget | null | undefined;
 }
 
 const PRAYERS: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
@@ -29,20 +31,30 @@ const PRAYERS: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 function formatDisplayDate(dateStr: string, dayOfWeek: string): string {
   const [, month, day] = dateStr.split('-').map(Number);
   const monthNames = [
-    'Jan','Feb','Mar','Apr','May','Jun',
-    'Jul','Aug','Sep','Oct','Nov','Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
   return `${dayOfWeek}, ${monthNames[month! - 1]} ${day}`;
 }
 
 function isPrayerPast(schedule: DailySchedule, prayer: PrayerName, now: Date): boolean {
-  const [h, m]    = schedule[prayer].azan.split(':').map(Number);
+  const [h, m] = schedule[prayer].azan.split(':').map(Number);
   const [y, mo, d] = schedule.date.split('-').map(Number);
   return new Date(y!, mo! - 1, d!, h!, m!, 0, 0) <= now;
 }
 
 function isSunrisePast(schedule: DailySchedule, now: Date): boolean {
-  const [h, m]    = schedule.sunrise.split(':').map(Number);
+  const [h, m] = schedule.sunrise.split(':').map(Number);
   const [y, mo, d] = schedule.date.split('-').map(Number);
   return new Date(y!, mo! - 1, d!, h!, m!, 0, 0) <= now;
 }
@@ -56,24 +68,30 @@ function DayRows({
   onPeekPrayer,
   peekedPrayer,
 }: {
-  schedule:      DailySchedule;
-  nextPrayer:    PrayerEvent | null;
-  isToday:       boolean;
+  schedule: DailySchedule;
+  nextPrayer: PrayerEvent | null;
+  isToday: boolean;
   countdownMode: CountdownMode;
-  onPeekPrayer?: ((prayer: PeekTarget, schedule: DailySchedule, label?: string) => void) | undefined;
+  onPeekPrayer?:
+    | ((prayer: PeekTarget, schedule: DailySchedule, label?: string) => void)
+    | undefined;
   peekedPrayer?: PeekTarget | null | undefined;
 }) {
   const now = new Date();
   const activePrayer: PrayerName | null =
-    isToday && countdownMode === 'to_iqama' && nextPrayer !== null && nextPrayer !== 'sunrise' && nextPrayer !== 'eid-prayer-1' && nextPrayer !== 'eid-prayer-2'
+    isToday &&
+    countdownMode === 'to_iqama' &&
+    nextPrayer !== null &&
+    nextPrayer !== 'sunrise' &&
+    nextPrayer !== 'eid-prayer-1' &&
+    nextPrayer !== 'eid-prayer-2'
       ? (nextPrayer as PrayerName)
       : null;
 
   const canPeekPrayer = (prayer: PrayerName) =>
     !!onPeekPrayer && !isPrayerPast(schedule, prayer, now) && activePrayer !== prayer;
 
-  const canPeekSunrise = () =>
-    !!onPeekPrayer && !isSunrisePast(schedule, now);
+  const canPeekSunrise = () => !!onPeekPrayer && !isSunrisePast(schedule, now);
 
   return (
     <div className="px-3 pb-4 space-y-1">
@@ -109,9 +127,16 @@ function DayRows({
           isActive={false}
           isPast={false}
           isPeeked={peekedPrayer === 'eid-prayer-1'}
-          onTap={onPeekPrayer
-            ? () => onPeekPrayer('eid-prayer-1', { ...schedule, sunrise: schedule.eid_prayer_1! }, '1st Prayer')
-            : undefined}
+          onTap={
+            onPeekPrayer
+              ? () =>
+                  onPeekPrayer(
+                    'eid-prayer-1',
+                    { ...schedule, sunrise: schedule.eid_prayer_1! },
+                    '1st Prayer',
+                  )
+              : undefined
+          }
         />
       )}
       {schedule.eid_prayer_2 && (
@@ -123,14 +148,21 @@ function DayRows({
           isActive={false}
           isPast={false}
           isPeeked={peekedPrayer === 'eid-prayer-2'}
-          onTap={onPeekPrayer
-            ? () => onPeekPrayer('eid-prayer-2', { ...schedule, sunrise: schedule.eid_prayer_2! }, '2nd Prayer')
-            : undefined}
+          onTap={
+            onPeekPrayer
+              ? () =>
+                  onPeekPrayer(
+                    'eid-prayer-2',
+                    { ...schedule, sunrise: schedule.eid_prayer_2! },
+                    '2nd Prayer',
+                  )
+              : undefined
+          }
         />
       )}
 
       {/* Remaining prayers */}
-      {PRAYERS.filter(p => p !== 'fajr').map(prayer => (
+      {PRAYERS.filter((p) => p !== 'fajr').map((prayer) => (
         <PrayerRow
           key={prayer}
           name={prayer}
@@ -188,12 +220,11 @@ export function PrayerTable({
   const onTouchMove = useCallback(
     (e: React.TouchEvent) => {
       if (startXRef.current === null) return;
-      const dx =
-        (e.touches[0]?.clientX ?? startXRef.current) - startXRef.current;
+      const dx = (e.touches[0]?.clientX ?? startXRef.current) - startXRef.current;
 
-      const canGoLeft  = activeTab === 'today' && tomorrowSchedule !== null;
+      const canGoLeft = activeTab === 'today' && tomorrowSchedule !== null;
       const canGoRight = activeTab === 'tomorrow';
-      if (!canGoLeft  && dx < 0) return;
+      if (!canGoLeft && dx < 0) return;
       if (!canGoRight && dx > 0) return;
 
       setDragOffset(dx);
@@ -205,7 +236,7 @@ export function PrayerTable({
     (e: React.TouchEvent) => {
       if (startXRef.current === null) return;
       const endX = e.changedTouches[0]?.clientX ?? startXRef.current;
-      const dx   = endX - startXRef.current;
+      const dx = endX - startXRef.current;
       startXRef.current = null;
       setIsDragging(false);
       setDragOffset(0);
@@ -220,19 +251,23 @@ export function PrayerTable({
     [activeTab, tomorrowSchedule, onTabChange],
   );
 
-  const translateX = isDragging
-    ? `calc(${baseTranslate}% + ${dragOffset}px)`
-    : `${baseTranslate}%`;
+  const translateX = isDragging ? `calc(${baseTranslate}% + ${dragOffset}px)` : `${baseTranslate}%`;
 
   return (
-    <div className="bg-white rounded-t-3xl shadow-sm overflow-hidden flex-1 flex flex-col">
+    <div
+      id="prayer-table"
+      className="bg-white rounded-t-3xl shadow-sm overflow-hidden flex-1 flex flex-col"
+    >
       {/* Header — date + Today/Tomorrow toggle */}
-      <div className="flex items-center justify-between px-6 pt-6 pb-4 flex-shrink-0">
+      <div
+        id="prayer-table-header"
+        className="flex items-center justify-between px-6 pt-6 pb-4 flex-shrink-0"
+      >
         <div>
-          <h3 className="text-l font-bold text-gray-900">
-            {activeSchedule.hijri_date}
-          </h3>
-          <p className="text-sm text-gray-500 mt-1">{formatDisplayDate(activeSchedule.date, activeSchedule.day_of_week)}</p>
+          <h3 className="text-l font-bold text-gray-900">{activeSchedule.hijri_date}</h3>
+          <p className="text-sm text-gray-500 mt-1">
+            {formatDisplayDate(activeSchedule.date, activeSchedule.day_of_week)}
+          </p>
         </div>
 
         {/* Tab toggle */}
@@ -240,9 +275,7 @@ export function PrayerTable({
           <button
             onClick={() => onTabChange('today')}
             className={`text-sm font-semibold px-4 py-1.5 rounded-full transition-colors min-h-[32px] ${
-              activeTab === 'today'
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-gray-500'
+              activeTab === 'today' ? 'bg-blue-100 text-blue-700' : 'text-gray-500'
             }`}
             aria-pressed={activeTab === 'today'}
           >
@@ -251,9 +284,7 @@ export function PrayerTable({
           <button
             onClick={() => onTabChange('tomorrow')}
             className={`text-sm font-semibold px-4 py-1.5 rounded-full transition-colors min-h-[32px] ${
-              activeTab === 'tomorrow'
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-gray-500'
+              activeTab === 'tomorrow' ? 'bg-blue-100 text-blue-700' : 'text-gray-500'
             }`}
             aria-pressed={activeTab === 'tomorrow'}
             disabled={!tomorrowSchedule}
@@ -273,11 +304,9 @@ export function PrayerTable({
         <div
           className="flex h-full"
           style={{
-            width:      '200%',
-            transform:  `translateX(${translateX})`,
-            transition: isDragging
-              ? 'none'
-              : 'transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+            width: '200%',
+            transform: `translateX(${translateX})`,
+            transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)',
             willChange: 'transform',
           }}
         >
@@ -305,9 +334,7 @@ export function PrayerTable({
                 peekedPrayer={peekedPrayer}
               />
             ) : (
-              <div className="px-6 py-8 text-center text-gray-400 text-sm">
-                Loading tomorrow…
-              </div>
+              <div className="px-6 py-8 text-center text-gray-400 text-sm">Loading tomorrow…</div>
             )}
           </div>
         </div>

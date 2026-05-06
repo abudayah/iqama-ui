@@ -22,14 +22,12 @@ export function DayTabBar({ activeTab, onTabChange }: DayTabBarProps) {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {(['today', 'tomorrow'] as const).map(tab => (
+      {(['today', 'tomorrow'] as const).map((tab) => (
         <button
           key={tab}
           onClick={() => onTabChange(tab)}
           className={`flex-1 py-3 text-sm font-medium capitalize min-h-[44px] ${
-            activeTab === tab
-              ? 'border-b-2 border-blue-600 text-blue-600'
-              : 'text-gray-500'
+            activeTab === tab ? 'border-b-2 border-blue-600 text-blue-600' : 'text-gray-500'
           }`}
           aria-selected={activeTab === tab}
           role="tab"

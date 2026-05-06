@@ -20,16 +20,19 @@ export function useSwipe(
     startX.current = e.touches[0]?.clientX ?? null;
   }, []);
 
-  const onTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (startX.current === null) return;
-    const endX = e.changedTouches[0]?.clientX ?? startX.current;
-    const delta = endX - startX.current;
-    startX.current = null;
+  const onTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      if (startX.current === null) return;
+      const endX = e.changedTouches[0]?.clientX ?? startX.current;
+      const delta = endX - startX.current;
+      startX.current = null;
 
-    if (Math.abs(delta) < threshold) return;
-    if (delta < 0) onSwipeLeft();
-    else onSwipeRight();
-  }, [onSwipeLeft, onSwipeRight, threshold]);
+      if (Math.abs(delta) < threshold) return;
+      if (delta < 0) onSwipeLeft();
+      else onSwipeRight();
+    },
+    [onSwipeLeft, onSwipeRight, threshold],
+  );
 
   return { onTouchStart, onTouchEnd };
 }

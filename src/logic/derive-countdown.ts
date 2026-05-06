@@ -25,17 +25,21 @@ function resolveEventTimes(
   event: PrayerEvent,
 ): { azan: string; iqama: string | null } {
   switch (event) {
-    case 'sunrise':      return { azan: schedule.sunrise, iqama: null };
-    case 'eid-prayer-1': return { azan: schedule.eid_prayer_1 ?? '07:00', iqama: null };
-    case 'eid-prayer-2': return { azan: schedule.eid_prayer_2 ?? '08:30', iqama: null };
-    default:             return { azan: schedule[event].azan, iqama: schedule[event].iqama };
+    case 'sunrise':
+      return { azan: schedule.sunrise, iqama: null };
+    case 'eid-prayer-1':
+      return { azan: schedule.eid_prayer_1 ?? '07:00', iqama: null };
+    case 'eid-prayer-2':
+      return { azan: schedule.eid_prayer_2 ?? '08:30', iqama: null };
+    default:
+      return { azan: schedule[event].azan, iqama: schedule[event].iqama };
   }
 }
 
 export function deriveCountdown(
   schedule: DailySchedule,
   nextPrayer: PrayerEvent,
-  now: Date
+  now: Date,
 ): CountdownState {
   const { azan, iqama } = resolveEventTimes(schedule, nextPrayer);
   const azanTime = parseTime(schedule.date, azan);

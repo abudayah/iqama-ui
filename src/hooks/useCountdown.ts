@@ -6,9 +6,10 @@ import type { NextPrayerResult } from './useNextPrayer';
 
 const DONE_STATE: CountdownState = { phase: 'done', display: 'All prayers complete' };
 
-export function useCountdown(
-  nextPrayerResult: NextPrayerResult | null,
-): { countdown: CountdownState; tick: number } {
+export function useCountdown(nextPrayerResult: NextPrayerResult | null): {
+  countdown: CountdownState;
+  tick: number;
+} {
   const [countdown, setCountdown] = useState<CountdownState>(DONE_STATE);
   const [tick, setTick] = useState(0);
 
@@ -27,7 +28,7 @@ export function useCountdown(
 
     const id = setInterval(() => {
       setCountdown(deriveCountdown(schedule, nextPrayer, new Date()));
-      setTick(t => t + 1);
+      setTick((t) => t + 1);
     }, 1_000);
 
     return () => clearInterval(id);

@@ -1,17 +1,17 @@
 export type PrayerName = 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha';
 
 export interface PrayerEntry {
-  azan: string;   // HH:mm
-  iqama: string;  // HH:mm
+  azan: string; // HH:mm
+  iqama: string; // HH:mm
 }
 
 export interface DailySchedule {
-  date: string;         // YYYY-MM-DD
-  hijri_date: string;   // e.g. "Dhul Hijjah 25, 1446"
-  day_of_week: string;  // e.g. "Friday"
+  date: string; // YYYY-MM-DD
+  hijri_date: string; // e.g. "Dhul Hijjah 25, 1446"
+  day_of_week: string; // e.g. "Friday"
   is_dst: boolean;
   fajr: PrayerEntry;
-  sunrise: string;      // HH:mm
+  sunrise: string; // HH:mm
   dhuhr: PrayerEntry;
   asr: PrayerEntry;
   maghrib: PrayerEntry;
@@ -31,9 +31,9 @@ export interface Override {
   id: number;
   prayer: PrayerName;
   overrideType: 'FIXED' | 'OFFSET';
-  value: string;      // HH:mm for FIXED, signed integer string for OFFSET
-  startDate: string;  // YYYY-MM-DD
-  endDate: string;    // YYYY-MM-DD
+  value: string; // HH:mm for FIXED, signed integer string for OFFSET
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
 }
 
 // Payload used when creating or updating an override (id excluded)
@@ -46,20 +46,20 @@ export interface AppConfig {
 
 export const CONFIG_KEYS = {
   BASE_URL: 'iqama_ui_base_url',
-  API_KEY:  'iqama_ui_api_key',
+  API_KEY: 'iqama_ui_api_key',
 } as const;
 
 export type CountdownPhase = 'to_azan' | 'to_iqama' | 'done';
 
 export interface CountdownState {
   phase: CountdownPhase;
-  display: string;   // e.g. "14:32" or "All prayers complete"
+  display: string; // e.g. "14:32" or "All prayers complete"
 }
 
 export type EidType = 'EID_AL_FITR' | 'EID_AL_ADHA';
 
 export interface HijriCalendarStatus {
-  gregorianDate: string;   // YYYY-MM-DD
+  gregorianDate: string; // YYYY-MM-DD
   hijriYear: number;
   hijriMonth: number;
   hijriDay: number;
@@ -69,12 +69,12 @@ export interface HijriCalendarStatus {
 
 export interface EidPrayerEntry {
   label: string;
-  time: string;   // HH:mm
+  time: string; // HH:mm
 }
 
 export interface EidConfig {
   type: EidType;
-  date: string;            // YYYY-MM-DD
+  date: string; // YYYY-MM-DD
   prayers: EidPrayerEntry[];
 }
 
@@ -86,8 +86,8 @@ export interface SubmitOverridePayload {
 }
 
 export interface EidPrayerRecord {
-  type: EidType;                        // 'EID_AL_FITR' | 'EID_AL_ADHA'
-  date: string;                         // YYYY-MM-DD
+  type: EidType; // 'EID_AL_FITR' | 'EID_AL_ADHA'
+  date: string; // YYYY-MM-DD
   prayers: EidPrayerEntry[];
   source: 'override' | 'astronomical';
 }

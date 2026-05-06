@@ -11,7 +11,7 @@ export type PrayerEvent = PrayerName | 'sunrise' | 'eid-prayer-1' | 'eid-prayer-
  */
 function buildEventOrder(schedule: DailySchedule): { event: PrayerEvent; time: string }[] {
   const events: { event: PrayerEvent; time: string }[] = [
-    { event: 'fajr',    time: schedule.fajr.azan },
+    { event: 'fajr', time: schedule.fajr.azan },
     { event: 'sunrise', time: schedule.sunrise },
   ];
 
@@ -20,10 +20,10 @@ function buildEventOrder(schedule: DailySchedule): { event: PrayerEvent; time: s
   if (schedule.eid_prayer_2) events.push({ event: 'eid-prayer-2', time: schedule.eid_prayer_2 });
 
   events.push(
-    { event: 'dhuhr',   time: schedule.dhuhr.azan },
-    { event: 'asr',     time: schedule.asr.azan },
+    { event: 'dhuhr', time: schedule.dhuhr.azan },
+    { event: 'asr', time: schedule.asr.azan },
     { event: 'maghrib', time: schedule.maghrib.azan },
-    { event: 'isha',    time: schedule.isha.azan },
+    { event: 'isha', time: schedule.isha.azan },
   );
 
   return events;
@@ -44,7 +44,7 @@ export function deriveNextPrayer(schedule: DailySchedule, now: Date): PrayerEven
     const entry = schedule[prayer];
     const [ah, am] = entry.azan.split(':').map(Number);
     const [ih, im] = entry.iqama.split(':').map(Number);
-    const azanDate  = new Date(year!, month! - 1, day!, ah!, am!, 0, 0);
+    const azanDate = new Date(year!, month! - 1, day!, ah!, am!, 0, 0);
     const iqamaDate = new Date(year!, month! - 1, day!, ih!, im!, 0, 0);
 
     if (now >= azanDate && now < iqamaDate) {

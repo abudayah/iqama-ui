@@ -31,11 +31,7 @@ describe('ConfirmationSheet', () => {
   it('calls onCancel when the Cancel button is clicked', async () => {
     const onCancel = vi.fn();
     render(
-      <ConfirmationSheet
-        consequenceText="Are you sure?"
-        onConfirm={vi.fn()}
-        onCancel={onCancel}
-      />,
+      <ConfirmationSheet consequenceText="Are you sure?" onConfirm={vi.fn()} onCancel={onCancel} />,
     );
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onCancel).toHaveBeenCalledTimes(1);
@@ -44,11 +40,7 @@ describe('ConfirmationSheet', () => {
   it('calls onCancel when the backdrop is clicked', async () => {
     const onCancel = vi.fn();
     render(
-      <ConfirmationSheet
-        consequenceText="Are you sure?"
-        onConfirm={vi.fn()}
-        onCancel={onCancel}
-      />,
+      <ConfirmationSheet consequenceText="Are you sure?" onConfirm={vi.fn()} onCancel={onCancel} />,
     );
     await userEvent.click(screen.getByTestId('confirmation-backdrop'));
     expect(onCancel).toHaveBeenCalledTimes(1);

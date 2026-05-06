@@ -14,7 +14,7 @@ const HIJRI_MONTHS = [
 ] as const;
 
 interface SightingCardProps {
-  hijriMonth: number;       // 1–12, current month
+  hijriMonth: number; // 1–12, current month
   onDecision: (length: 29 | 30) => void;
 }
 
@@ -33,14 +33,16 @@ export function SightingCard({ hijriMonth, onDecision }: SightingCardProps) {
       <div className="p-5">
         {/* Moon icon + heading */}
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-2xl" aria-hidden="true">🌙</span>
+          <span className="text-2xl" aria-hidden="true">
+            🌙
+          </span>
           <h2 className="text-base font-semibold text-gray-800">Moon Sighting</h2>
         </div>
 
         {/* Prompt */}
         <p className="text-sm text-gray-700 mb-5">
-          Today is the 29th of <span className="font-medium">{currentMonthName}</span>.
-          Has the moon for <span className="font-medium">{nextMonthName}</span> been sighted?
+          Today is the 29th of <span className="font-medium">{currentMonthName}</span>. Has the moon
+          for <span className="font-medium">{nextMonthName}</span> been sighted?
         </p>
 
         {/* Action buttons */}

@@ -9,7 +9,11 @@ interface OverrideFormModalProps {
 
 const PRAYERS: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 const PRAYER_LABELS: Record<string, string> = {
-  fajr: 'Fajr', dhuhr: 'Dhuhr', asr: 'Asr', maghrib: 'Maghrib', isha: 'Isha',
+  fajr: 'Fajr',
+  dhuhr: 'Dhuhr',
+  asr: 'Asr',
+  maghrib: 'Maghrib',
+  isha: 'Isha',
 };
 const FIXED_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -31,7 +35,9 @@ function parseOffsetValue(v: string): number {
 
 export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModalProps) {
   const [prayer, setPrayer] = useState<PrayerName>(initial?.prayer ?? 'fajr');
-  const [overrideType, setOverrideType] = useState<'FIXED' | 'OFFSET'>(initial?.overrideType ?? 'FIXED');
+  const [overrideType, setOverrideType] = useState<'FIXED' | 'OFFSET'>(
+    initial?.overrideType ?? 'FIXED',
+  );
   const [value, setValue] = useState(initial?.value ?? '');
   const [startDate, setStartDate] = useState(initial?.startDate ?? '');
   const [endDate, setEndDate] = useState(initial?.endDate ?? '');
@@ -39,7 +45,7 @@ export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModa
   const [saving, setSaving] = useState(false);
 
   const [offsetNum, setOffsetNum] = useState<number>(() =>
-    initial?.overrideType === 'OFFSET' ? parseOffsetValue(initial.value) : OFFSET_DEFAULT
+    initial?.overrideType === 'OFFSET' ? parseOffsetValue(initial.value) : OFFSET_DEFAULT,
   );
 
   const handleOffsetSlider = (n: number) => {
@@ -93,18 +99,20 @@ export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModa
         <label className="block text-sm font-medium text-gray-700 mb-1">Prayer</label>
         <select
           value={prayer}
-          onChange={e => setPrayer(e.target.value as PrayerName)}
+          onChange={(e) => setPrayer(e.target.value as PrayerName)}
           className="w-full border border-gray-300 rounded px-3 py-3 text-sm mb-3 min-h-[44px]"
         >
-          {PRAYERS.map(p => (
-            <option key={p} value={p}>{PRAYER_LABELS[p]}</option>
+          {PRAYERS.map((p) => (
+            <option key={p} value={p}>
+              {PRAYER_LABELS[p]}
+            </option>
           ))}
         </select>
 
         {/* Type */}
         <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
         <div className="flex gap-4 mb-3">
-          {(['FIXED', 'OFFSET'] as const).map(t => (
+          {(['FIXED', 'OFFSET'] as const).map((t) => (
             <label key={t} className="flex items-center gap-2 text-sm cursor-pointer min-h-[44px]">
               <input
                 type="radio"
@@ -127,7 +135,7 @@ export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModa
             type="time"
             step={300}
             value={value}
-            onChange={e => setValue(e.target.value)}
+            onChange={(e) => setValue(e.target.value)}
             className="w-full border border-gray-300 rounded px-3 py-3 text-sm mb-1 min-h-[44px]"
           />
         ) : (
@@ -145,7 +153,7 @@ export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModa
               max={OFFSET_MAX}
               step={OFFSET_STEP}
               value={offsetNum}
-              onChange={e => handleOffsetSlider(Number(e.target.value))}
+              onChange={(e) => handleOffsetSlider(Number(e.target.value))}
               className="w-full h-2 accent-blue-600 cursor-pointer"
               aria-label="Offset in minutes"
             />
@@ -165,7 +173,7 @@ export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModa
         <input
           type="date"
           value={startDate}
-          onChange={e => setStartDate(e.target.value)}
+          onChange={(e) => setStartDate(e.target.value)}
           className="w-full border border-gray-300 rounded px-3 py-3 text-sm mb-1 min-h-[44px]"
         />
         {errors['startDate'] && <p className="text-red-600 text-xs mb-2">{errors['startDate']}</p>}
@@ -175,7 +183,7 @@ export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModa
         <input
           type="date"
           value={endDate}
-          onChange={e => setEndDate(e.target.value)}
+          onChange={(e) => setEndDate(e.target.value)}
           className="w-full border border-gray-300 rounded px-3 py-3 text-sm mb-1 min-h-[44px]"
         />
         {errors['endDate'] && <p className="text-red-600 text-xs mb-2">{errors['endDate']}</p>}

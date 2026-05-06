@@ -5,7 +5,7 @@ import type { SubmitOverridePayload } from '../types';
 interface EidPrayerModalProps {
   eidType: 'EID_AL_FITR' | 'EID_AL_ADHA';
   eidDate: Date;
-  sunriseTime: string;      // HH:mm
+  sunriseTime: string; // HH:mm
   hijriYear: number;
   hijriMonth: number;
   length: 29 | 30;
@@ -28,7 +28,10 @@ function addMinutes(time: string, offset: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
-function computeDefaultFirstPrayer(sunriseTime: string, eidType: 'EID_AL_FITR' | 'EID_AL_ADHA'): string {
+function computeDefaultFirstPrayer(
+  sunriseTime: string,
+  eidType: 'EID_AL_FITR' | 'EID_AL_ADHA',
+): string {
   const offset = eidType === 'EID_AL_FITR' ? 20 : 15;
   return ceilToNearest15(addMinutes(sunriseTime, offset));
 }
@@ -56,9 +59,7 @@ export function EidPrayerModal({
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const title =
-    eidType === 'EID_AL_FITR'
-      ? 'Confirm Eid al-Fitr Prayers'
-      : 'Confirm Eid al-Adha Prayers';
+    eidType === 'EID_AL_FITR' ? 'Confirm Eid al-Fitr Prayers' : 'Confirm Eid al-Adha Prayers';
 
   const formattedDate = eidDate.toLocaleDateString('en-US', {
     weekday: 'long',
@@ -103,7 +104,9 @@ export function EidPrayerModal({
       <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-md p-6">
         {/* Header */}
         <div className="flex items-center gap-2 mb-4">
-          <span className="text-2xl" aria-hidden="true">🌙</span>
+          <span className="text-2xl" aria-hidden="true">
+            🌙
+          </span>
           <h2 className="text-lg font-bold text-gray-900">{title}</h2>
         </div>
 
@@ -116,7 +119,7 @@ export function EidPrayerModal({
           type="time"
           step={300}
           value={firstPrayerTime}
-          onChange={e => setFirstPrayerTime(e.target.value)}
+          onChange={(e) => setFirstPrayerTime(e.target.value)}
           className="w-full border border-gray-300 rounded px-3 py-3 text-sm mb-3 min-h-[44px]"
           aria-label="1st Prayer time"
         />
@@ -127,7 +130,7 @@ export function EidPrayerModal({
           type="time"
           step={300}
           value={secondPrayerTime}
-          onChange={e => setSecondPrayerTime(e.target.value)}
+          onChange={(e) => setSecondPrayerTime(e.target.value)}
           className="w-full border border-gray-300 rounded px-3 py-3 text-sm mb-3 min-h-[44px]"
           aria-label="2nd Prayer time"
         />

@@ -33,9 +33,9 @@ export function ScheduleRangePage() {
   };
 
   return (
-    <div>
+    <div id="schedule-range-page">
       <DateRangePicker start={start} end={end} onRangeChange={handleRangeChange} />
-      <div className="p-4">
+      <div id="schedule-range-content" className="p-4">
         <ScheduleRangeTable
           schedules={schedules}
           overrides={overrides}

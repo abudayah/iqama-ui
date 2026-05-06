@@ -8,7 +8,12 @@ interface ScheduleRangeTableProps {
   error: Error | null;
 }
 
-export function ScheduleRangeTable({ schedules, overrides, loading, error }: ScheduleRangeTableProps) {
+export function ScheduleRangeTable({
+  schedules,
+  overrides,
+  loading,
+  error,
+}: ScheduleRangeTableProps) {
   if (loading) {
     return (
       <div className="animate-pulse space-y-2 p-4">
@@ -28,21 +33,13 @@ export function ScheduleRangeTable({ schedules, overrides, loading, error }: Sch
   }
 
   if (!schedules || schedules.length === 0) {
-    return (
-      <div className="p-4 text-center text-gray-500 text-sm">
-        No schedule data available.
-      </div>
-    );
+    return <div className="p-4 text-center text-gray-500 text-sm">No schedule data available.</div>;
   }
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden">
-      {schedules.map(schedule => (
-      <ScheduleRangeRow
-          key={schedule.date}
-          schedule={schedule}
-          overrides={overrides}
-        />
+    <div id="schedule-range-table" className="bg-white rounded-lg shadow overflow-hidden">
+      {schedules.map((schedule) => (
+        <ScheduleRangeRow key={schedule.date} schedule={schedule} overrides={overrides} />
       ))}
     </div>
   );

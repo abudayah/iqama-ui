@@ -42,7 +42,9 @@ export function EidCard({ record }: EidCardProps) {
       <div className="p-5">
         {/* Star/crescent icon + heading */}
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-2xl" aria-hidden="true">⭐</span>
+          <span className="text-2xl" aria-hidden="true">
+            ⭐
+          </span>
           <h2 className="text-base font-semibold text-gray-800">{typeName}</h2>
         </div>
 
@@ -69,7 +71,9 @@ export function EidCard({ record }: EidCardProps) {
             role="note"
             data-testid="preliminary-notice"
           >
-            <span className="text-amber-500 mt-0.5" aria-hidden="true">⚠️</span>
+            <span className="text-amber-500 mt-0.5" aria-hidden="true">
+              ⚠️
+            </span>
             <p className="text-xs text-amber-800">
               Preliminary times — subject to moon-sighting confirmation
             </p>

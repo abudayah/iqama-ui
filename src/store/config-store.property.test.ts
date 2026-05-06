@@ -17,17 +17,13 @@ describe('Property 6: Config store round-trip', () => {
 
   it('should preserve baseUrl and apiKey through store write/read cycle', () => {
     fc.assert(
-      fc.property(
-        fc.webUrl(),
-        fc.string(),
-        (url, key) => {
-          setBaseUrl(url);
-          setApiKey(key);
-          const config = getConfig();
-          return config.baseUrl === url && config.apiKey === key;
-        }
-      ),
-      { numRuns: 100 }
+      fc.property(fc.webUrl(), fc.string(), (url, key) => {
+        setBaseUrl(url);
+        setApiKey(key);
+        const config = getConfig();
+        return config.baseUrl === url && config.apiKey === key;
+      }),
+      { numRuns: 100 },
     );
   });
 });

@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 
 export function AdminNav() {
   return (
-    <nav className="flex border-b border-gray-200 bg-white">
+    <nav id="admin-nav" className="flex border-b border-gray-200 bg-white">
       <NavLink
         to="/admin"
         end

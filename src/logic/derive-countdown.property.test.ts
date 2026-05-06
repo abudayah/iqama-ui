@@ -22,11 +22,13 @@ function minutesToDate(minutes: number): Date {
 const minutesArb = fc.integer({ min: 0, max: 23 * 60 + 59 });
 
 // Generate a scenario: azan, iqama (iqama >= azan), now
-const scenarioArb = fc.tuple(minutesArb, minutesArb, minutesArb).map(([azanMin, iqamaMin, nowMin]) => {
-  // Ensure iqama >= azan
-  const actualIqama = Math.max(azanMin, iqamaMin);
-  return { azanMin, iqamaMin: actualIqama, nowMin };
-});
+const scenarioArb = fc
+  .tuple(minutesArb, minutesArb, minutesArb)
+  .map(([azanMin, iqamaMin, nowMin]) => {
+    // Ensure iqama >= azan
+    const actualIqama = Math.max(azanMin, iqamaMin);
+    return { azanMin, iqamaMin: actualIqama, nowMin };
+  });
 
 // Display format: MM:SS or H:MM:SS or HH:MM:SS
 const DISPLAY_FORMAT_REGEX = /^\d+:\d{2}(:\d{2})?$/;

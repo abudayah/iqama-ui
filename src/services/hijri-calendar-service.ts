@@ -33,7 +33,10 @@ export async function fetchEidPrayers(date?: string, admin?: boolean): Promise<E
   // No requiresAuth — public endpoint
 }
 
-export async function fetchQiyamConfig(): Promise<{ hijri_year: number; start_time: string } | null> {
+export async function fetchQiyamConfig(): Promise<{
+  hijri_year: number;
+  start_time: string;
+} | null> {
   return apiFetch<{ hijri_year: number; start_time: string } | null>(
     '/api/v1/hijri-calendar/qiyam-config',
   );

@@ -26,6 +26,7 @@ export function SimulatorBanner({ simDateStr, simNow }: SimulatorBannerProps) {
   return (
     <div
       role="status"
+      id="simulator-banner"
       aria-label="Simulator mode active"
       className="flex items-center justify-between gap-3 px-4 py-2 text-xs font-medium"
       style={{ background: '#7c3aed', color: '#fff' }}

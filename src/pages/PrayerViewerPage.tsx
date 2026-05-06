@@ -27,9 +27,9 @@ export function PrayerViewerPage() {
   const [sightingSuccess, setSightingSuccess] = useState(false);
 
   /* ── Peek state ── */
-  const [peekedPrayer,   setPeekedPrayer]   = useState<PeekTarget | null>(null);
+  const [peekedPrayer, setPeekedPrayer] = useState<PeekTarget | null>(null);
   const [peekedSchedule, setPeekedSchedule] = useState<DailySchedule | null>(null);
-  const [peekedLabel,    setPeekedLabel]    = useState<string | null>(null);
+  const [peekedLabel, setPeekedLabel] = useState<string | null>(null);
   const peekTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearPeek = useCallback(() => {
@@ -39,29 +39,35 @@ export function PrayerViewerPage() {
     setPeekedLabel(null);
   }, []);
 
-  const handleTabChange = useCallback((tab: 'today' | 'tomorrow') => {
-    clearPeek();
-    setActiveTab(tab);
-  }, [clearPeek]);
+  const handleTabChange = useCallback(
+    (tab: 'today' | 'tomorrow') => {
+      clearPeek();
+      setActiveTab(tab);
+    },
+    [clearPeek],
+  );
 
-  const handlePeek = useCallback((prayer: PeekTarget, schedule: DailySchedule, label?: string) => {
-    if (peekedPrayer === prayer) {
+  const handlePeek = useCallback(
+    (prayer: PeekTarget, schedule: DailySchedule, label?: string) => {
+      if (peekedPrayer === prayer) {
+        if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
+        setPeekedPrayer(null);
+        setPeekedSchedule(null);
+        setPeekedLabel(null);
+        return;
+      }
       if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
-      setPeekedPrayer(null);
-      setPeekedSchedule(null);
-      setPeekedLabel(null);
-      return;
-    }
-    if (peekTimerRef.current) clearTimeout(peekTimerRef.current);
-    setPeekedPrayer(prayer);
-    setPeekedSchedule(schedule);
-    setPeekedLabel(label ?? null);
-    peekTimerRef.current = setTimeout(() => {
-      setPeekedPrayer(null);
-      setPeekedSchedule(null);
-      setPeekedLabel(null);
-    }, PEEK_DURATION_MS);
-  }, [peekedPrayer]);
+      setPeekedPrayer(prayer);
+      setPeekedSchedule(schedule);
+      setPeekedLabel(label ?? null);
+      peekTimerRef.current = setTimeout(() => {
+        setPeekedPrayer(null);
+        setPeekedSchedule(null);
+        setPeekedLabel(null);
+      }, PEEK_DURATION_MS);
+    },
+    [peekedPrayer],
+  );
 
   const { simNow, simDateStr, simTomorrowStr, isSimulating } = useSimulator();
 
@@ -82,50 +88,46 @@ export function PrayerViewerPage() {
   } = useSchedule(simTomorrowStr);
 
   /* Single source of truth for all time-aware state */
-  const {
-    countdownMode,
-    nextPrayer,
-    nextSchedule,
-    countdown,
-    hijriDay,
-    hijriMonth,
-    tick,
-  } = usePrayerContext(todaySchedule, tomorrowSchedule, isSimulating ? simNow : undefined);
+  const { countdownMode, nextPrayer, nextSchedule, countdown, hijriDay, hijriMonth, tick } =
+    usePrayerContext(todaySchedule, tomorrowSchedule, isSimulating ? simNow : undefined);
 
   const isLoading = todayLoading;
-  const error     = activeTab === 'today' ? todayError : tomorrowError;
-  const refetch   = activeTab === 'today' ? refetchToday : refetchTomorrow;
+  const error = activeTab === 'today' ? todayError : tomorrowError;
+  const refetch = activeTab === 'today' ? refetchToday : refetchTomorrow;
 
   /* nextPrayer is only "active" in the today table when the schedule matches */
   const todayNextPrayer: PrayerEvent | null =
     nextSchedule === todaySchedule ? (nextPrayer ?? null) : null;
 
   /* ── Moon-sighting decision handler ── */
-  const onDecision = useCallback(async (length: 29 | 30) => {
-    if (!sightingStatus) return;
-    setSightingError(null);
-    setSightingSuccess(false);
+  const onDecision = useCallback(
+    async (length: 29 | 30) => {
+      if (!sightingStatus) return;
+      setSightingError(null);
+      setSightingSuccess(false);
 
-    if (sightingStatus.hijriMonth === 9 || sightingStatus.hijriMonth === 11) {
-      setPendingLength(length);
-      setEidModalOpen(true);
-    } else {
-      const hijriYear = new Date(sightingStatus.gregorianDate).getFullYear();
-      try {
-        await submitOverride({ hijriYear, hijriMonth: sightingStatus.hijriMonth, length });
-        setSightingSuccess(true);
-      } catch (err) {
-        setSightingError(err instanceof Error ? err.message : 'Submission failed. Please try again.');
+      if (sightingStatus.hijriMonth === 9 || sightingStatus.hijriMonth === 11) {
+        setPendingLength(length);
+        setEidModalOpen(true);
+      } else {
+        const hijriYear = new Date(sightingStatus.gregorianDate).getFullYear();
+        try {
+          await submitOverride({ hijriYear, hijriMonth: sightingStatus.hijriMonth, length });
+          setSightingSuccess(true);
+        } catch (err) {
+          setSightingError(
+            err instanceof Error ? err.message : 'Submission failed. Please try again.',
+          );
+        }
       }
-    }
-  }, [sightingStatus]);
+    },
+    [sightingStatus],
+  );
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div id="prayer-viewer-page" className="min-h-screen bg-gray-100 flex flex-col">
       <OfflineBanner />
-      {isSimulating && (
-        <SimulatorBanner simDateStr={simDateStr} simNow={simNow} />
-      )}
+      {isSimulating && <SimulatorBanner simDateStr={simDateStr} simNow={simNow} />}
 
       <HeroBanner
         nextPrayer={nextPrayer}
@@ -143,8 +145,10 @@ export function PrayerViewerPage() {
       />
 
       {/* Prayer list — overlaps the hero bottom edge */}
-      <div className="flex-1 -mt-4 relative z-10 flex flex-col max-w-lg w-full mx-auto">
-
+      <div
+        id="prayer-list"
+        className="flex-1 -mt-4 relative z-10 flex flex-col max-w-lg w-full mx-auto"
+      >
         {/* Loading skeleton */}
         {isLoading && (
           <div className="bg-white rounded-t-3xl px-6 pt-6 pb-4">
@@ -177,30 +181,31 @@ export function PrayerViewerPage() {
         )}
 
         {/* Sighting card — shown on day 29, or day 30 without an override */}
-        {sightingStatus !== null && shouldShowSightingCard(sightingStatus.hijriDay, sightingStatus.hasOverride) && (
-          <div className="px-4 pt-4">
-            {sightingSuccess && (
-              <div
-                className="mb-3 bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-emerald-700 text-sm"
-                role="status"
-              >
-                Moon-sighting decision saved successfully.
-              </div>
-            )}
-            {sightingError && (
-              <div
-                className="mb-3 bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 text-sm"
-                role="alert"
-              >
-                {sightingError}
-              </div>
-            )}
-            <SightingCard
-              hijriMonth={sightingStatus.hijriMonth}
-              onDecision={(length) => void onDecision(length)}
-            />
-          </div>
-        )}
+        {sightingStatus !== null &&
+          shouldShowSightingCard(sightingStatus.hijriDay, sightingStatus.hasOverride) && (
+            <div className="px-4 pt-4">
+              {sightingSuccess && (
+                <div
+                  className="mb-3 bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-emerald-700 text-sm"
+                  role="status"
+                >
+                  Moon-sighting decision saved successfully.
+                </div>
+              )}
+              {sightingError && (
+                <div
+                  className="mb-3 bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 text-sm"
+                  role="alert"
+                >
+                  {sightingError}
+                </div>
+              )}
+              <SightingCard
+                hijriMonth={sightingStatus.hijriMonth}
+                onDecision={(length) => void onDecision(length)}
+              />
+            </div>
+          )}
 
         {/* Prayer table — rendered once today's data is ready */}
         {todaySchedule && !isLoading && (

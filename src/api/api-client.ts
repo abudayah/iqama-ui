@@ -3,7 +3,7 @@ import { NetworkError, AuthError, ApiError, ParseError } from './errors';
 
 export async function apiFetch<T>(
   path: string,
-  options?: RequestInit & { requiresAuth?: boolean }
+  options?: RequestInit & { requiresAuth?: boolean },
 ): Promise<T> {
   const { baseUrl, apiKey } = getConfig();
   const { requiresAuth, ...fetchOptions } = options ?? {};
@@ -27,9 +27,11 @@ export async function apiFetch<T>(
   if (!response.ok) {
     let message = `API error: ${response.status}`;
     try {
-      const body = await response.json() as { message?: string };
+      const body = (await response.json()) as { message?: string };
       if (body.message) message = body.message;
-    } catch { /* ignore parse errors on error responses */ }
+    } catch {
+      /* ignore parse errors on error responses */
+    }
     throw new ApiError(response.status, message);
   }
 
@@ -45,7 +47,7 @@ export async function apiFetch<T>(
   }
 
   try {
-    return await response.json() as T;
+    return (await response.json()) as T;
   } catch (err) {
     throw new ParseError('Failed to parse response JSON', err);
   }

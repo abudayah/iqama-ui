@@ -9,7 +9,11 @@ interface OverrideRowProps {
 }
 
 const PRAYER_LABELS: Record<string, string> = {
-  fajr: 'Fajr', dhuhr: 'Dhuhr', asr: 'Asr', maghrib: 'Maghrib', isha: 'Isha',
+  fajr: 'Fajr',
+  dhuhr: 'Dhuhr',
+  asr: 'Asr',
+  maghrib: 'Maghrib',
+  isha: 'Isha',
 };
 
 export function OverrideRow({ override, today, onEdit, onDelete }: OverrideRowProps) {
@@ -17,6 +21,7 @@ export function OverrideRow({ override, today, onEdit, onDelete }: OverrideRowPr
 
   return (
     <div
+      id={`override-row-${override.id}`}
       data-testid={`override-row-${override.id}`}
       className={`flex items-center px-4 py-3 border-b border-gray-100 ${
         active ? 'bg-green-50' : 'bg-white'
@@ -27,9 +32,11 @@ export function OverrideRow({ override, today, onEdit, onDelete }: OverrideRowPr
           <span className="text-sm font-medium text-gray-800">
             {PRAYER_LABELS[override.prayer] ?? override.prayer}
           </span>
-          <span className={`text-xs px-2 py-0.5 rounded-full ${
-            active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-          }`}>
+          <span
+            className={`text-xs px-2 py-0.5 rounded-full ${
+              active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
+            }`}
+          >
             {active ? 'Active' : 'Inactive'}
           </span>
         </div>

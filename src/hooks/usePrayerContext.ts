@@ -13,7 +13,10 @@ import _dayjs from 'dayjs';
 // @ts-ignore
 import _dayjsHijri from 'dayjs-hijri';
 
-interface HijriDayjs { month(): number; date(): number }
+interface HijriDayjs {
+  month(): number;
+  date(): number;
+}
 interface DayjsFn {
   (date?: Date | string | number): { calendar(type: 'hijri' | 'gregory'): HijriDayjs };
   extend(plugin: unknown): void;
@@ -72,14 +75,22 @@ function getHijriDate(date: Date): { month: number; day: number } {
 function prayerToTimeOfDay(prayer: PrayerEvent | null): TimeOfDay {
   if (!prayer) return 'NIGHT';
   switch (prayer) {
-    case 'fajr':         return 'DAWN';
-    case 'sunrise':      return 'DAWN';
-    case 'eid-prayer-1': return 'DAY';
-    case 'eid-prayer-2': return 'DAY';
-    case 'dhuhr':        return 'DAY';
-    case 'asr':          return 'DAY';
-    case 'maghrib':      return 'DUSK';
-    case 'isha':         return 'NIGHT';
+    case 'fajr':
+      return 'DAWN';
+    case 'sunrise':
+      return 'DAWN';
+    case 'eid-prayer-1':
+      return 'DAY';
+    case 'eid-prayer-2':
+      return 'DAY';
+    case 'dhuhr':
+      return 'DAY';
+    case 'asr':
+      return 'DAY';
+    case 'maghrib':
+      return 'DUSK';
+    case 'isha':
+      return 'NIGHT';
   }
 }
 
@@ -109,7 +120,9 @@ export function usePrayerContext(
 
   const nextSchedule = useMemo((): DailySchedule | null => {
     if (!todaySchedule) return null;
-    return deriveNextPrayerWithFallback(todaySchedule, tomorrowSchedule, getNow())?.schedule ?? null;
+    return (
+      deriveNextPrayerWithFallback(todaySchedule, tomorrowSchedule, getNow())?.schedule ?? null
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [todaySchedule, tomorrowSchedule, tick, simulatedNow]);
 
@@ -127,7 +140,7 @@ export function usePrayerContext(
     // but getNow() always returns the same simulated moment.
     const id = setInterval(() => {
       setCountdown(deriveCountdown(nextSchedule, nextPrayer, getNow()));
-      setTick(t => t + 1);
+      setTick((t) => t + 1);
     }, 1_000);
 
     return () => clearInterval(id);

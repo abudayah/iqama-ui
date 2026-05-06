@@ -2,7 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { fetchEidPrayers } from '../services/hijri-calendar-service';
 import type { EidPrayerRecord } from '../types/index';
 
-export function useEidPrayers(date?: string, admin?: boolean): {
+export function useEidPrayers(
+  date?: string,
+  admin?: boolean,
+): {
   records: EidPrayerRecord[];
   loading: boolean;
   error: Error | null;

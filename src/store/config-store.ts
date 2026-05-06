@@ -37,7 +37,9 @@ export function setBaseUrl(url: string): void {
   try {
     parsed = new URL(url);
   } catch {
-    throw new Error(`Invalid base URL: "${url}". Please provide a well-formed URL (e.g. https://api.example.com).`);
+    throw new Error(
+      `Invalid base URL: "${url}". Please provide a well-formed URL (e.g. https://api.example.com).`,
+    );
   }
   if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
     throw new Error(`Invalid base URL: "${url}". Only http and https schemes are supported.`);

@@ -14,7 +14,9 @@ export function ConfigGate({ children }: ConfigGateProps) {
       new URL(config.baseUrl);
       isValidUrl = true;
     }
-  } catch { /* invalid URL */ }
+  } catch {
+    /* invalid URL */
+  }
 
   if (!isValidUrl) {
     return <ConfigSetupScreen />;

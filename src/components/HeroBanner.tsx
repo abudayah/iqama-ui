@@ -9,30 +9,34 @@ export type PeekTarget = PrayerName | 'sunrise' | 'eid-prayer-1' | 'eid-prayer-2
 
 /* ─── Props ─────────────────────────────────────────────────────────────────── */
 interface HeroBannerProps {
-  nextPrayer:    PrayerEvent | null;
-  countdown:     CountdownState;
+  nextPrayer: PrayerEvent | null;
+  countdown: CountdownState;
   /** Schedule for the prayer being counted down to (may be tomorrow's) */
-  schedule:      DailySchedule | null;
+  schedule: DailySchedule | null;
   /** Today's schedule — used for sky/sun/moon anchor times */
   todaySchedule: DailySchedule | null;
   countdownMode: CountdownMode;
-  hijriDay:      number;
-  hijriMonth:    number;
+  hijriDay: number;
+  hijriMonth: number;
   /** Tick counter from usePrayerContext — drives per-second re-render */
-  tick:          number;
+  tick: number;
   /** Optional simulated now (from simulator) */
   simulatedNow?: Date | undefined;
   /** Peeked target — when set, hero shows that target's countdown */
-  peekPrayer?:   PeekTarget | null;
+  peekPrayer?: PeekTarget | null;
   /** Schedule that contains the peeked target */
   peekSchedule?: DailySchedule | null;
   /** Optional label override for the peeked target (used for Eid prayer rows) */
-  peekLabel?:    string | null;
+  peekLabel?: string | null;
 }
 
 /* ─── Constants ─────────────────────────────────────────────────────────────── */
 const PRAYER_LABELS: Record<string, string> = {
-  fajr: 'Fajr', dhuhr: 'Dhuhr', asr: 'Asr', maghrib: 'Maghrib', isha: 'Isha',
+  fajr: 'Fajr',
+  dhuhr: 'Dhuhr',
+  asr: 'Asr',
+  maghrib: 'Maghrib',
+  isha: 'Isha',
   sunrise: 'Sunrise',
   'eid-prayer-1': '1st Prayer',
   'eid-prayer-2': '2nd Prayer',
@@ -87,7 +91,7 @@ function lerpColor(c1: string, c2: string, t: number): string {
  *   24:00 → deep night (same as 0:00)
  */
 interface SkyKeyframe {
-  t:   number;   // minutes since midnight
+  t: number; // minutes since midnight
   top: string;
   mid: string;
   bot: string;
@@ -104,16 +108,16 @@ function buildSkyKeyframes(
   const duskEnd = maghribMin + 40;
 
   return [
-    { t: 0,           top: '#0f2027', mid: '#162c36', bot: '#203a43' }, // deep night
-    { t: fajrMin,     top: '#2c1b3d', mid: '#6b4c5a', bot: '#b08980' }, // first light
-    { t: sunriseMin,  top: '#1a6b9a', mid: '#e8956d', bot: '#f5c07a' }, // sunrise glow
+    { t: 0, top: '#0f2027', mid: '#162c36', bot: '#203a43' }, // deep night
+    { t: fajrMin, top: '#2c1b3d', mid: '#6b4c5a', bot: '#b08980' }, // first light
+    { t: sunriseMin, top: '#1a6b9a', mid: '#e8956d', bot: '#f5c07a' }, // sunrise glow
     { t: sunriseMin + 30, top: '#2980b9', mid: '#4eb1df', bot: '#6dd5ed' }, // morning blue
-    { t: solarNoon,   top: '#1a6fa8', mid: '#3da0d0', bot: '#5cc8e8' }, // peak day
+    { t: solarNoon, top: '#1a6fa8', mid: '#3da0d0', bot: '#5cc8e8' }, // peak day
     { t: goldenStart, top: '#2c3e50', mid: '#d4845a', bot: '#f0a070' }, // golden hour
-    { t: maghribMin,  top: '#2c3e50', mid: '#c06c84', bot: '#f67280' }, // sunset peak
-    { t: duskEnd,     top: '#1a1a2e', mid: '#2d1b3d', bot: '#4a2040' }, // dusk fading
-    { t: ishaMin,     top: '#0f2027', mid: '#162c36', bot: '#203a43' }, // full night
-    { t: 24 * 60,     top: '#0f2027', mid: '#162c36', bot: '#203a43' }, // midnight wrap
+    { t: maghribMin, top: '#2c3e50', mid: '#c06c84', bot: '#f67280' }, // sunset peak
+    { t: duskEnd, top: '#1a1a2e', mid: '#2d1b3d', bot: '#4a2040' }, // dusk fading
+    { t: ishaMin, top: '#0f2027', mid: '#162c36', bot: '#203a43' }, // full night
+    { t: 24 * 60, top: '#0f2027', mid: '#162c36', bot: '#203a43' }, // midnight wrap
   ];
 }
 
@@ -145,9 +149,12 @@ function interpolateSky(
  */
 interface MtnKeyframe {
   t: number;
-  backTop: string; backBot: string;
-  midTop:  string; midBot:  string;
-  frtTop:  string; frtBot:  string;
+  backTop: string;
+  backBot: string;
+  midTop: string;
+  midBot: string;
+  frtTop: string;
+  frtBot: string;
 }
 
 function buildMtnKeyframes(
@@ -159,14 +166,78 @@ function buildMtnKeyframes(
   const goldenStart = maghribMin - 30;
   const duskEnd = maghribMin + 40;
   return [
-    { t: 0,               backTop:'#1f2937',backBot:'#111827', midTop:'#151e29',midBot:'#0b1016', frtTop:'#111827',frtBot:'#000000' },
-    { t: fajrMin,         backTop:'#4a4053',backBot:'#2a2533', midTop:'#3a3545',midBot:'#1c1a24', frtTop:'#2c2b36',frtBot:'#11151c' },
-    { t: sunriseMin + 30, backTop:'#5a7b9c',backBot:'#2c3e50', midTop:'#3b5978',midBot:'#1a252f', frtTop:'#2c3e50',frtBot:'#111827' },
-    { t: goldenStart,     backTop:'#6b5a4a',backBot:'#3a2e24', midTop:'#4a3d30',midBot:'#221a12', frtTop:'#352a1e',frtBot:'#120d08' },
-    { t: maghribMin,      backTop:'#4a3b4f',backBot:'#2a1f2e', midTop:'#38293d',midBot:'#1c1121', frtTop:'#291e2e',frtBot:'#0f0a14' },
-    { t: duskEnd,         backTop:'#252535',backBot:'#141420', midTop:'#1c1c2e',midBot:'#0d0d18', frtTop:'#181828',frtBot:'#060610' },
-    { t: ishaMin,         backTop:'#1f2937',backBot:'#111827', midTop:'#151e29',midBot:'#0b1016', frtTop:'#111827',frtBot:'#000000' },
-    { t: 24 * 60,         backTop:'#1f2937',backBot:'#111827', midTop:'#151e29',midBot:'#0b1016', frtTop:'#111827',frtBot:'#000000' },
+    {
+      t: 0,
+      backTop: '#1f2937',
+      backBot: '#111827',
+      midTop: '#151e29',
+      midBot: '#0b1016',
+      frtTop: '#111827',
+      frtBot: '#000000',
+    },
+    {
+      t: fajrMin,
+      backTop: '#4a4053',
+      backBot: '#2a2533',
+      midTop: '#3a3545',
+      midBot: '#1c1a24',
+      frtTop: '#2c2b36',
+      frtBot: '#11151c',
+    },
+    {
+      t: sunriseMin + 30,
+      backTop: '#5a7b9c',
+      backBot: '#2c3e50',
+      midTop: '#3b5978',
+      midBot: '#1a252f',
+      frtTop: '#2c3e50',
+      frtBot: '#111827',
+    },
+    {
+      t: goldenStart,
+      backTop: '#6b5a4a',
+      backBot: '#3a2e24',
+      midTop: '#4a3d30',
+      midBot: '#221a12',
+      frtTop: '#352a1e',
+      frtBot: '#120d08',
+    },
+    {
+      t: maghribMin,
+      backTop: '#4a3b4f',
+      backBot: '#2a1f2e',
+      midTop: '#38293d',
+      midBot: '#1c1121',
+      frtTop: '#291e2e',
+      frtBot: '#0f0a14',
+    },
+    {
+      t: duskEnd,
+      backTop: '#252535',
+      backBot: '#141420',
+      midTop: '#1c1c2e',
+      midBot: '#0d0d18',
+      frtTop: '#181828',
+      frtBot: '#060610',
+    },
+    {
+      t: ishaMin,
+      backTop: '#1f2937',
+      backBot: '#111827',
+      midTop: '#151e29',
+      midBot: '#0b1016',
+      frtTop: '#111827',
+      frtBot: '#000000',
+    },
+    {
+      t: 24 * 60,
+      backTop: '#1f2937',
+      backBot: '#111827',
+      midTop: '#151e29',
+      midBot: '#0b1016',
+      frtTop: '#111827',
+      frtBot: '#000000',
+    },
   ];
 }
 
@@ -185,10 +256,10 @@ function interpolateMtn(keyframes: MtnKeyframe[], t: number): Omit<MtnKeyframe, 
   return {
     backTop: lerpColor(lo.backTop, hi.backTop, frac),
     backBot: lerpColor(lo.backBot, hi.backBot, frac),
-    midTop:  lerpColor(lo.midTop,  hi.midTop,  frac),
-    midBot:  lerpColor(lo.midBot,  hi.midBot,  frac),
-    frtTop:  lerpColor(lo.frtTop,  hi.frtTop,  frac),
-    frtBot:  lerpColor(lo.frtBot,  hi.frtBot,  frac),
+    midTop: lerpColor(lo.midTop, hi.midTop, frac),
+    midBot: lerpColor(lo.midBot, hi.midBot, frac),
+    frtTop: lerpColor(lo.frtTop, hi.frtTop, frac),
+    frtBot: lerpColor(lo.frtBot, hi.frtBot, frac),
   };
 }
 
@@ -204,10 +275,10 @@ function interpolateMtn(keyframes: MtnKeyframe[], t: number): Omit<MtnKeyframe, 
  *   P0 = rise point, P1 = apex control, P2 = set point
  */
 interface CelestialState {
-  leftPct: number;   // 0–100
-  topPct:  number;   // 0–100
-  color:   string;
-  opacity: number;   // 0–1 for fade in/out near horizon
+  leftPct: number; // 0–100
+  topPct: number; // 0–100
+  color: string;
+  opacity: number; // 0–1 for fade in/out near horizon
   showSun: boolean;
 }
 
@@ -222,14 +293,14 @@ const HORIZON_PCT = 67; // % from top where sun/moon meet the mountain line
 
 function sunArc(t: number): { leftPct: number; topPct: number } {
   // Quadratic bezier: rise(5, HORIZON) → apex(50, 8) → set(95, HORIZON)
-  const p0 = { x: 5,  y: HORIZON_PCT };
-  const p1 = { x: 50, y: 8           };
+  const p0 = { x: 5, y: HORIZON_PCT };
+  const p1 = { x: 50, y: 8 };
   const p2 = { x: 95, y: HORIZON_PCT };
   const tc = Math.max(0, Math.min(1, t));
   const mt = 1 - tc;
   return {
     leftPct: mt * mt * p0.x + 2 * mt * tc * p1.x + tc * tc * p2.x,
-    topPct:  mt * mt * p0.y + 2 * mt * tc * p1.y + tc * tc * p2.y,
+    topPct: mt * mt * p0.y + 2 * mt * tc * p1.y + tc * tc * p2.y,
   };
 }
 
@@ -250,7 +321,7 @@ function computeCelestial(
   sunriseMin: number,
   maghribMin: number,
 ): CelestialState {
-  const SUN_FADE_MINS  = 20; // fade in/out near horizon for the sun
+  const SUN_FADE_MINS = 20; // fade in/out near horizon for the sun
 
   // ── Sun: visible from fajr up to (but not including) maghrib ──
   if (nowMin >= fajrMin && nowMin < maghribMin) {
@@ -278,11 +349,11 @@ function computeCelestial(
   // Three states: hidden (day), up (night), descending (near sunrise)
   // The CSS 2s transition handles the rise/set animation.
   const isDaytime = nowMin >= sunriseMin && nowMin < maghribMin;
-  const nearSunrise = !isDaytime && (
-    nowMin < sunriseMin
-      ? nowMin >= sunriseMin - 1          // within 1 min before sunrise
-      : nowMin >= sunriseMin + 24 * 60 - 1 // wrapping past midnight
-  );
+  const nearSunrise =
+    !isDaytime &&
+    (nowMin < sunriseMin
+      ? nowMin >= sunriseMin - 1 // within 1 min before sunrise
+      : nowMin >= sunriseMin + 24 * 60 - 1); // wrapping past midnight
   const moonT = isDaytime ? 0 : nearSunrise ? 1 : 0.5;
   const { leftPct, topPct } = moonArc(moonT);
 
@@ -297,7 +368,7 @@ function computeCelestial(
  */
 function moonShadowCx(day: number): number {
   if (day === 15) return 200;
-  if (day < 15)  return 50 + (day / 15) * 100;
+  if (day < 15) return 50 + (day / 15) * 100;
   return -50 + ((day - 15) / 15) * 100;
 }
 
@@ -326,11 +397,12 @@ export function HeroBanner({
 
   // Resolve the azan time string for the peeked target.
   // Eid peeks use peekSchedule.sunrise (we inject the Eid time there).
-  const peekTimeStr: string | null = isPeeking && peekSchedule
-    ? (peekPrayer === 'sunrise' || isEidPeek)
-      ? peekSchedule.sunrise
-      : peekSchedule[peekPrayer as PrayerName].azan
-    : null;
+  const peekTimeStr: string | null =
+    isPeeking && peekSchedule
+      ? peekPrayer === 'sunrise' || isEidPeek
+        ? peekSchedule.sunrise
+        : peekSchedule[peekPrayer as PrayerName].azan
+      : null;
 
   const peekAzanMin: number | null = peekTimeStr !== null ? hhmm(peekTimeStr) : null;
 
@@ -338,10 +410,10 @@ export function HeroBanner({
   const skyMin = isPeeking && peekAzanMin !== null ? peekAzanMin : nowMin;
 
   /* ── Resolve anchor times from today's schedule ── */
-  const fajrMin    = todaySchedule ? hhmm(todaySchedule.fajr.azan)    : 5  * 60;
-  const sunriseMin = todaySchedule ? hhmm(todaySchedule.sunrise)       : 6  * 60;
-  const maghribMin = todaySchedule ? hhmm(todaySchedule.maghrib.azan)  : 20 * 60;
-  const ishaMin    = todaySchedule ? hhmm(todaySchedule.isha.azan)     : 21 * 60;
+  const fajrMin = todaySchedule ? hhmm(todaySchedule.fajr.azan) : 5 * 60;
+  const sunriseMin = todaySchedule ? hhmm(todaySchedule.sunrise) : 6 * 60;
+  const maghribMin = todaySchedule ? hhmm(todaySchedule.maghrib.azan) : 20 * 60;
+  const ishaMin = todaySchedule ? hhmm(todaySchedule.isha.azan) : 21 * 60;
 
   /* ── Continuous sky — driven by skyMin (peek azan time or real now) ── */
   const skyKeyframes = buildSkyKeyframes(fajrMin, sunriseMin, maghribMin, ishaMin);
@@ -355,28 +427,30 @@ export function HeroBanner({
   const cel = computeCelestial(skyMin, fajrMin, sunriseMin, maghribMin);
 
   /* ── Prayer data — peek overrides default ── */
-  const displayPrayer   = isPeeking ? peekPrayer!  : nextPrayer;
+  const displayPrayer = isPeeking ? peekPrayer! : nextPrayer;
   const displaySchedule = isPeeking ? peekSchedule! : schedule;
 
-  const displayCountdown: CountdownState = isPeeking && peekSchedule && peekTimeStr
-    ? (() => {
-        const [h, m] = peekTimeStr.split(':').map(Number);
-        const [y, mo, d] = peekSchedule.date.split('-').map(Number);
-        const targetDate = new Date(y!, mo! - 1, d!, h!, m!, 0, 0);
-        const diffMs = targetDate.getTime() - now.getTime();
-        if (diffMs <= 0) return { phase: 'done' as const, display: 'All prayers complete' };
-        const total = Math.floor(diffMs / 1000);
-        const hh = Math.floor(total / 3600);
-        const mm = Math.floor((total % 3600) / 60);
-        const ss = total % 60;
-        return {
-          phase: 'to_azan' as const,
-          display: `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`,
-        };
-      })()
-    : countdown;
+  const displayCountdown: CountdownState =
+    isPeeking && peekSchedule && peekTimeStr
+      ? (() => {
+          const [h, m] = peekTimeStr.split(':').map(Number);
+          const [y, mo, d] = peekSchedule.date.split('-').map(Number);
+          const targetDate = new Date(y!, mo! - 1, d!, h!, m!, 0, 0);
+          const diffMs = targetDate.getTime() - now.getTime();
+          if (diffMs <= 0) return { phase: 'done' as const, display: 'All prayers complete' };
+          const total = Math.floor(diffMs / 1000);
+          const hh = Math.floor(total / 3600);
+          const mm = Math.floor((total % 3600) / 60);
+          const ss = total % 60;
+          return {
+            phase: 'to_azan' as const,
+            display: `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`,
+          };
+        })()
+      : countdown;
 
-  const prayerLabel = peekLabel ?? (displayPrayer ? (PRAYER_LABELS[displayPrayer] ?? displayPrayer) : '—');
+  const prayerLabel =
+    peekLabel ?? (displayPrayer ? (PRAYER_LABELS[displayPrayer] ?? displayPrayer) : '—');
 
   const isNonAzanEvent = (p: typeof displayPrayer) =>
     p === 'sunrise' || p === 'eid-prayer-1' || p === 'eid-prayer-2';
@@ -385,36 +459,50 @@ export function HeroBanner({
   const azanTime: string | null = isPeeking
     ? peekTimeStr
     : displayPrayer && displaySchedule && !isNonAzanEvent(displayPrayer)
-      ? displaySchedule[displayPrayer as PrayerName]?.azan ?? null
+      ? (displaySchedule[displayPrayer as PrayerName]?.azan ?? null)
       : null;
 
   // Eid prayers and sunrise have no iqama
   const iqamaTime: string | null =
     displayPrayer && displaySchedule && !isNonAzanEvent(displayPrayer)
-      ? displaySchedule[displayPrayer as PrayerName]?.iqama ?? null
+      ? (displaySchedule[displayPrayer as PrayerName]?.iqama ?? null)
       : null;
 
   /* ── Countdown display ── */
   const effectiveMode = isPeeking ? 'to_azan' : countdownMode;
   const isIqamaWindow = effectiveMode === 'to_iqama';
-  const isDone        = effectiveMode === 'done';
+  const isDone = effectiveMode === 'done';
 
   // Determine super-title based on what's being displayed
   const superTitle = isPeeking
-    ? (isEidPeek ? 'EID PRAYER IN' : peekPrayer === 'sunrise' ? 'SUNRISE IN' : 'AZAN IN')
+    ? isEidPeek
+      ? 'EID PRAYER IN'
+      : peekPrayer === 'sunrise'
+        ? 'SUNRISE IN'
+        : 'AZAN IN'
     : displayPrayer === 'sunrise'
       ? 'SUNRISE IN'
       : displayPrayer === 'eid-prayer-1' || displayPrayer === 'eid-prayer-2'
         ? 'NEXT PRAYER'
-        : isIqamaWindow ? 'TIME UNTIL IQAMA' : 'NEXT PRAYER';
+        : isIqamaWindow
+          ? 'TIME UNTIL IQAMA'
+          : 'NEXT PRAYER';
 
   const subLine = isPeeking
-    ? (azanTime ? `${prayerLabel} · at ${azanTime}` : prayerLabel)
+    ? azanTime
+      ? `${prayerLabel} · at ${azanTime}`
+      : prayerLabel
     : isIqamaWindow
-      ? (iqamaTime ? `${prayerLabel} · Iqama at ${iqamaTime}` : prayerLabel)
+      ? iqamaTime
+        ? `${prayerLabel} · Iqama at ${iqamaTime}`
+        : prayerLabel
       : displayPrayer === 'sunrise'
-        ? (azanTime ? `${prayerLabel} · at ${azanTime}` : prayerLabel)
-        : (azanTime ? `${prayerLabel} · Azan at ${azanTime}` : prayerLabel);
+        ? azanTime
+          ? `${prayerLabel} · at ${azanTime}`
+          : prayerLabel
+        : azanTime
+          ? `${prayerLabel} · Azan at ${azanTime}`
+          : prayerLabel;
 
   /* ── Moon shadow cx ── */
   const shadowCx = moonShadowCx(hijriDay);
@@ -439,6 +527,7 @@ export function HeroBanner({
   return (
     <div
       ref={wrapperRef}
+      id="prayer-hero-banner"
       className="relative text-white"
       style={{
         height: 300,
@@ -458,9 +547,7 @@ export function HeroBanner({
 
         {/* Timer */}
         {isDone ? (
-          <p className="text-5xl font-bold mt-1 tabular-nums leading-none tracking-tight">
-            —
-          </p>
+          <p className="text-5xl font-bold mt-1 tabular-nums leading-none tracking-tight">—</p>
         ) : (
           <p
             className="text-5xl font-bold mt-1 tabular-nums leading-none tracking-tight"
@@ -482,20 +569,19 @@ export function HeroBanner({
 
       {/* ── Landscape layer ── */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 1 }}>
-
         {/* Sun */}
         {cel.showSun && (
           <div
             className="absolute rounded-full"
             style={{
-              top:        `${cel.topPct}%`,
-              left:       `${cel.leftPct}%`,
-              transform:  'translate(-50%, -50%)',
-              width:      70,
-              height:     70,
+              top: `${cel.topPct}%`,
+              left: `${cel.leftPct}%`,
+              transform: 'translate(-50%, -50%)',
+              width: 70,
+              height: 70,
               background: cel.color,
-              boxShadow:  `0 0 50px 14px ${cel.color}`,
-              opacity:    cel.opacity,
+              boxShadow: `0 0 50px 14px ${cel.color}`,
+              opacity: cel.opacity,
               transition: isPeeking
                 ? 'top 0.6s ease-out, left 0.6s ease-out'
                 : 'top 1s linear, left 1s linear, opacity 20s linear, background 60s linear',
@@ -509,16 +595,14 @@ export function HeroBanner({
           <div
             className="absolute"
             style={{
-              top:        `${moonTopPct}%`,
-              left:       `${cel.leftPct}%`,
-              transform:  'translate(-50%, -50%)',
-              width:      80,
-              height:     80,
-              filter:     `drop-shadow(0 0 18px rgba(255,244,202,0.45))`,
-              opacity:    1,
-              transition: isPeeking
-                ? 'top 0.6s ease-out'
-                : 'top 2s ease-out',
+              top: `${moonTopPct}%`,
+              left: `${cel.leftPct}%`,
+              transform: 'translate(-50%, -50%)',
+              width: 80,
+              height: 80,
+              filter: `drop-shadow(0 0 18px rgba(255,244,202,0.45))`,
+              opacity: 1,
+              transition: isPeeking ? 'top 0.6s ease-out' : 'top 2s ease-out',
             }}
             aria-hidden="true"
           >
@@ -565,14 +649,13 @@ export function HeroBanner({
             </linearGradient>
           </defs>
 
-          <path fill="url(#hb-grad-back)"
-            d="M0,40 L0,15 Q15,5 30,12 T60,10 T90,18 T100,12 L100,40 Z" />
-          <path fill="url(#hb-grad-mist)"
-            d="M0,40 L0,18 Q20,10 40,16 T80,14 T100,20 L100,40 Z" />
-          <path fill="url(#hb-grad-mid)"
-            d="M0,40 L0,22 Q18,12 35,20 T70,16 T100,24 L100,40 Z" />
-          <path fill="url(#hb-grad-front)"
-            d="M-10,40 L-10,28 Q25,18 45,28 T110,22 L110,40 Z" />
+          <path
+            fill="url(#hb-grad-back)"
+            d="M0,40 L0,15 Q15,5 30,12 T60,10 T90,18 T100,12 L100,40 Z"
+          />
+          <path fill="url(#hb-grad-mist)" d="M0,40 L0,18 Q20,10 40,16 T80,14 T100,20 L100,40 Z" />
+          <path fill="url(#hb-grad-mid)" d="M0,40 L0,22 Q18,12 35,20 T70,16 T100,24 L100,40 Z" />
+          <path fill="url(#hb-grad-front)" d="M-10,40 L-10,28 Q25,18 45,28 T110,22 L110,40 Z" />
         </svg>
       </div>
       {/* ── Islamic event greeting banner ── */}

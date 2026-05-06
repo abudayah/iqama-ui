@@ -30,12 +30,19 @@ export function ConfigSetupScreen() {
           id="base-url"
           type="url"
           value={url}
-          onChange={e => { setUrl(e.target.value); setError(''); }}
+          onChange={(e) => {
+            setUrl(e.target.value);
+            setError('');
+          }}
           placeholder="https://api.example.com"
           className="w-full border border-gray-300 rounded px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
           aria-describedby={error ? 'url-error' : undefined}
         />
-        {error && <p id="url-error" className="text-red-600 text-xs mt-1">{error}</p>}
+        {error && (
+          <p id="url-error" className="text-red-600 text-xs mt-1">
+            {error}
+          </p>
+        )}
         <button
           onClick={handleSave}
           disabled={!isValid}

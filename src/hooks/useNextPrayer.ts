@@ -17,6 +17,6 @@ export function useNextPrayer(
   return useMemo(() => {
     if (!todaySchedule) return null;
     return deriveNextPrayerWithFallback(todaySchedule, tomorrowSchedule, new Date());
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [todaySchedule, tomorrowSchedule, tick]);
 }

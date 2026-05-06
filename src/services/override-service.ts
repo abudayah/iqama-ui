@@ -14,7 +14,10 @@ export async function createOverride(payload: OverridePayload): Promise<Override
   });
 }
 
-export async function updateOverride(id: number, payload: Partial<OverridePayload>): Promise<Override> {
+export async function updateOverride(
+  id: number,
+  payload: Partial<OverridePayload>,
+): Promise<Override> {
   return apiFetch<Override>(`/api/v1/admin/overrides/${id}`, {
     method: 'PATCH',
     requiresAuth: true,

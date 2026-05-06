@@ -26,13 +26,13 @@ describe('Property 7: Admin requests always include the x-api-key header', () =>
       .filter((s) => s.trim() === s && s.trim().length > 0);
 
     await fc.assert(
-      fc.asyncProperty(
-        validApiKey,
-        async (apiKey) => {
-          localStorage.setItem(CONFIG_KEYS.API_KEY, apiKey);
+      fc.asyncProperty(validApiKey, async (apiKey) => {
+        localStorage.setItem(CONFIG_KEYS.API_KEY, apiKey);
 
-          let capturedHeaders: Headers | undefined;
-          vi.stubGlobal('fetch', vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+        let capturedHeaders: Headers | undefined;
+        vi.stubGlobal(
+          'fetch',
+          vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
             capturedHeaders = new Headers(init?.headers);
             return Promise.resolve({
               status: 200,
@@ -40,14 +40,14 @@ describe('Property 7: Admin requests always include the x-api-key header', () =>
               headers: new Headers(),
               json: async () => ({}),
             } as Response);
-          }));
+          }),
+        );
 
-          await apiFetch('/api/v1/admin/overrides', { requiresAuth: true });
+        await apiFetch('/api/v1/admin/overrides', { requiresAuth: true });
 
-          return capturedHeaders?.get('x-api-key') === apiKey;
-        }
-      ),
-      { numRuns: 100 }
+        return capturedHeaders?.get('x-api-key') === apiKey;
+      }),
+      { numRuns: 100 },
     );
   });
 });

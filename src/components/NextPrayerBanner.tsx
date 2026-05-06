@@ -62,6 +62,7 @@ export function NextPrayerBanner({ nextPrayer, countdown, schedule }: NextPrayer
 
   return (
     <div
+      id="next-prayer-banner"
       className="relative overflow-hidden rounded-xl text-white"
       style={{ background: 'linear-gradient(135deg, #185FA5 0%, #0C447C 100%)' }}
       data-testid="next-prayer-banner"
@@ -92,12 +93,18 @@ export function NextPrayerBanner({ nextPrayer, countdown, schedule }: NextPrayer
         {/* Top row */}
         <div className="flex justify-between items-start">
           <div>
-            <p className="text-xs" style={{ opacity: 0.75 }}>Next prayer</p>
+            <p className="text-xs" style={{ opacity: 0.75 }}>
+              Next prayer
+            </p>
             <p className="text-2xl font-medium mt-0.5">{PRAYER_LABELS[nextPrayer] ?? nextPrayer}</p>
-            <p className="text-sm mt-0.5" style={{ opacity: 0.7 }}>Iqama at {iqamaTime}</p>
+            <p className="text-sm mt-0.5" style={{ opacity: 0.7 }}>
+              Iqama at {iqamaTime}
+            </p>
           </div>
           <div className="text-right">
-            <p className="text-xs" style={{ opacity: 0.75 }}>{countdownLabel}</p>
+            <p className="text-xs" style={{ opacity: 0.75 }}>
+              {countdownLabel}
+            </p>
             <p
               className="text-3xl font-medium mt-1 tabular-nums"
               style={{ letterSpacing: '0.05em' }}
@@ -112,10 +119,7 @@ export function NextPrayerBanner({ nextPrayer, countdown, schedule }: NextPrayer
 
         {/* Progress bar */}
         <div className="mt-4">
-          <div
-            className="h-0.5 rounded-full"
-            style={{ background: 'rgba(255,255,255,0.2)' }}
-          >
+          <div className="h-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.2)' }}>
             <div
               className="h-0.5 rounded-full transition-all duration-1000"
               style={{ width: `${progress}%`, background: 'rgba(255,255,255,0.85)' }}

@@ -38,12 +38,14 @@ const mockSubmitOverride = vi.mocked(submitOverride);
 
 // ── Default mock return values ─────────────────────────────────────────────
 
-function makeDefaultStatus(overrides: Partial<{
-  hijriMonth: number;
-  hijriDay: number;
-  hasOverride: boolean;
-  gregorianDate: string;
-}> = {}) {
+function makeDefaultStatus(
+  overrides: Partial<{
+    hijriMonth: number;
+    hijriDay: number;
+    hasOverride: boolean;
+    gregorianDate: string;
+  }> = {},
+) {
   return {
     gregorianDate: '2025-03-29',
     hijriMonth: overrides.hijriMonth ?? 9,

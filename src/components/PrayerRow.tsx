@@ -1,38 +1,51 @@
 import type { PrayerName, PrayerEntry } from '../types/index';
 
 interface PrayerRowProps {
-  name:     PrayerName | 'sunrise';
-  entry:    PrayerEntry | { azan: string; iqama?: never };
-  isNext:   boolean;
-  isPast:   boolean;
+  name: PrayerName | 'sunrise';
+  entry: PrayerEntry | { azan: string; iqama?: never };
+  isNext: boolean;
+  isPast: boolean;
   /** True only during the azan→iqama window for this prayer — shows "now" badge */
   isActive: boolean;
   /** True when this prayer is currently being peeked in the hero */
   isPeeked: boolean;
   /** Override the display label (used for Eid prayer rows) */
-  label?:   string;
+  label?: string;
   /** Called when the row is tapped (only provided for future prayers) */
-  onTap?:  (() => void) | undefined;
+  onTap?: (() => void) | undefined;
 }
 
 const PRAYER_LABELS: Record<string, string> = {
-  fajr: 'Fajr', dhuhr: 'Dhuhr', asr: 'Asr',
-  maghrib: 'Maghrib', isha: 'Isha', sunrise: 'Sunrise',
+  fajr: 'Fajr',
+  dhuhr: 'Dhuhr',
+  asr: 'Asr',
+  maghrib: 'Maghrib',
+  isha: 'Isha',
+  sunrise: 'Sunrise',
 };
 
 /** Dot colour per prayer — matches the design system */
 const DOT_COLORS: Record<string, string> = {
-  fajr:    '#cbd5e1',
+  fajr: '#cbd5e1',
   sunrise: '#fde047',
-  dhuhr:   '#93c5fd',
-  asr:     '#fdba74',
+  dhuhr: '#93c5fd',
+  asr: '#fdba74',
   maghrib: '#2563eb',
-  isha:    '#4b5563',
+  isha: '#4b5563',
 };
 
-export function PrayerRow({ name, entry, isNext, isPast, isActive, isPeeked, label, onTap }: PrayerRowProps) {
-  const isSunrise  = name === 'sunrise';
-  const dotColor   = DOT_COLORS[name] ?? '#6b7280';
+export function PrayerRow({
+  name,
+  entry,
+  isNext,
+  isPast,
+  isActive,
+  isPeeked,
+  label,
+  onTap,
+}: PrayerRowProps) {
+  const isSunrise = name === 'sunrise';
+  const dotColor = DOT_COLORS[name] ?? '#6b7280';
   const iqamaValue = 'iqama' in entry && entry.iqama ? entry.iqama : null;
 
   return (
@@ -43,10 +56,10 @@ export function PrayerRow({ name, entry, isNext, isPast, isActive, isPeeked, lab
       onClick={onTap}
       className={[
         'flex items-center justify-between px-3 py-[18px]',
-        isNext   ? 'bg-blue-50 rounded-2xl'                          : '',
+        isNext ? 'bg-blue-50 rounded-2xl' : '',
         isPeeked ? 'bg-indigo-50 rounded-2xl ring-1 ring-indigo-200' : '',
-        isPast   ? 'opacity-40'                                       : '',
-        onTap    ? 'cursor-pointer active:opacity-70'                 : '',
+        isPast ? 'opacity-40' : '',
+        onTap ? 'cursor-pointer active:opacity-70' : '',
       ].join(' ')}
       data-testid={`prayer-row-${name}`}
       aria-current={isNext ? 'true' : undefined}
@@ -68,7 +81,7 @@ export function PrayerRow({ name, entry, isNext, isPast, isActive, isPeeked, lab
             fontStyle: isSunrise ? 'italic' : undefined,
           }}
         >
-          {label ?? (PRAYER_LABELS[name] ?? name)}
+          {label ?? PRAYER_LABELS[name] ?? name}
         </span>
 
         {/* "now" pill removed per user preference */}

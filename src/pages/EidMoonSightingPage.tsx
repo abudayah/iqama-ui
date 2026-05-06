@@ -43,39 +43,50 @@ export function EidMoonSightingPage() {
   const [sightingSuccess, setSightingSuccess] = useState(false);
 
   /* ── Moon-sighting decision handler (same logic as PrayerViewerPage) ── */
-  const onDecision = useCallback(async (length: 29 | 30) => {
-    if (!status) return;
-    setSightingError(null);
-    setSightingSuccess(false);
+  const onDecision = useCallback(
+    async (length: 29 | 30) => {
+      if (!status) return;
+      setSightingError(null);
+      setSightingSuccess(false);
 
-    if (status.hijriMonth === 9 || status.hijriMonth === 11) {
-      setPendingLength(length);
-      setEditingEidType(null);
-      setEidModalOpen(true);
-    } else {
-      const hijriYear = new Date(status.gregorianDate).getFullYear();
-      try {
-        await submitOverride({ hijriYear, hijriMonth: status.hijriMonth, length });
-        setSightingSuccess(true);
-      } catch (err) {
-        setSightingError(err instanceof Error ? err.message : 'Submission failed. Please try again.');
+      if (status.hijriMonth === 9 || status.hijriMonth === 11) {
+        setPendingLength(length);
+        setEditingEidType(null);
+        setEidModalOpen(true);
+      } else {
+        const hijriYear = new Date(status.gregorianDate).getFullYear();
+        try {
+          await submitOverride({ hijriYear, hijriMonth: status.hijriMonth, length });
+          setSightingSuccess(true);
+        } catch (err) {
+          setSightingError(
+            err instanceof Error ? err.message : 'Submission failed. Please try again.',
+          );
+        }
       }
-    }
-  }, [status]);
+    },
+    [status],
+  );
 
   /* ── Edit button handler ── */
-  const handleEdit = useCallback((eidType: EidType) => {
-    if (!status) return;
-    setEditingEidType(eidType);
-    setPendingLength(null);
-    setEidModalOpen(true);
-  }, [status]);
+  const handleEdit = useCallback(
+    (eidType: EidType) => {
+      if (!status) return;
+      setEditingEidType(eidType);
+      setPendingLength(null);
+      setEidModalOpen(true);
+    },
+    [status],
+  );
 
   /* ── Modal submit handler ── */
-  const handleModalSubmit = useCallback(async (payload: Parameters<typeof submitOverride>[0]) => {
-    await submitOverride(payload);
-    refetch();
-  }, [refetch]);
+  const handleModalSubmit = useCallback(
+    async (payload: Parameters<typeof submitOverride>[0]) => {
+      await submitOverride(payload);
+      refetch();
+    },
+    [refetch],
+  );
 
   /* ── Derive modal props ── */
   const getModalEidType = (): EidType => {
@@ -238,9 +249,7 @@ export function EidMoonSightingPage() {
                           ))}
                         </div>
                       ) : (
-                        <p className="text-xs text-gray-400 italic">
-                          No prayer times saved yet
-                        </p>
+                        <p className="text-xs text-gray-400 italic">No prayer times saved yet</p>
                       )}
                     </div>
 

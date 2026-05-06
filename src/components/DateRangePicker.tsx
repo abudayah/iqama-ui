@@ -12,7 +12,7 @@ export function DateRangePicker({ start, end, onRangeChange }: DateRangePickerPr
         <input
           type="date"
           value={start}
-          onChange={e => onRangeChange(e.target.value, end)}
+          onChange={(e) => onRangeChange(e.target.value, end)}
           className="w-full border border-gray-300 rounded px-3 py-2 text-sm min-h-[44px]"
         />
       </div>
@@ -21,7 +21,7 @@ export function DateRangePicker({ start, end, onRangeChange }: DateRangePickerPr
         <input
           type="date"
           value={end}
-          onChange={e => onRangeChange(start, e.target.value)}
+          onChange={(e) => onRangeChange(start, e.target.value)}
           className="w-full border border-gray-300 rounded px-3 py-2 text-sm min-h-[44px]"
         />
       </div>

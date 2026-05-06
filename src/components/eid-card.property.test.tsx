@@ -42,10 +42,13 @@ const timeStrArb = fc
 // Labels are constrained to alphanumeric characters only to avoid whitespace
 // normalisation issues in Testing Library's queryByText.
 const labelArb = fc
-  .array(fc.constantFrom(...'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.split('')), {
-    minLength: 1,
-    maxLength: 20,
-  })
+  .array(
+    fc.constantFrom(...'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'.split('')),
+    {
+      minLength: 1,
+      maxLength: 20,
+    },
+  )
   .map((chars) => chars.join(''));
 
 const prayerEntriesArb: fc.Arbitrary<EidPrayerEntry[]> = fc.array(

@@ -76,8 +76,18 @@ export function computeConsequenceText(
 
 export function RamadanEidPage() {
   // ── Hooks ──
-  const { status, loading: statusLoading, error: statusError, refetch: refetchStatus } = useSightingStatus();
-  const { records, loading: recordsLoading, error: recordsError, refetch } = useEidPrayers(undefined, true);
+  const {
+    status,
+    loading: statusLoading,
+    error: statusError,
+    refetch: refetchStatus,
+  } = useSightingStatus();
+  const {
+    records,
+    loading: recordsLoading,
+    error: recordsError,
+    refetch,
+  } = useEidPrayers(undefined, true);
   const {
     config: qiyamConfig,
     loading: qiyamLoading,
@@ -194,13 +204,10 @@ export function RamadanEidPage() {
 
   // ── Eid Prayer Times handlers ──
 
-  const handleEditEid = useCallback(
-    (eidType: EidType) => {
-      setEditingEidType(eidType);
-      setEidModalOpen(true);
-    },
-    [],
-  );
+  const handleEditEid = useCallback((eidType: EidType) => {
+    setEditingEidType(eidType);
+    setEidModalOpen(true);
+  }, []);
 
   const handleModalSubmit = useCallback(
     async (payload: SubmitOverridePayload) => {
@@ -224,7 +231,7 @@ export function RamadanEidPage() {
   // ── Render ──
 
   return (
-    <div className="p-4 space-y-8">
+    <div id="ramadan-eid-page" className="p-4 space-y-8">
       {/* ══════════════════════════════════════════════════════════════════
           Section 1: Moon Sighting — SightingCard (always visible)
       ══════════════════════════════════════════════════════════════════ */}
@@ -234,8 +241,10 @@ export function RamadanEidPage() {
         </h2>
 
         {/* SightingCard is always rendered regardless of loading/error state */}
-        <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4" data-testid="sighting-card">
-
+        <div
+          className="bg-white border border-gray-200 rounded-xl p-4 space-y-4"
+          data-testid="sighting-card"
+        >
           {/* Loading skeleton */}
           {statusLoading && (
             <div className="animate-pulse space-y-2" data-testid="status-skeleton">
@@ -271,13 +280,11 @@ export function RamadanEidPage() {
                 <div>
                   <p className="text-xs text-gray-500 mb-2 font-medium">Month length</p>
                   <div className="grid grid-cols-3 gap-2" role="group" aria-label="Month length">
-                    {(
-                      [
-                        { value: 'astronomical' as const, label: 'Astronomical', sub: 'default' },
-                        { value: 29 as const, label: '29 Days', sub: 'moon sighted' },
-                        { value: 30 as const, label: '30 Days', sub: 'complete' },
-                      ]
-                    ).map(({ value, label, sub }) => {
+                    {[
+                      { value: 'astronomical' as const, label: 'Astronomical', sub: 'default' },
+                      { value: 29 as const, label: '29 Days', sub: 'moon sighted' },
+                      { value: 30 as const, label: '30 Days', sub: 'complete' },
+                    ].map(({ value, label, sub }) => {
                       const isActive = currentMonthLength === value;
                       const isPending = pendingChoice === value;
                       return (
@@ -297,7 +304,9 @@ export function RamadanEidPage() {
                           data-testid={`month-length-tile-${String(value)}`}
                         >
                           <span className="text-sm font-semibold leading-tight">{label}</span>
-                          <span className={`text-xs mt-0.5 ${isActive ? 'text-emerald-600' : isPending ? 'text-amber-600' : 'text-gray-400'}`}>
+                          <span
+                            className={`text-xs mt-0.5 ${isActive ? 'text-emerald-600' : isPending ? 'text-amber-600' : 'text-gray-400'}`}
+                          >
                             {sub}
                           </span>
                         </button>
@@ -452,9 +461,7 @@ export function RamadanEidPage() {
                           Prayer times will be set once the moon-sighting override is submitted
                         </p>
                       ) : (
-                        <p className="text-xs text-gray-400 italic">
-                          No prayer times saved yet
-                        </p>
+                        <p className="text-xs text-gray-400 italic">No prayer times saved yet</p>
                       )}
                     </div>
 
@@ -482,9 +489,7 @@ export function RamadanEidPage() {
         </h2>
 
         <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
-          {qiyamLoading && (
-            <div className="animate-pulse h-8 bg-gray-200 rounded w-32" />
-          )}
+          {qiyamLoading && <div className="animate-pulse h-8 bg-gray-200 rounded w-32" />}
 
           {qiyamError && !qiyamLoading && (
             <div
@@ -516,13 +521,11 @@ export function RamadanEidPage() {
                 />
               </div>
 
-              <p className="text-xs text-gray-500 font-medium">
-                Active nights: 20th–29th Ramadan
-              </p>
+              <p className="text-xs text-gray-500 font-medium">Active nights: 20th–29th Ramadan</p>
 
               <p className="text-xs text-gray-400">
-                Shown in the app as &apos;Qiyam&apos; with start time only. Applies to all 10
-                nights — adjust each year when Ramadan begins.
+                Shown in the app as &apos;Qiyam&apos; with start time only. Applies to all 10 nights
+                — adjust each year when Ramadan begins.
               </p>
 
               {qiyamSaveSuccess && (

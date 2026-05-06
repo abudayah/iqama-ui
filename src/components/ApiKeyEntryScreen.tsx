@@ -23,10 +23,10 @@ export function ApiKeyEntryScreen() {
           id="api-key"
           type="password"
           value={key}
-          onChange={e => setKey(e.target.value)}
+          onChange={(e) => setKey(e.target.value)}
           placeholder="Enter API key"
           className="w-full border border-gray-300 rounded px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
-          onKeyDown={e => e.key === 'Enter' && handleSave()}
+          onKeyDown={(e) => e.key === 'Enter' && handleSave()}
         />
         <button
           onClick={handleSave}

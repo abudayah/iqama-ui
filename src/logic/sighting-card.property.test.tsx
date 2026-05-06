@@ -15,13 +15,9 @@ const NON_EID_MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 10, 12] as const;
 describe('shouldShowSightingCard — Property 6: Sighting card hidden before day 29', () => {
   it('returns false for any hijriDay in 1–28 regardless of hasOverride', () => {
     fc.assert(
-      fc.property(
-        fc.integer({ min: 1, max: 28 }),
-        fc.boolean(),
-        (hijriDay, hasOverride) => {
-          return shouldShowSightingCard(hijriDay, hasOverride) === false;
-        },
-      ),
+      fc.property(fc.integer({ min: 1, max: 28 }), fc.boolean(), (hijriDay, hasOverride) => {
+        return shouldShowSightingCard(hijriDay, hasOverride) === false;
+      }),
       { numRuns: 100 },
     );
   });
@@ -40,16 +36,13 @@ describe('SightingCard — Property 7: Non-Eid months dispatch directly without 
           );
 
           const buttonLabel =
-            length === 29
-              ? /Yes, Month ends today \(29 Days\)/i
-              : /No, Complete 30 days/i;
+            length === 29 ? /Yes, Month ends today \(29 Days\)/i : /No, Complete 30 days/i;
 
           const button = screen.getByRole('button', { name: buttonLabel });
           button.click();
 
           const called =
-            onDecision.mock.calls.length === 1 &&
-            onDecision.mock.calls[0]?.[0] === length;
+            onDecision.mock.calls.length === 1 && onDecision.mock.calls[0]?.[0] === length;
 
           unmount();
           return called;

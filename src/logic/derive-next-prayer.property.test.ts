@@ -32,7 +32,7 @@ const scheduleArb: fc.Arbitrary<DailySchedule> = fc.record({
   }),
 });
 
-const nowArb = fc.integer({ min: 0, max: 23 * 60 + 59 }).map(totalMinutes => {
+const nowArb = fc.integer({ min: 0, max: 23 * 60 + 59 }).map((totalMinutes) => {
   return new Date(2025, 0, 15, Math.floor(totalMinutes / 60), totalMinutes % 60, 0, 0); // local time
 });
 
@@ -60,7 +60,7 @@ describe('deriveNextPrayer — Property 1: Next prayer is always in the future (
         const entry = schedule[result];
         const [ah, am] = entry.azan.split(':').map(Number);
         const [ih, im] = entry.iqama.split(':').map(Number);
-        const azanDate  = new Date(2025, 0, 15, ah!, am!, 0, 0);
+        const azanDate = new Date(2025, 0, 15, ah!, am!, 0, 0);
         const iqamaDate = new Date(2025, 0, 15, ih!, im!, 0, 0);
 
         // Either: azan is in the future, OR we're in the iqama window

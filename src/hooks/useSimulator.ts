@@ -62,12 +62,12 @@ export function useSimulator(): SimulatorState {
   const simNow = useMemo(() => {
     const [y, mo, d] = simDateStr.split('-').map(Number);
     const real = new Date();
-    const hours   = hasTime ? parseInt(rawTime.slice(0, 2), 10) : real.getHours();
+    const hours = hasTime ? parseInt(rawTime.slice(0, 2), 10) : real.getHours();
     const minutes = hasTime ? parseInt(rawTime.slice(3, 5), 10) : real.getMinutes();
     const seconds = hasTime ? 0 : real.getSeconds();
     return new Date(y!, mo! - 1, d!, hours, minutes, seconds, 0);
-  // rawDate and rawTime are primitives — stable as long as the URL doesn't change
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // rawDate and rawTime are primitives — stable as long as the URL doesn't change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rawDate, rawTime]);
 
   return { simNow, simDateStr, simTomorrowStr, isSimulating };

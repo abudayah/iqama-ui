@@ -21,7 +21,6 @@ function getTimeInput() {
   return document.querySelector<HTMLInputElement>('input[type="time"]')!;
 }
 
-
 describe('OverrideFormModal — FIXED validation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -126,39 +125,21 @@ describe('OverrideFormModal — edit mode pre-population', () => {
   };
 
   it('pre-fills prayer field with initial value', () => {
-    render(
-      <OverrideFormModal
-        initial={initialOverride}
-        onSave={noop}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<OverrideFormModal initial={initialOverride} onSave={noop} onClose={vi.fn()} />);
 
     const prayerSelect = screen.getByRole('combobox') as HTMLSelectElement;
     expect(prayerSelect.value).toBe('maghrib');
   });
 
   it('pre-fills override type with initial value', () => {
-    render(
-      <OverrideFormModal
-        initial={initialOverride}
-        onSave={noop}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<OverrideFormModal initial={initialOverride} onSave={noop} onClose={vi.fn()} />);
 
     const offsetRadio = screen.getByDisplayValue('OFFSET') as HTMLInputElement;
     expect(offsetRadio.checked).toBe(true);
   });
 
   it('pre-fills value field with initial value', () => {
-    render(
-      <OverrideFormModal
-        initial={initialOverride}
-        onSave={noop}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<OverrideFormModal initial={initialOverride} onSave={noop} onClose={vi.fn()} />);
 
     // For OFFSET type, value is shown via the slider and the badge label
     const slider = screen.getByRole('slider', { name: /offset in minutes/i }) as HTMLInputElement;
@@ -167,39 +148,21 @@ describe('OverrideFormModal — edit mode pre-population', () => {
   });
 
   it('pre-fills start date with initial value', () => {
-    render(
-      <OverrideFormModal
-        initial={initialOverride}
-        onSave={noop}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<OverrideFormModal initial={initialOverride} onSave={noop} onClose={vi.fn()} />);
 
     const { startDateInput } = getDateInputs();
     expect(startDateInput.value).toBe('2025-03-01');
   });
 
   it('pre-fills end date with initial value', () => {
-    render(
-      <OverrideFormModal
-        initial={initialOverride}
-        onSave={noop}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<OverrideFormModal initial={initialOverride} onSave={noop} onClose={vi.fn()} />);
 
     const { endDateInput } = getDateInputs();
     expect(endDateInput.value).toBe('2025-03-31');
   });
 
   it('shows "Edit Override" title in edit mode', () => {
-    render(
-      <OverrideFormModal
-        initial={initialOverride}
-        onSave={noop}
-        onClose={vi.fn()}
-      />,
-    );
+    render(<OverrideFormModal initial={initialOverride} onSave={noop} onClose={vi.fn()} />);
 
     expect(screen.getByText('Edit Override')).toBeInTheDocument();
   });

@@ -17,8 +17,8 @@ export function OverridesPage() {
   const today = getTodayDate();
 
   return (
-    <div className="p-4">
-      <div className="flex items-center justify-between mb-4">
+    <div id="overrides-page" className="p-4">
+      <div id="overrides-page-header" className="flex items-center justify-between mb-4">
         <h1 className="text-lg font-bold text-gray-800">Overrides</h1>
         <div className="flex gap-2">
           <button
@@ -58,12 +58,7 @@ export function OverridesPage() {
       )}
 
       {!loading && !error && (
-        <OverrideList
-          overrides={overrides}
-          today={today}
-          onUpdate={update}
-          onRemove={remove}
-        />
+        <OverrideList overrides={overrides} today={today} onUpdate={update} onRemove={remove} />
       )}
 
       {showCreateModal && (

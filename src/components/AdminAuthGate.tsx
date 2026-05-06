@@ -19,9 +19,5 @@ export function AdminAuthGate({ children }: AdminAuthGateProps) {
     return <ApiKeyEntryScreen />;
   }
 
-  return (
-    <AuthErrorContext.Provider value={clearApiKey}>
-      {children}
-    </AuthErrorContext.Provider>
-  );
+  return <AuthErrorContext.Provider value={clearApiKey}>{children}</AuthErrorContext.Provider>;
 }

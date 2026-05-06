@@ -32,9 +32,7 @@ const timeArb = fc
   .tuple(fc.integer({ min: 0, max: 23 }), fc.integer({ min: 0, max: 59 }))
   .map(([h, m]) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
 
-const offsetArb = fc
-  .integer({ min: -120, max: 120 })
-  .map((n) => (n >= 0 ? `+${n}` : `${n}`));
+const offsetArb = fc.integer({ min: -120, max: 120 }).map((n) => (n >= 0 ? `+${n}` : `${n}`));
 
 const dateArb = fc
   .tuple(
@@ -45,13 +43,7 @@ const dateArb = fc
   .map(([y, m, d]) => `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
 
 const overrideArb: fc.Arbitrary<Override> = fc
-  .tuple(
-    fc.integer({ min: 1, max: 9999 }),
-    prayerNameArb,
-    overrideTypeArb,
-    dateArb,
-    dateArb,
-  )
+  .tuple(fc.integer({ min: 1, max: 9999 }), prayerNameArb, overrideTypeArb, dateArb, dateArb)
   .chain(([id, prayer, overrideType, startDate, endDate]) => {
     const valueArb = overrideType === 'FIXED' ? timeArb : offsetArb;
     return valueArb.map((value) => ({
@@ -250,7 +242,9 @@ describe('OverrideRow — Property 11: renders all required fields for any overr
 
         // Override type and value appear in the same text node
         expect(screen.getByText(new RegExp(override.overrideType))).toBeInTheDocument();
-        expect(screen.getByText(new RegExp(override.value.replace('+', '\\+')))).toBeInTheDocument();
+        expect(
+          screen.getByText(new RegExp(override.value.replace('+', '\\+'))),
+        ).toBeInTheDocument();
 
         // Start and end dates
         expect(screen.getByText(new RegExp(override.startDate))).toBeInTheDocument();

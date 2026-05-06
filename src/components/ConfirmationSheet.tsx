@@ -22,7 +22,7 @@ export function ConfirmationSheet({
       {/* Bottom-sheet panel */}
       <div
         className="relative bg-white rounded-t-2xl w-full max-w-md p-6"
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Consequence text */}
         <p className="text-sm text-gray-700 mb-6">{consequenceText}</p>

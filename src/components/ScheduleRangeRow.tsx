@@ -8,28 +8,32 @@ interface ScheduleRangeRowProps {
 
 const PRAYERS: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 const PRAYER_LABELS: Record<string, string> = {
-  fajr: 'Fajr', dhuhr: 'Dhuhr', asr: 'Asr', maghrib: 'Maghrib', isha: 'Isha',
+  fajr: 'Fajr',
+  dhuhr: 'Dhuhr',
+  asr: 'Asr',
+  maghrib: 'Maghrib',
+  isha: 'Isha',
 };
 
 /** Returns the difference in minutes between two HH:mm strings (b - a). */
 function diffMinutes(a: string, b: string): number {
   const [ah, am] = a.split(':').map(Number);
   const [bh, bm] = b.split(':').map(Number);
-  return (bh! * 60 + bm!) - (ah! * 60 + am!);
+  return bh! * 60 + bm! - (ah! * 60 + am!);
 }
 
 export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps) {
-  const activeOverrides = overrides.filter(o => isActive(o, schedule.date));
+  const activeOverrides = overrides.filter((o) => isActive(o, schedule.date));
 
   return (
-    <div className="bg-white border-b border-gray-100">
+    <div id={`schedule-range-row-${schedule.date}`} className="bg-white border-b border-gray-100">
       <div className="flex items-center px-4 py-2 bg-gray-50">
         <span className="text-sm font-medium text-gray-800 flex-1">{schedule.date}</span>
         <span className="text-xs text-gray-500">{schedule.day_of_week}</span>
       </div>
       <div className="flex">
-        {PRAYERS.map(prayer => {
-          const override = activeOverrides.find(o => o.prayer === prayer);
+        {PRAYERS.map((prayer) => {
+          const override = activeOverrides.find((o) => o.prayer === prayer);
           const entry = schedule[prayer];
           const offsetMins = diffMinutes(entry.azan, entry.iqama);
           const offsetLabel = offsetMins > 0 ? `+${offsetMins}m` : `${offsetMins}m`;
@@ -44,9 +48,7 @@ export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps)
                   {override.overrideType === 'FIXED' ? override.value : `${override.value}m`}
                 </span>
               ) : (
-                <span className="text-xs font-medium text-emerald-600 mt-0.5">
-                  {offsetLabel}
-                </span>
+                <span className="text-xs font-medium text-emerald-600 mt-0.5">{offsetLabel}</span>
               )}
             </div>
           );

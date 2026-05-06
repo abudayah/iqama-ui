@@ -17,7 +17,7 @@ function MapPinIcon() {
 
 export function MasjidHeader() {
   return (
-    <header className="bg-white border-b border-gray-100">
+    <header id="masjid-header" className="bg-white border-b border-gray-100">
       <div className="max-w-lg mx-auto px-4 flex items-center justify-between gap-3">
         {/* Logo — full header height */}
         <img

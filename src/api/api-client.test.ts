@@ -11,7 +11,7 @@ const BASE_URL = 'https://api.example.com';
 function makeResponse(
   status: number,
   body: string | null,
-  contentType = 'application/json'
+  contentType = 'application/json',
 ): Response {
   const headers = new Headers({ 'content-type': contentType });
   return {
@@ -60,7 +60,7 @@ describe('apiFetch', () => {
   it('throws ApiError with status 404 on a 404 response', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(makeResponse(404, JSON.stringify({ message: 'Not found' })))
+      vi.fn().mockResolvedValue(makeResponse(404, JSON.stringify({ message: 'Not found' }))),
     );
 
     await expect(apiFetch('/test')).rejects.toSatisfy((err: unknown) => {
@@ -72,7 +72,9 @@ describe('apiFetch', () => {
   it('throws ApiError with status 500 on a 500 response', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(makeResponse(500, JSON.stringify({ message: 'Internal server error' })))
+      vi
+        .fn()
+        .mockResolvedValue(makeResponse(500, JSON.stringify({ message: 'Internal server error' }))),
     );
 
     await expect(apiFetch('/test')).rejects.toSatisfy((err: unknown) => {
@@ -93,7 +95,9 @@ describe('apiFetch', () => {
       status: 200,
       ok: true,
       headers: new Headers({ 'content-type': 'application/json' }),
-      json: async () => { throw new SyntaxError('Unexpected token'); },
+      json: async () => {
+        throw new SyntaxError('Unexpected token');
+      },
       text: async () => 'not-json',
     } as unknown as Response;
 
@@ -105,10 +109,7 @@ describe('apiFetch', () => {
   // ── 7. Successful response with valid JSON → returns parsed data ─────────
   it('returns parsed JSON data on a successful 200 response', async () => {
     const payload = { id: 1, name: 'Fajr' };
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue(makeResponse(200, JSON.stringify(payload)))
-    );
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(makeResponse(200, JSON.stringify(payload))));
 
     const result = await apiFetch<typeof payload>('/test');
     expect(result).toEqual(payload);

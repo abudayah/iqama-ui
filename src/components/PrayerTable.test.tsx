@@ -82,8 +82,8 @@ describe('PrayerTable — unit tests', () => {
     renderTable(fixtureSchedule);
 
     const rows = screen.getAllByTestId(/^prayer-row-/);
-    const names = rows.map(r => r.getAttribute('data-testid'));
-    const fajrIdx    = names.indexOf('prayer-row-fajr');
+    const names = rows.map((r) => r.getAttribute('data-testid'));
+    const fajrIdx = names.indexOf('prayer-row-fajr');
     const sunriseIdx = names.indexOf('prayer-row-sunrise');
     expect(sunriseIdx).toBe(fajrIdx + 1);
   });
