@@ -40,14 +40,17 @@ Uses `calculateEidDate` from `src/logic/calculate-eid-date.ts` for date calculat
 ## UX Flow: Moon Sighting
 
 1. **SightingCard** is always rendered (even during loading/error states) — `data-testid="sighting-card"`
-2. When status loads, two decision buttons appear:
-   - **"Yes, Month ends today"** → 29-day month
-   - **"No, Complete 30 days"** → 30-day month
-3. Tapping a button opens the **ConfirmationSheet** (inline, no modal) showing consequence text
-4. **Confirm** behavior depends on the current Hijri month:
-   - **Month 9 or 11** (Eid months): opens `EidPrayerModal` — POST is dispatched from within the modal
-   - **All other months**: dispatches POST directly, shows success/error inline
+2. When status loads, a **3-tile selector** appears with options:
+   - **Astronomical** (default) — resets to astronomical calendar (deletes override)
+   - **29 Days** — moon sighted, month ends today
+   - **30 Days** — complete month
+3. Tapping a tile that differs from the current selection opens the **ConfirmationSheet** (inline, no modal) showing consequence text
+4. **Confirm** behavior depends on the selected tile and current Hijri month:
+   - **Astronomical tile**: calls `deleteOverride()` directly, shows success inline
+   - **29 or 30 tile + month 9 or 11** (Eid months): opens `EidPrayerModal` — POST is dispatched from within the modal
+   - **29 or 30 tile + all other months**: dispatches POST directly, shows success/error inline
 5. **Cancel** closes the ConfirmationSheet without any network call
+6. Tapping the already-active tile does nothing
 
 ## Status Badges
 
@@ -136,8 +139,9 @@ Default prayer times are computed from sunrise:
 | `hijri-date` | Hijri date display text |
 | `confirmed-badge` | Green "Confirmed" badge |
 | `pending-badge` | Amber "Pending" badge |
-| `decision-yes` | "Yes, Month ends today" button |
-| `decision-no` | "No, Complete 30 days" button |
+| `month-length-tile-astronomical` | "Astronomical" tile (default) |
+| `month-length-tile-29` | "29 Days" tile |
+| `month-length-tile-30` | "30 Days" tile |
 | `sighting-success` | Success message after POST |
 | `sighting-error` | Error message after failed POST |
 | `eid-card-EID_AL_FITR` | Eid al-Fitr card |
@@ -151,14 +155,17 @@ Default prayer times are computed from sunrise:
 
 ## Qiyam Active Nights
 
-The UI label reads **"Active nights: 21st–30th Ramadan"** (display label).
+The UI label reads **"Active nights: 20th–29th Ramadan"**.
 
-The backend injects `qiyam_time` on Hijri days **20–29** of month 9. The display label uses 21st–30th because these are the *nights* (the night of the 21st begins after Maghrib on the 20th). Do not change the backend range to match the display label.
+The backend injects `qiyam_time` on Hijri days **20–29** of month 9. The night of the 30th has no Qiyam — it is Eid eve. The label accurately reflects the backend range.
 
 ## Critical Rules
 
 1. **SightingCard is always rendered** — never conditionally hide it based on loading/error state.
-2. **ConfirmationSheet before POST** — never dispatch POST directly from a decision button tap.
-3. **Eid months open modal** — months 9 and 11 must open `EidPrayerModal` after Confirm; POST is dispatched from within the modal.
-4. **`computeConsequenceText` must be exported** — it is tested independently.
-5. **`deleteOverride` is not imported in the current component** — moon sighting only submits overrides (29 or 30 days); there is no "reset to astronomical" button in this flow.
+2. **3-tile selector** — options are Astronomical / 29 Days / 30 Days. Tapping the active tile does nothing.
+3. **ConfirmationSheet before POST** — never dispatch POST directly from a tile tap.
+4. **Eid months open modal** — months 9 and 11 must open `EidPrayerModal` after Confirm on a 29/30 tile; POST is dispatched from within the modal.
+5. **Astronomical tile calls `deleteOverride()`** — not `submitOverride()`.
+6. **`computeConsequenceText` must be exported** — it is tested independently.
+7. **Qiyam label is "20th–29th Ramadan"** — the night of the 30th has no Qiyam (it is Eid eve).
+8. **OFFSET range is -120 to +120 minutes** — negative offsets are valid (e.g. Fajr earlier than Azan is not valid in practice, but the UI allows the full range).

@@ -120,9 +120,8 @@ describe('RamadanEidPage — unit tests', () => {
   it('opens ConfirmationSheet when a decision button is tapped, without dispatching POST', () => {
     render(<RamadanEidPage />);
 
-    // Tap the "Yes" button (29-day month)
-    const yesButton = screen.getByText(/Yes, Month ends today/i);
-    fireEvent.click(yesButton);
+    // Tap the 29-day tile
+    fireEvent.click(screen.getByTestId('month-length-tile-29'));
 
     // ConfirmationSheet should be open
     expect(screen.getByText(/Eid al-Fitr will fall on/i)).toBeInTheDocument();
@@ -134,8 +133,7 @@ describe('RamadanEidPage — unit tests', () => {
   it('opens ConfirmationSheet when "No" button is tapped, without dispatching POST', () => {
     render(<RamadanEidPage />);
 
-    const noButton = screen.getByText(/No, Complete 30 days/i);
-    fireEvent.click(noButton);
+    fireEvent.click(screen.getByTestId('month-length-tile-30'));
 
     expect(screen.getByText(/Eid al-Fitr will fall on/i)).toBeInTheDocument();
     expect(mockSubmitOverride).not.toHaveBeenCalled();
@@ -144,7 +142,7 @@ describe('RamadanEidPage — unit tests', () => {
   it('closes ConfirmationSheet when Cancel is tapped', () => {
     render(<RamadanEidPage />);
 
-    fireEvent.click(screen.getByText(/Yes, Month ends today/i));
+    fireEvent.click(screen.getByTestId('month-length-tile-29'));
     expect(screen.getByText(/Eid al-Fitr will fall on/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByText('Cancel'));
@@ -158,7 +156,7 @@ describe('RamadanEidPage — unit tests', () => {
     setupDefaultMocks({ hijriMonth: 9 });
     render(<RamadanEidPage />);
 
-    fireEvent.click(screen.getByText(/Yes, Month ends today/i));
+    fireEvent.click(screen.getByTestId('month-length-tile-29'));
     fireEvent.click(screen.getByText('Confirm'));
 
     await waitFor(() => {
@@ -171,7 +169,7 @@ describe('RamadanEidPage — unit tests', () => {
     setupDefaultMocks({ hijriMonth: 11 });
     render(<RamadanEidPage />);
 
-    fireEvent.click(screen.getByText(/Yes, Month ends today/i));
+    fireEvent.click(screen.getByTestId('month-length-tile-29'));
     fireEvent.click(screen.getByText('Confirm'));
 
     await waitFor(() => {
@@ -186,7 +184,7 @@ describe('RamadanEidPage — unit tests', () => {
     setupDefaultMocks({ hijriMonth: 1 });
     render(<RamadanEidPage />);
 
-    fireEvent.click(screen.getByText(/Yes, Month ends today/i));
+    fireEvent.click(screen.getByTestId('month-length-tile-29'));
     fireEvent.click(screen.getByText('Confirm'));
 
     await waitFor(() => {
@@ -201,7 +199,7 @@ describe('RamadanEidPage — unit tests', () => {
     setupDefaultMocks({ hijriMonth: 5 });
     render(<RamadanEidPage />);
 
-    fireEvent.click(screen.getByText(/No, Complete 30 days/i));
+    fireEvent.click(screen.getByTestId('month-length-tile-30'));
     fireEvent.click(screen.getByText('Confirm'));
 
     await waitFor(() => {
@@ -219,7 +217,7 @@ describe('RamadanEidPage — unit tests', () => {
     mockSubmitOverride.mockResolvedValue(undefined);
     render(<RamadanEidPage />);
 
-    fireEvent.click(screen.getByText(/Yes, Month ends today/i));
+    fireEvent.click(screen.getByTestId('month-length-tile-29'));
     fireEvent.click(screen.getByText('Confirm'));
 
     await waitFor(() => {
@@ -234,7 +232,7 @@ describe('RamadanEidPage — unit tests', () => {
     mockSubmitOverride.mockRejectedValue(new Error('Server error'));
     render(<RamadanEidPage />);
 
-    fireEvent.click(screen.getByText(/Yes, Month ends today/i));
+    fireEvent.click(screen.getByTestId('month-length-tile-29'));
     fireEvent.click(screen.getByText('Confirm'));
 
     await waitFor(() => {
@@ -245,18 +243,11 @@ describe('RamadanEidPage — unit tests', () => {
 
   // ── Status card badges ──
 
-  it('shows Confirmed badge when hasOverride is true', () => {
-    setupDefaultMocks({ hasOverride: true });
-    render(<RamadanEidPage />);
-    expect(screen.getByTestId('confirmed-badge')).toBeInTheDocument();
-    expect(screen.queryByTestId('pending-badge')).not.toBeInTheDocument();
-  });
-
-  it('shows Pending badge when hasOverride is false', () => {
+  it('shows no badge by default (astronomical is the default state)', () => {
     setupDefaultMocks({ hasOverride: false });
     render(<RamadanEidPage />);
-    expect(screen.getByTestId('pending-badge')).toBeInTheDocument();
     expect(screen.queryByTestId('confirmed-badge')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('pending-badge')).not.toBeInTheDocument();
   });
 
   it('shows skeleton loading state when status is loading', () => {
@@ -409,9 +400,9 @@ describe('RamadanEidPage — unit tests', () => {
     expect(screen.getByText('Failed to save')).toBeInTheDocument();
   });
 
-  it('displays "Active nights: 21st–30th Ramadan" label', () => {
+  it('displays "Active nights: 20th–29th Ramadan" label', () => {
     render(<RamadanEidPage />);
-    expect(screen.getByText(/Active nights: 21st–30th Ramadan/i)).toBeInTheDocument();
+    expect(screen.getByText(/Active nights: 20th–29th Ramadan/i)).toBeInTheDocument();
   });
 
   it('displays the Qiyam note text', () => {
@@ -663,10 +654,9 @@ describe('Property 7: Non-Eid months dispatch POST directly on confirm', () => {
 
           const { unmount } = render(<RamadanEidPage />);
 
-          // Tap the appropriate decision button based on length
-          const buttonText =
-            length === 29 ? /Yes, Month ends today/i : /No, Complete 30 days/i;
-          fireEvent.click(screen.getByText(buttonText));
+          // Tap the appropriate tile based on length
+          const tileTestId = length === 29 ? 'month-length-tile-29' : 'month-length-tile-30';
+          fireEvent.click(screen.getByTestId(tileTestId));
 
           // Tap Confirm on the ConfirmationSheet
           fireEvent.click(screen.getByText('Confirm'));

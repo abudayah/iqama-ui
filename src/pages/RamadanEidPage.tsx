@@ -3,7 +3,7 @@ import { useSightingStatus } from '../hooks/useSightingStatus';
 import { useEidPrayers } from '../hooks/useEidPrayers';
 import { useQiyamConfig } from '../hooks/useQiyamConfig';
 import { EidPrayerModal } from '../components/EidPrayerModal';
-import { submitOverride } from '../services/hijri-calendar-service';
+import { submitOverride, deleteOverride } from '../services/hijri-calendar-service';
 import { calculateEidDate } from '../logic/calculate-eid-date';
 import type { EidType, EidPrayerRecord, SubmitOverridePayload } from '../types/index';
 
@@ -33,7 +33,7 @@ const EID_TYPES: EidType[] = ['EID_AL_FITR', 'EID_AL_ADHA'];
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-type MonthLength = 29 | 30;
+type MonthLength = 'astronomical' | 29 | 30;
 
 // ── Exported helper ────────────────────────────────────────────────────────
 
@@ -46,7 +46,7 @@ type MonthLength = 29 | 30;
  */
 export function computeConsequenceText(
   hijriMonth: number,
-  length: MonthLength,
+  length: 29 | 30,
   referenceDate: Date,
 ): string {
   if (hijriMonth === 9) {
@@ -91,7 +91,7 @@ export function RamadanEidPage() {
   // ── State ──
   const [eidModalOpen, setEidModalOpen] = useState(false);
   const [editingEidType, setEditingEidType] = useState<EidType | null>(null);
-  const [pendingLength, setPendingLength] = useState<MonthLength | null>(null);
+  const [pendingChoice, setPendingChoice] = useState<MonthLength | null>(null);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const [sightingError, setSightingError] = useState<string | null>(null);
   const [sightingSuccess, setSightingSuccess] = useState(false);
@@ -107,35 +107,63 @@ export function RamadanEidPage() {
 
   // ── Derived values ──
 
+  const currentMonthLength: MonthLength = status?.overrideLength ?? 'astronomical';
+
   const hijriDateDisplay = status
     ? `${HIJRI_MONTHS[(status.hijriMonth ?? 1) - 1]} ${status.hijriDay}, ${status.hijriYear}`
     : null;
 
-  // ── Moon Sighting handlers ──
+  // ── Moon Sighting tile handler ──
 
-  const handleDecision = useCallback(
-    (length: MonthLength) => {
+  const handleTileSelect = useCallback(
+    (choice: MonthLength) => {
+      if (!status || choice === currentMonthLength) return;
       setSightingError(null);
       setSightingSuccess(false);
-      setPendingLength(length);
-      setConfirmationOpen(true);
+      if (choice === 'astronomical') {
+        // Reverting to astronomical — confirm before deleting override
+        setPendingChoice(choice);
+        setConfirmationOpen(true);
+      } else {
+        setPendingChoice(choice);
+        setConfirmationOpen(true);
+      }
     },
-    [],
+    [status, currentMonthLength],
   );
 
   const handleCancelConfirmation = useCallback(() => {
     setConfirmationOpen(false);
-    setPendingLength(null);
+    setPendingChoice(null);
     setSightingError(null);
   }, []);
 
   const handleConfirm = useCallback(async () => {
-    if (!status || pendingLength === null) return;
+    if (!status || pendingChoice === null) return;
 
+    if (pendingChoice === 'astronomical') {
+      // Delete override — revert to astronomical
+      setSightingSaving(true);
+      setSightingError(null);
+      try {
+        await deleteOverride();
+        setConfirmationOpen(false);
+        setPendingChoice(null);
+        setSightingSuccess(true);
+        refetchStatus();
+      } catch (err) {
+        setSightingError(err instanceof Error ? err.message : 'Failed to save. Please try again.');
+      } finally {
+        setSightingSaving(false);
+      }
+      return;
+    }
+
+    const length: 29 | 30 = pendingChoice;
     const isEidMonth = status.hijriMonth === 9 || status.hijriMonth === 11;
 
     if (isEidMonth) {
-      // Open EidPrayerModal instead of dispatching POST directly
+      // Open EidPrayerModal — POST is dispatched from within the modal
       const eidType: EidType = status.hijriMonth === 9 ? 'EID_AL_FITR' : 'EID_AL_ADHA';
       setEditingEidType(eidType);
       setConfirmationOpen(false);
@@ -150,11 +178,11 @@ export function RamadanEidPage() {
       const payload: SubmitOverridePayload = {
         hijriYear: status.hijriYear,
         hijriMonth: status.hijriMonth,
-        length: pendingLength,
+        length,
       };
       await submitOverride(payload);
       setConfirmationOpen(false);
-      setPendingLength(null);
+      setPendingChoice(null);
       setSightingSuccess(true);
       refetchStatus();
     } catch (err) {
@@ -162,7 +190,7 @@ export function RamadanEidPage() {
     } finally {
       setSightingSaving(false);
     }
-  }, [status, pendingLength, refetchStatus]);
+  }, [status, pendingChoice, refetchStatus]);
 
   // ── Eid Prayer Times handlers ──
 
@@ -230,62 +258,62 @@ export function RamadanEidPage() {
           {/* Loaded state */}
           {status && !statusLoading && (
             <>
-              {/* Date + badge */}
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm text-gray-500">Current Hijri month</p>
-                  <p className="text-base font-semibold text-gray-800" data-testid="hijri-date">
-                    {hijriDateDisplay}
-                  </p>
-                </div>
-                {status.hasOverride ? (
-                  <span
-                    className="text-xs font-medium bg-emerald-100 text-emerald-700 rounded-full px-2.5 py-1"
-                    data-testid="confirmed-badge"
-                  >
-                    Confirmed
-                  </span>
-                ) : (
-                  <span
-                    className="text-xs font-medium bg-amber-100 text-amber-700 rounded-full px-2.5 py-1"
-                    data-testid="pending-badge"
-                  >
-                    Pending
-                  </span>
-                )}
+              {/* Date */}
+              <div>
+                <p className="text-sm text-gray-500">Current Hijri month</p>
+                <p className="text-base font-semibold text-gray-800" data-testid="hijri-date">
+                  {hijriDateDisplay}
+                </p>
               </div>
 
-              {/* Decision buttons */}
+              {/* 3-tile selector */}
               {!confirmationOpen && (
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => handleDecision(29)}
-                    disabled={sightingSaving}
-                    className="flex flex-col items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 py-3 px-2 text-center transition-colors min-h-[64px] disabled:opacity-50 hover:bg-emerald-100 active:bg-emerald-200"
-                    data-testid="decision-yes"
-                  >
-                    <span className="text-sm font-semibold text-emerald-800 leading-tight">Yes, Month ends today</span>
-                    <span className="text-xs text-emerald-600 mt-0.5">29 days</span>
-                  </button>
-                  <button
-                    onClick={() => handleDecision(30)}
-                    disabled={sightingSaving}
-                    className="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white py-3 px-2 text-center transition-colors min-h-[64px] disabled:opacity-50 hover:bg-gray-50 active:bg-gray-100"
-                    data-testid="decision-no"
-                  >
-                    <span className="text-sm font-semibold text-gray-700 leading-tight">No, Complete 30 days</span>
-                    <span className="text-xs text-gray-400 mt-0.5">30 days</span>
-                  </button>
+                <div>
+                  <p className="text-xs text-gray-500 mb-2 font-medium">Month length</p>
+                  <div className="grid grid-cols-3 gap-2" role="group" aria-label="Month length">
+                    {(
+                      [
+                        { value: 'astronomical' as const, label: 'Astronomical', sub: 'default' },
+                        { value: 29 as const, label: '29 Days', sub: 'moon sighted' },
+                        { value: 30 as const, label: '30 Days', sub: 'complete' },
+                      ]
+                    ).map(({ value, label, sub }) => {
+                      const isActive = currentMonthLength === value;
+                      const isPending = pendingChoice === value;
+                      return (
+                        <button
+                          key={String(value)}
+                          onClick={() => handleTileSelect(value)}
+                          disabled={sightingSaving}
+                          aria-pressed={isActive}
+                          className={[
+                            'flex flex-col items-center justify-center rounded-xl border py-3 px-2 text-center transition-colors min-h-[64px] disabled:opacity-50',
+                            isActive
+                              ? 'border-emerald-500 bg-emerald-50 text-emerald-800'
+                              : isPending
+                                ? 'border-amber-400 bg-amber-50 text-amber-800'
+                                : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 active:bg-gray-100',
+                          ].join(' ')}
+                          data-testid={`month-length-tile-${String(value)}`}
+                        >
+                          <span className="text-sm font-semibold leading-tight">{label}</span>
+                          <span className={`text-xs mt-0.5 ${isActive ? 'text-emerald-600' : isPending ? 'text-amber-600' : 'text-gray-400'}`}>
+                            {sub}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
               {/* ConfirmationSheet */}
-              {confirmationOpen && pendingLength !== null && (
+              {confirmationOpen && pendingChoice !== null && pendingChoice !== 'astronomical' && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3">
                   <p className="text-sm text-amber-800 font-medium">
                     {computeConsequenceText(
                       status.hijriMonth,
-                      pendingLength,
+                      pendingChoice,
                       new Date(status.gregorianDate + 'T12:00:00'),
                     )}
                   </p>
@@ -301,6 +329,31 @@ export function RamadanEidPage() {
                       onClick={() => void handleConfirm()}
                       disabled={sightingSaving}
                       className="flex-1 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg px-3 py-2 disabled:opacity-50 min-h-[44px]"
+                    >
+                      {sightingSaving ? 'Saving…' : 'Confirm'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Astronomical revert confirmation */}
+              {confirmationOpen && pendingChoice === 'astronomical' && (
+                <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-3">
+                  <p className="text-sm text-gray-700 font-medium">
+                    Reset to astronomical calendar?
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleCancelConfirmation}
+                      disabled={sightingSaving}
+                      className="flex-1 text-sm text-gray-600 border border-gray-300 rounded-lg px-3 py-2 hover:bg-white disabled:opacity-50 min-h-[44px]"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => void handleConfirm()}
+                      disabled={sightingSaving}
+                      className="flex-1 text-sm font-medium text-white bg-gray-700 hover:bg-gray-800 rounded-lg px-3 py-2 disabled:opacity-50 min-h-[44px]"
                     >
                       {sightingSaving ? 'Saving…' : 'Confirm'}
                     </button>
@@ -464,7 +517,7 @@ export function RamadanEidPage() {
               </div>
 
               <p className="text-xs text-gray-500 font-medium">
-                Active nights: 21st–30th Ramadan
+                Active nights: 20th–29th Ramadan
               </p>
 
               <p className="text-xs text-gray-400">
@@ -516,14 +569,14 @@ export function RamadanEidPage() {
             if (existing) return new Date(existing.date + 'T12:00:00');
             return calculateEidDate(
               status ? new Date(status.gregorianDate + 'T12:00:00') : new Date(),
-              pendingLength === 29,
+              pendingChoice === 29,
               editingEidType === 'EID_AL_FITR' ? 'FITR' : 'ADHA',
             );
           })()}
           sunriseTime="06:00"
           hijriYear={status?.hijriYear ?? new Date().getFullYear()}
           hijriMonth={editingEidType === 'EID_AL_FITR' ? 9 : 11}
-          length={pendingLength ?? 29}
+          length={typeof pendingChoice === 'number' ? pendingChoice : 29}
           onSubmit={handleModalSubmit}
           onClose={handleModalClose}
         />

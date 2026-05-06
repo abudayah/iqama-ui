@@ -229,7 +229,7 @@ export function PrayerTable({
       {/* Header — date + Today/Tomorrow toggle */}
       <div className="flex items-center justify-between px-6 pt-6 pb-4 flex-shrink-0">
         <div>
-          <h3 className="text-xl font-bold text-gray-900">
+          <h3 className="text-l font-bold text-gray-900">
             {activeSchedule.hijri_date}
           </h3>
           <p className="text-sm text-gray-500 mt-1">{formatDisplayDate(activeSchedule.date, activeSchedule.day_of_week)}</p>
