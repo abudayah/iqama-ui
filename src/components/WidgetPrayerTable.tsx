@@ -31,12 +31,108 @@ const BILINGUAL_LABELS: Record<string, { en: string; ar: string }> = {
   asr: { en: 'Asr', ar: 'عصر' },
   maghrib: { en: 'Maghrib', ar: 'مغرب' },
   isha: { en: 'Isha', ar: 'عشاء' },
+  'eid-1': { en: '1st Eid', ar: 'عيد ١' },
+  'eid-2': { en: '2nd Eid', ar: 'عيد ٢' },
+  qiyam: { en: 'Qiyam', ar: 'قيام' },
 };
 
 // On Fridays, Dhuhr is replaced by the Jumuah (Friday) prayer
 const FRIDAY_DHUHR_LABEL = { en: 'Friday', ar: 'الجمعة' };
 
-const PRAYER_ORDER = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'] as const;
+// ─── Column descriptor ────────────────────────────────────────────────────────
+
+interface ColDef {
+  key: string; // unique key for React + IDs
+  labels: { en: string; ar: string };
+  azan: string; // time to show in Azan row
+  iqama: string | null; // time to show in Iqama row (null = dash)
+  eventKey: string; // matches PrayerEvent for highlight logic
+}
+
+// ─── Build column list from schedule ─────────────────────────────────────────
+
+function buildColumns(schedule: DailySchedule, isFriday: boolean): ColDef[] {
+  const cols: ColDef[] = [
+    {
+      key: 'fajr',
+      labels: BILINGUAL_LABELS['fajr']!,
+      azan: schedule.fajr.azan,
+      iqama: schedule.fajr.iqama,
+      eventKey: 'fajr',
+    },
+    {
+      key: 'sunrise',
+      labels: BILINGUAL_LABELS['sunrise']!,
+      azan: schedule.sunrise,
+      iqama: null,
+      eventKey: 'sunrise',
+    },
+  ];
+
+  // Eid prayers inserted after sunrise when present
+  if (schedule.eid_prayer_1) {
+    cols.push({
+      key: 'eid-1',
+      labels: BILINGUAL_LABELS['eid-1']!,
+      azan: schedule.eid_prayer_1,
+      iqama: null,
+      eventKey: 'eid-prayer-1',
+    });
+  }
+  if (schedule.eid_prayer_2) {
+    cols.push({
+      key: 'eid-2',
+      labels: BILINGUAL_LABELS['eid-2']!,
+      azan: schedule.eid_prayer_2,
+      iqama: null,
+      eventKey: 'eid-prayer-2',
+    });
+  }
+
+  cols.push(
+    {
+      key: 'dhuhr',
+      labels: isFriday ? FRIDAY_DHUHR_LABEL : BILINGUAL_LABELS['dhuhr']!,
+      azan: schedule.dhuhr.azan,
+      iqama: schedule.dhuhr.iqama,
+      eventKey: 'dhuhr',
+    },
+    {
+      key: 'asr',
+      labels: BILINGUAL_LABELS['asr']!,
+      azan: schedule.asr.azan,
+      iqama: schedule.asr.iqama,
+      eventKey: 'asr',
+    },
+    {
+      key: 'maghrib',
+      labels: BILINGUAL_LABELS['maghrib']!,
+      azan: schedule.maghrib.azan,
+      iqama: schedule.maghrib.iqama,
+      eventKey: 'maghrib',
+    },
+    {
+      key: 'isha',
+      labels: BILINGUAL_LABELS['isha']!,
+      azan: schedule.isha.azan,
+      iqama: schedule.isha.iqama,
+      eventKey: 'isha',
+    },
+  );
+
+  // Qiyam appended after Isha when present
+  if (schedule.qiyam_time) {
+    cols.push({
+      key: 'qiyam',
+      labels: BILINGUAL_LABELS['qiyam']!,
+      azan: schedule.qiyam_time,
+      iqama: null,
+      eventKey: 'qiyam',
+    });
+  }
+
+  return cols;
+}
 
 // ─── DaySection ──────────────────────────────────────────────────────────────
 
@@ -68,6 +164,8 @@ function DaySection({
     return 'text-gray-800';
   };
 
+  const isFriday = schedule.day_of_week === 'Friday';
+  const columns = buildColumns(schedule, isFriday);
   const sectionId = isToday ? 'widget-today' : 'widget-tomorrow';
 
   return (
@@ -99,24 +197,20 @@ function DaySection({
                 className="px-3 py-2 text-left text-sm font-semibold text-gray-400 uppercase w-24 min-w-[6rem]"
                 scope="col"
               />
-              {PRAYER_ORDER.map((prayerKey) => {
-                const labels =
-                  prayerKey === 'dhuhr' && schedule.day_of_week === 'Friday'
-                    ? FRIDAY_DHUHR_LABEL
-                    : BILINGUAL_LABELS[prayerKey]!;
+              {columns.map((col) => {
                 return (
                   <th
-                    key={prayerKey}
-                    id={`${sectionId}-col-${prayerKey}`}
+                    key={col.key}
+                    id={`${sectionId}-col-${col.key}`}
                     scope="col"
                     className={[
-                      'px-2 py-3 text-center text-sm font-semibold uppercase transition-colors duration-300',
-                      colHeader(prayerKey),
+                      'px-2 py-3 text-center text-base font-semibold uppercase transition-colors duration-300',
+                      colHeader(col.eventKey),
                     ].join(' ')}
                   >
-                    <span className="block">{labels.en}</span>
+                    <span className="block">{col.labels.en}</span>
                     <span className="block font-normal text-xs mt-0.5 opacity-75" lang="ar">
-                      {labels.ar}
+                      {col.labels.ar}
                     </span>
                   </th>
                 );
@@ -129,32 +223,25 @@ function DaySection({
               <th
                 id={`${sectionId}-row-azan-label`}
                 scope="row"
-                className="px-3 py-4 text-left text-sm font-semibold text-teal-600 uppercase whitespace-nowrap"
+                className="px-3 py-4 text-left text-base font-semibold text-teal-600 uppercase whitespace-nowrap"
               >
                 <span className="block">Azan</span>
                 <span className="block font-normal text-xs mt-0.5 opacity-80" lang="ar">
                   أذان
                 </span>
               </th>
-              {PRAYER_ORDER.map((prayerKey) => {
-                const isSunrise = prayerKey === 'sunrise';
-                const azanTime = isSunrise
-                  ? schedule.sunrise
-                  : (schedule[prayerKey as keyof DailySchedule] as { azan: string }).azan;
-
-                return (
-                  <td
-                    key={prayerKey}
-                    id={`${sectionId}-azan-${prayerKey}`}
-                    className={[
-                      'px-2 py-4 text-center tabular-nums text-base transition-colors duration-300',
-                      colCell(prayerKey),
-                    ].join(' ')}
-                  >
-                    {azanTime}
-                  </td>
-                );
-              })}
+              {columns.map((col) => (
+                <td
+                  key={col.key}
+                  id={`${sectionId}-azan-${col.key}`}
+                  className={[
+                    'px-2 py-4 text-center tabular-nums text-xl transition-colors duration-300',
+                    colCell(col.eventKey),
+                  ].join(' ')}
+                >
+                  {col.azan}
+                </td>
+              ))}
             </tr>
 
             {/* Iqama row */}
@@ -162,32 +249,25 @@ function DaySection({
               <th
                 id={`${sectionId}-row-iqama-label`}
                 scope="row"
-                className="px-3 py-4 text-left text-sm font-semibold text-teal-600 uppercase whitespace-nowrap"
+                className="px-3 py-4 text-left text-base font-semibold text-teal-600 uppercase whitespace-nowrap"
               >
                 <span className="block">Iqama</span>
                 <span className="block font-normal text-xs mt-0.5 opacity-80" lang="ar">
                   إقامة
                 </span>
               </th>
-              {PRAYER_ORDER.map((prayerKey) => {
-                const isSunrise = prayerKey === 'sunrise';
-                const iqamaTime = isSunrise
-                  ? null
-                  : (schedule[prayerKey as keyof DailySchedule] as { iqama: string }).iqama;
-
-                return (
-                  <td
-                    key={prayerKey}
-                    id={`${sectionId}-iqama-${prayerKey}`}
-                    className={[
-                      'px-2 py-4 text-center tabular-nums text-base transition-colors duration-300',
-                      colCell(prayerKey),
-                    ].join(' ')}
-                  >
-                    {iqamaTime ?? <span className="opacity-30">—</span>}
-                  </td>
-                );
-              })}
+              {columns.map((col) => (
+                <td
+                  key={col.key}
+                  id={`${sectionId}-iqama-${col.key}`}
+                  className={[
+                    'px-2 py-4 text-center tabular-nums text-xl transition-colors duration-300',
+                    colCell(col.eventKey),
+                  ].join(' ')}
+                >
+                  {col.iqama ?? <span className="opacity-30">—</span>}
+                </td>
+              ))}
             </tr>
           </tbody>
         </table>
