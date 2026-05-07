@@ -250,7 +250,7 @@ function DaySection({
               <th
                 id={`${sectionId}-row-azan-label`}
                 scope="row"
-                className="px-3 py-4 text-left text-sm font-bold uppercase whitespace-nowrap"
+                className="px-3 py-4 text-right text-sm font-bold uppercase whitespace-nowrap"
                 style={{ color: '#205072' }}
               >
                 <span className="block">Azan</span>
@@ -279,7 +279,7 @@ function DaySection({
               <th
                 id={`${sectionId}-row-iqama-label`}
                 scope="row"
-                className="px-3 py-4 text-left text-sm font-bold uppercase whitespace-nowrap"
+                className="px-3 py-4 text-right text-sm font-bold uppercase whitespace-nowrap"
                 style={{ color: '#329D9C' }}
               >
                 <span className="block">Iqama</span>
