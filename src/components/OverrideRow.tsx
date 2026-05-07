@@ -1,6 +1,21 @@
 import type { Override } from '../types/index';
 import { isActive } from '../logic/is-active';
 
+function formatDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return '—';
+  const datePart = dateStr.split('T')[0]; // handle ISO timestamps like 2026-05-04T00:00:00.000Z
+  const parts = datePart.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(isNaN)) return dateStr;
+  const [year, month, day] = parts;
+  const date = new Date(year, month - 1, day);
+  if (isNaN(date.getTime())) return dateStr;
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
+}
+
 interface OverrideRowProps {
   override: Override;
   today: string;
@@ -41,7 +56,8 @@ export function OverrideRow({ override, today, onEdit, onDelete }: OverrideRowPr
           </span>
         </div>
         <p className="text-xs text-gray-500 mt-0.5">
-          {override.overrideType}: {override.value} · {override.startDate} – {override.endDate}
+          {override.overrideType}: {override.value} · {formatDate(override.startDate)} –{' '}
+          {formatDate(override.endDate)}
         </p>
       </div>
       <div className="flex gap-2 ml-2">
