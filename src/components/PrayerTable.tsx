@@ -65,6 +65,7 @@ function DayRows({
   nextPrayer,
   isToday,
   countdownMode,
+  tick: _tick,
   onPeekPrayer,
   peekedPrayer,
 }: {
@@ -72,6 +73,7 @@ function DayRows({
   nextPrayer: PrayerEvent | null;
   isToday: boolean;
   countdownMode: CountdownMode;
+  tick: number;
   onPeekPrayer?:
     | ((prayer: PeekTarget, schedule: DailySchedule, label?: string) => void)
     | undefined;
@@ -162,19 +164,22 @@ function DayRows({
       )}
 
       {/* Remaining prayers */}
-      {PRAYERS.filter((p) => p !== 'fajr').map((prayer) => (
-        <PrayerRow
-          key={prayer}
-          name={prayer}
-          label={prayer === 'dhuhr' && schedule.day_of_week === 'Friday' ? 'Friday' : undefined}
-          entry={schedule[prayer]}
-          isNext={isToday && nextPrayer === prayer}
-          isActive={activePrayer === prayer}
-          isPast={isToday && isPrayerPast(schedule, prayer, now) && nextPrayer !== prayer}
-          isPeeked={peekedPrayer === prayer}
-          onTap={canPeekPrayer(prayer) ? () => onPeekPrayer!(prayer, schedule) : undefined}
-        />
-      ))}
+      {PRAYERS.filter((p) => p !== 'fajr').map((prayer) => {
+        const isFridayDhuhr = prayer === 'dhuhr' && schedule.day_of_week === 'Friday';
+        return (
+          <PrayerRow
+            key={prayer}
+            name={prayer}
+            {...(isFridayDhuhr ? { label: 'Friday' } : {})}
+            entry={schedule[prayer]}
+            isNext={isToday && nextPrayer === prayer}
+            isActive={activePrayer === prayer}
+            isPast={isToday && isPrayerPast(schedule, prayer, now) && nextPrayer !== prayer}
+            isPeeked={peekedPrayer === prayer}
+            onTap={canPeekPrayer(prayer) ? () => onPeekPrayer!(prayer, schedule) : undefined}
+          />
+        );
+      })}
 
       {/* Qiyam al-Layl row — injected by backend on Hijri days 20–29 of Ramadan */}
       {schedule.qiyam_time && (
@@ -198,7 +203,7 @@ export function PrayerTable({
   nextPrayer,
   activeTab,
   onTabChange,
-  tick: _tick = 0,
+  tick = 0,
   countdownMode = 'done',
   onPeekPrayer,
   peekedPrayer,
@@ -318,6 +323,7 @@ export function PrayerTable({
               nextPrayer={nextPrayer}
               isToday={true}
               countdownMode={countdownMode}
+              tick={tick}
               onPeekPrayer={onPeekPrayer}
               peekedPrayer={peekedPrayer}
             />
@@ -331,6 +337,7 @@ export function PrayerTable({
                 nextPrayer={null}
                 isToday={false}
                 countdownMode="done"
+                tick={tick}
                 onPeekPrayer={onPeekPrayer}
                 peekedPrayer={peekedPrayer}
               />

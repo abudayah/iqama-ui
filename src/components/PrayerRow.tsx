@@ -10,7 +10,7 @@ interface PrayerRowProps {
   /** True when this prayer is currently being peeked in the hero */
   isPeeked: boolean;
   /** Override the display label (used for Eid prayer rows) */
-  label?: string;
+  label?: string | undefined;
   /** Called when the row is tapped (only provided for future prayers) */
   onTap?: (() => void) | undefined;
 }
@@ -48,6 +48,16 @@ export function PrayerRow({
   const dotColor = DOT_COLORS[name] ?? '#6b7280';
   const iqamaValue = 'iqama' in entry && entry.iqama ? entry.iqama : null;
 
+  const highlightStyle = isActive
+    ? { backgroundColor: 'rgba(248, 180, 0, 0.3)' }
+    : isNext
+      ? {
+          backgroundColor: 'rgba(248, 180, 0, 0.1)',
+          borderLeft: '1px solid #ffe7b3',
+          borderRight: '1px solid #ffe7b3',
+        }
+      : {};
+
   return (
     <div
       role={onTap ? 'button' : undefined}
@@ -56,11 +66,12 @@ export function PrayerRow({
       onClick={onTap}
       className={[
         'flex items-center justify-between px-3 py-[18px]',
-        isNext ? 'bg-blue-50 rounded-2xl' : '',
+        isNext || isActive ? 'rounded-2xl' : '',
         isPeeked ? 'bg-indigo-50 rounded-2xl ring-1 ring-indigo-200' : '',
         isPast ? 'opacity-40' : '',
         onTap ? 'cursor-pointer active:opacity-70' : '',
       ].join(' ')}
+      style={highlightStyle}
       data-testid={`prayer-row-${name}`}
       aria-current={isNext ? 'true' : undefined}
     >
@@ -76,7 +87,7 @@ export function PrayerRow({
         <span
           className="text-[1.05rem]"
           style={{
-            fontWeight: isNext ? 700 : 500,
+            fontWeight: isNext || isActive ? 700 : 500,
             color: isNext ? '#1e6c93' : isSunrise ? '#6b7280' : '#374151',
             fontStyle: isSunrise ? 'italic' : undefined,
           }}
@@ -89,16 +100,10 @@ export function PrayerRow({
 
       {/* Right: azan + iqama times */}
       <div className="flex gap-6 tabular-nums">
-        <span
-          className="text-[1.05rem] font-semibold"
-          style={{ color: isNext ? '#1e6c93' : '#1e6c93', opacity: isNext ? 1 : 0.55 }}
-        >
+        <span className="text-[1.05rem] font-semibold" style={{ color: '#205072' }}>
           {entry.azan}
         </span>
-        <span
-          className="text-[1.05rem] font-semibold"
-          style={{ color: isNext ? '#2ca58d' : '#2ca58d', opacity: isNext ? 1 : 0.55 }}
-        >
+        <span className="text-[1.05rem] font-semibold" style={{ color: '#329D9C' }}>
           {iqamaValue ?? ''}
         </span>
       </div>

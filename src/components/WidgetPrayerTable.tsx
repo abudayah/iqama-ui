@@ -165,6 +165,14 @@ function DaySection({
     return '';
   };
 
+  const isPastCol = (azanTime: string, prayerKey: string): boolean => {
+    if (!isToday || nextPrayerKey === prayerKey) return false;
+    const now = new Date();
+    const [y, mo, d] = schedule.date.split('-').map(Number);
+    const [h, m] = azanTime.split(':').map(Number);
+    return new Date(y!, mo! - 1, d!, h!, m!, 0, 0) <= now;
+  };
+
   const colBg = (prayerKey: string): React.CSSProperties => {
     if (nextPrayerKey === prayerKey && isActive)
       return {
@@ -223,6 +231,7 @@ function DaySection({
                     className={[
                       'px-2 py-3 text-center text-base font-semibold uppercase transition-colors duration-300',
                       colHeader(col.eventKey),
+                      isPastCol(col.azan, col.eventKey) ? 'opacity-40' : '',
                     ].join(' ')}
                     style={colBg(col.eventKey)}
                   >
@@ -256,6 +265,7 @@ function DaySection({
                   className={[
                     'px-2 py-4 text-center tabular-nums text-xl transition-colors duration-300',
                     colCell(col.eventKey),
+                    isPastCol(col.azan, col.eventKey) ? 'opacity-40' : '',
                   ].join(' ')}
                   style={{ color: '#205072', ...colBg(col.eventKey) }}
                 >
@@ -284,6 +294,7 @@ function DaySection({
                   className={[
                     'px-2 py-4 text-center tabular-nums text-xl transition-colors duration-300',
                     colCell(col.eventKey),
+                    isPastCol(col.azan, col.eventKey) ? 'opacity-40' : '',
                   ].join(' ')}
                   style={{ color: '#329D9C', ...colBg(col.eventKey) }}
                 >
