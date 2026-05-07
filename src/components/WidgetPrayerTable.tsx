@@ -1,3 +1,4 @@
+import React from 'react';
 import type { DailySchedule } from '../types/index';
 import type { PrayerEvent } from '../logic/derive-next-prayer';
 import type { CountdownMode } from '../hooks/usePrayerContext';
@@ -153,15 +154,31 @@ function DaySection({
 
   // Column style helpers
   const colHeader = (prayerKey: string) => {
-    if (nextPrayerKey === prayerKey && isActive) return 'bg-teal-600 text-white';
-    if (nextPrayerKey === prayerKey && isNext) return 'bg-teal-50 text-teal-700';
-    return 'text-gray-500';
+    if (nextPrayerKey === prayerKey && isActive) return 'bg-slate-100'; // bg handled via inline style
+    if (nextPrayerKey === prayerKey && isNext) return 'bg-slate-100'; // bg handled via inline style
+    return 'bg-slate-100 text-gray-500';
   };
 
   const colCell = (prayerKey: string) => {
-    if (nextPrayerKey === prayerKey && isActive) return 'bg-teal-600 text-white font-bold';
-    if (nextPrayerKey === prayerKey && isNext) return 'bg-teal-50 text-teal-800 font-semibold';
-    return 'text-gray-800';
+    if (nextPrayerKey === prayerKey && isActive) return 'font-bold';
+    if (nextPrayerKey === prayerKey && isNext) return 'font-semibold';
+    return '';
+  };
+
+  const colBg = (prayerKey: string): React.CSSProperties => {
+    if (nextPrayerKey === prayerKey && isActive)
+      return {
+        backgroundColor: 'rgba(248, 180, 0, 0.2)',
+        borderLeft: '1px solid #ffdd93ff',
+        borderRight: '1px solid #ffdd93ff',
+      };
+    if (nextPrayerKey === prayerKey && isNext)
+      return {
+        backgroundColor: 'rgba(248, 180, 0, 0.1)',
+        borderLeft: '1px solid #ffe7b3',
+        borderRight: '1px solid #ffe7b3',
+      };
+    return {};
   };
 
   const isFriday = schedule.day_of_week === 'Friday';
@@ -191,10 +208,10 @@ function DaySection({
       <div className="overflow-x-auto flex-1">
         <table id={`${sectionId}-table`} className="w-full h-full border-collapse min-w-[520px]">
           <thead>
-            <tr id={`${sectionId}-col-headers`}>
+            <tr id={`${sectionId}-col-headers`} className="bg-slate-100">
               {/* Row-label header cell (top-left corner) */}
               <th
-                className="px-3 py-2 text-left text-sm font-semibold text-gray-400 uppercase w-24 min-w-[6rem]"
+                className="px-3 py-2 text-left text-sm font-semibold text-gray-400 uppercase w-24 min-w-[6rem] bg-slate-100"
                 scope="col"
               />
               {columns.map((col) => {
@@ -207,6 +224,7 @@ function DaySection({
                       'px-2 py-3 text-center text-base font-semibold uppercase transition-colors duration-300',
                       colHeader(col.eventKey),
                     ].join(' ')}
+                    style={colBg(col.eventKey)}
                   >
                     <span className="block">{col.labels.en}</span>
                     <span className="block font-normal text-xs mt-0.5 opacity-75" lang="ar">
@@ -223,7 +241,8 @@ function DaySection({
               <th
                 id={`${sectionId}-row-azan-label`}
                 scope="row"
-                className="px-3 py-4 text-left text-base font-semibold text-teal-600 uppercase whitespace-nowrap"
+                className="px-3 py-4 text-left text-sm font-bold uppercase whitespace-nowrap"
+                style={{ color: '#205072' }}
               >
                 <span className="block">Azan</span>
                 <span className="block font-normal text-xs mt-0.5 opacity-80" lang="ar">
@@ -238,6 +257,7 @@ function DaySection({
                     'px-2 py-4 text-center tabular-nums text-xl transition-colors duration-300',
                     colCell(col.eventKey),
                   ].join(' ')}
+                  style={{ color: '#205072', ...colBg(col.eventKey) }}
                 >
                   {col.azan}
                 </td>
@@ -249,7 +269,8 @@ function DaySection({
               <th
                 id={`${sectionId}-row-iqama-label`}
                 scope="row"
-                className="px-3 py-4 text-left text-base font-semibold text-teal-600 uppercase whitespace-nowrap"
+                className="px-3 py-4 text-left text-sm font-bold uppercase whitespace-nowrap"
+                style={{ color: '#329D9C' }}
               >
                 <span className="block">Iqama</span>
                 <span className="block font-normal text-xs mt-0.5 opacity-80" lang="ar">
@@ -264,6 +285,7 @@ function DaySection({
                     'px-2 py-4 text-center tabular-nums text-xl transition-colors duration-300',
                     colCell(col.eventKey),
                   ].join(' ')}
+                  style={{ color: '#329D9C', ...colBg(col.eventKey) }}
                 >
                   {col.iqama ?? <span className="opacity-30">—</span>}
                 </td>
