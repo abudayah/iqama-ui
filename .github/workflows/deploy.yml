@@ -32,17 +32,17 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -p 22 ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy static files to server
         run: |
           rsync -avz --delete \
-            -e "ssh -p ${{ secrets.SSH_PORT }}" \
+            -e "ssh -p 22" \
             dist/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.DEPLOY_PATH }}/
 
       - name: Write .htaccess for React Router
         run: |
-          ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+          ssh -p 22 ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
           cat > ${{ secrets.DEPLOY_PATH }}/.htaccess << 'HTACCESS'
           RewriteEngine On
           RewriteBase /
