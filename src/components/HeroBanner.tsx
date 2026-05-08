@@ -323,32 +323,45 @@ function computeCelestial(
   sunriseMin: number,
   maghribMin: number,
 ): CelestialState {
-  const SUN_FADE_MINS = 5; // fade out near maghrib
+  // Sunrise: sun fades in from opacity 0 at sunriseMin to opacity 1 at sunriseMin+RISE_MINS
+  //          position follows the arc from t=0 (horizon left)
+  // Sunset:  sun physically sinks behind mountains over SET_MINS before maghrib, opacity stays 1
+  //          then hidden after maghrib
+  const RISE_MINS = 21; // minutes after sunrise until fully visible
+  const SET_MINS = 15; // minutes before maghrib when sun starts sinking
 
-  // ── Sun: visible from sunrise up to (but not including) maghrib ──
+  const daySpan = maghribMin - sunriseMin;
+
+  // ── Sun: show from fajr through maghrib ──
   if (nowMin >= fajrMin && nowMin < maghribMin) {
-    const daySpan = maghribMin - sunriseMin;
-
     let leftPct: number;
     let topPct: number;
     let opacity: number;
 
     if (nowMin < sunriseMin) {
-      // Before sunrise: sun is below the horizon, not yet visible
-      const { leftPct: lp, topPct: _tp } = sunArc(0);
+      // Before sunrise: hidden below mountains
+      const { leftPct: lp } = sunArc(0);
       leftPct = lp;
-      topPct = HORIZON_PCT + 10; // below the mountain line
+      topPct = HORIZON_PCT + 10;
       opacity = 0;
-    } else if (nowMin >= maghribMin - SUN_FADE_MINS) {
-      // Approaching maghrib: sun dives behind the mountains, opacity stays 1
+    } else if (nowMin < sunriseMin + RISE_MINS) {
+      // Sunrise: sun physically rises from behind mountains, opacity stays 1
+      const rawT = daySpan > 0 ? (nowMin - sunriseMin) / daySpan : 0;
+      const arc = sunArc(rawT);
+      leftPct = arc.leftPct;
+      const riseFrac = (nowMin - sunriseMin) / RISE_MINS; // 0→1
+      topPct = HORIZON_PCT + 10 + (arc.topPct - (HORIZON_PCT + 10)) * riseFrac;
+      opacity = 1;
+    } else if (nowMin >= maghribMin - SET_MINS) {
+      // Sunset: sun sinks behind mountains, opacity stays 1
       const rawT = daySpan > 0 ? (nowMin - sunriseMin) / daySpan : 0;
       const arc = sunArc(Math.min(rawT, 1));
       leftPct = arc.leftPct;
-      const sinkFrac = (nowMin - (maghribMin - SUN_FADE_MINS)) / SUN_FADE_MINS; // 0→1
+      const sinkFrac = (nowMin - (maghribMin - SET_MINS)) / SET_MINS; // 0→1
       topPct = arc.topPct + (HORIZON_PCT + 10 - arc.topPct) * sinkFrac;
       opacity = 1;
     } else {
-      // Normal daytime: sun travels the arc
+      // Normal daytime: arc position, fully visible
       const rawT = daySpan > 0 ? (nowMin - sunriseMin) / daySpan : 0;
       const arc = sunArc(rawT);
       leftPct = arc.leftPct;
@@ -356,8 +369,8 @@ function computeCelestial(
       opacity = 1;
     }
 
-    // Sun colour: warm orange near horizon, white-yellow at peak
-    const horizonProximity = Math.abs(topPct - HORIZON_PCT) / (HORIZON_PCT - 8);
+    // Colour: warm orange near horizon, pale yellow at peak
+    const horizonProximity = Math.max(0, Math.min(1, (HORIZON_PCT - topPct) / (HORIZON_PCT - 8)));
     const color = lerpColor('#ffb347', '#fff4ca', horizonProximity);
 
     return { leftPct, topPct, color, opacity, showSun: true };
