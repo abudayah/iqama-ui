@@ -29,6 +29,8 @@ interface HeroBannerProps {
   peekSchedule?: DailySchedule | null;
   /** Optional label override for the peeked target (used for Eid prayer rows) */
   peekLabel?: string | null;
+  /** Compact mode — reduces sun/moon size for wide/short banner layouts (e.g. widget) */
+  compact?: boolean;
 }
 
 /* ─── Constants ─────────────────────────────────────────────────────────────── */
@@ -443,6 +445,7 @@ export function HeroBanner({
   peekPrayer,
   peekSchedule,
   peekLabel,
+  compact = false,
 }: HeroBannerProps) {
   const now = simulatedNow ?? new Date();
   const nowMin = nowMinutes(now);
@@ -693,10 +696,10 @@ export function HeroBanner({
               top: `${cel.topPct}%`,
               left: `${cel.leftPct}%`,
               transform: 'translate(-50%, -50%)',
-              width: 70,
-              height: 70,
+              width: compact ? 54 : 70,
+              height: compact ? 54 : 70,
               background: cel.color,
-              boxShadow: `0 0 50px 14px ${cel.color}`,
+              boxShadow: `0 0 ${compact ? 24 : 50}px ${compact ? 8 : 14}px ${cel.color}`,
               opacity: cel.opacity,
               transition: isPeeking ? 'top 0.6s ease-out, left 0.6s ease-out' : undefined,
             }}
@@ -712,8 +715,8 @@ export function HeroBanner({
               top: `${moonTopPct}%`,
               left: `${cel.leftPct}%`,
               transform: 'translate(-50%, -50%)',
-              width: 80,
-              height: 80,
+              width: compact ? 64 : 80,
+              height: compact ? 64 : 80,
               filter: glowFilter,
               opacity: 1,
               transition: isPeeking ? 'top 0.6s ease-out' : 'top 2s ease-out',

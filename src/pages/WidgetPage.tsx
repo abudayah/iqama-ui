@@ -25,7 +25,7 @@ export function WidgetPage() {
     >
       {/* Hero — constrained to 28vh; inline style override targets the banner's hardcoded height */}
       <style>{`#widget-hero #prayer-hero-banner { height: 100% !important; }`}</style>
-      <div id="widget-hero" className="shrink-0 overflow-hidden" style={{ height: '28vh' }}>
+      <div id="widget-hero" className="shrink-0 overflow-hidden" style={{ height: '32vh' }}>
         <HeroBanner
           nextPrayer={nextPrayer}
           countdown={countdown}
@@ -36,6 +36,7 @@ export function WidgetPage() {
           hijriMonth={hijriMonth}
           tick={tick}
           simulatedNow={isSimulating ? simNow : undefined}
+          compact
         />
       </div>
 
