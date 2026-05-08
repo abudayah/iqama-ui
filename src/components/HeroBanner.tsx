@@ -293,10 +293,11 @@ interface CelestialState {
 const HORIZON_PCT = 67; // % from top where sun/moon meet the mountain line
 
 function sunArc(t: number): { leftPct: number; topPct: number } {
-  // Quadratic bezier: rise(5, HORIZON) → apex(50, 8) → set(95, HORIZON)
-  const p0 = { x: 5, y: HORIZON_PCT };
+  // Quadratic bezier: rise(5, HORIZON-10) → apex(50, 8) → set(95, HORIZON-10)
+  const riseSetY = HORIZON_PCT - 22;
+  const p0 = { x: 20, y: riseSetY };
   const p1 = { x: 50, y: 8 };
-  const p2 = { x: 95, y: HORIZON_PCT };
+  const p2 = { x: 80, y: riseSetY };
   const tc = Math.max(0, Math.min(1, t));
   const mt = 1 - tc;
   return {
@@ -322,25 +323,41 @@ function computeCelestial(
   sunriseMin: number,
   maghribMin: number,
 ): CelestialState {
-  const SUN_FADE_MINS = 20; // fade in/out near horizon for the sun
+  const SUN_FADE_MINS = 5; // fade out near maghrib
 
-  // ── Sun: visible from fajr up to (but not including) maghrib ──
+  // ── Sun: visible from sunrise up to (but not including) maghrib ──
   if (nowMin >= fajrMin && nowMin < maghribMin) {
-    // t=0 at sunrise, t=1 at maghrib (sun is below horizon before sunrise)
     const daySpan = maghribMin - sunriseMin;
-    const rawT = daySpan > 0 ? (nowMin - sunriseMin) / daySpan : 0;
-    const { leftPct, topPct } = sunArc(rawT);
 
-    // Fade in from fajr→sunrise, fade out near maghrib
-    let opacity = 1;
+    let leftPct: number;
+    let topPct: number;
+    let opacity: number;
+
     if (nowMin < sunriseMin) {
-      opacity = Math.max(0, (nowMin - fajrMin) / SUN_FADE_MINS);
-    } else if (nowMin > maghribMin - SUN_FADE_MINS) {
-      opacity = Math.max(0, (maghribMin - nowMin) / SUN_FADE_MINS);
+      // Before sunrise: sun is below the horizon, not yet visible
+      const { leftPct: lp, topPct: _tp } = sunArc(0);
+      leftPct = lp;
+      topPct = HORIZON_PCT + 10; // below the mountain line
+      opacity = 0;
+    } else if (nowMin >= maghribMin - SUN_FADE_MINS) {
+      // Approaching maghrib: sun dives behind the mountains, opacity stays 1
+      const rawT = daySpan > 0 ? (nowMin - sunriseMin) / daySpan : 0;
+      const arc = sunArc(Math.min(rawT, 1));
+      leftPct = arc.leftPct;
+      const sinkFrac = (nowMin - (maghribMin - SUN_FADE_MINS)) / SUN_FADE_MINS; // 0→1
+      topPct = arc.topPct + (HORIZON_PCT + 10 - arc.topPct) * sinkFrac;
+      opacity = 1;
+    } else {
+      // Normal daytime: sun travels the arc
+      const rawT = daySpan > 0 ? (nowMin - sunriseMin) / daySpan : 0;
+      const arc = sunArc(rawT);
+      leftPct = arc.leftPct;
+      topPct = arc.topPct;
+      opacity = 1;
     }
 
     // Sun colour: warm orange near horizon, white-yellow at peak
-    const horizonProximity = Math.abs(topPct - HORIZON_PCT) / (HORIZON_PCT - 8); // 0=horizon, 1=peak
+    const horizonProximity = Math.abs(topPct - HORIZON_PCT) / (HORIZON_PCT - 8);
     const color = lerpColor('#ffb347', '#fff4ca', horizonProximity);
 
     return { leftPct, topPct, color, opacity, showSun: true };
@@ -450,8 +467,8 @@ export function HeroBanner({
   const mtnKeyframes = buildMtnKeyframes(fajrMin, sunriseMin, maghribMin, ishaMin);
   const mtn = interpolateMtn(mtnKeyframes, skyMin);
 
-  /* ── Celestial body — rounded to nearest minute so position only updates once/min ── */
-  const celMin = isPeeking ? skyMin : Math.floor(nowMin);
+  /* ── Celestial body — uses full precision (with seconds) so sunrise/sunset trigger exactly on time ── */
+  const celMin = isPeeking ? skyMin : nowMin;
   const cel = computeCelestial(celMin, fajrMin, sunriseMin, maghribMin);
 
   /* ── Stars — only computed once schedule is available ── */
@@ -668,9 +685,7 @@ export function HeroBanner({
               background: cel.color,
               boxShadow: `0 0 50px 14px ${cel.color}`,
               opacity: cel.opacity,
-              transition: isPeeking
-                ? 'top 0.6s ease-out, left 0.6s ease-out'
-                : 'top 62s linear, left 62s linear, opacity 20s linear, background 62s linear',
+              transition: isPeeking ? 'top 0.6s ease-out, left 0.6s ease-out' : undefined,
             }}
             aria-hidden="true"
           />
