@@ -1,25 +1,24 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYMENT_PATH=/home2/theisbcc/public_html/iqama-ui
+    - export DEPLOY=/home2/theisbcc/iqama.theisbc.ca
 
-    # 1. Install and Build
-    # Using 'npm install' if 'npm ci' fails due to lockfile mismatches on the server
+    # Install all dependencies (devDependencies needed for build)
     - npm install
+
+    # Build the Vite app
     - npm run build
 
-    # 2. Clean and Deploy
-    # It's safer to use rsync to avoid downtime during the 'rm -rf' phase
-    - /usr/bin/rsync -avz --delete dist/ $DEPLOYMENT_PATH/
+    # Deploy built files to the document root
+    - /usr/bin/rsync -avz --delete dist/ $DEPLOY/
 
-    # 3. Ensure .htaccess is present for React Routing
-    # This prevents 404s on page refresh
+    # Create .htaccess for React Router (client-side routing)
     - |
-      if [ ! -f $DEPLOYMENT_PATH/.htaccess ]; then
-        echo "RewriteEngine On
-        RewriteBase /
-        RewriteRule ^index\.html$ - [L]
-        RewriteCond %{REQUEST_FILENAME} !-f
-        RewriteCond %{REQUEST_FILENAME} !-d
-        RewriteRule . /index.html [L]" > $DEPLOYMENT_PATH/.htaccess
-      fi
+      cat > $DEPLOY/.htaccess << 'EOF'
+      RewriteEngine On
+      RewriteBase /
+      RewriteRule ^index\.html$ - [L]
+      RewriteCond %{REQUEST_FILENAME} !-f
+      RewriteCond %{REQUEST_FILENAME} !-d
+      RewriteRule . /index.html [L]
+      EOF
