@@ -647,7 +647,25 @@ export function HeroBanner({
               pointerEvents: 'none',
             }}
           >
-            {STARS.map((star, i) => (
+            {STARS.filter((star) => {
+              // Skip stars behind the moon disc.
+              // Moon center: leftPct=72%, topPct=moonTopPct% (of 300px banner height).
+              // Moon diameter: 80px (compact: 64px). Banner height: 300px.
+              // Convert moon radius to % of banner height for the Y axis.
+              // Stars use x: 0–100% of width, y: 0–58% of height.
+              const moonX = cel.leftPct; // 72%
+              const moonY = moonTopPct; // % of banner height
+              const moonDiameterPx = compact ? 64 : 80;
+              const moonRadiusYPct = (moonDiameterPx / 2 / 300) * 100; // ~13.3% (normal) or ~10.7% (compact)
+              // X axis: we don't know the container width, so use a generous fixed exclusion
+              // that covers the moon at typical banner widths (300–500px).
+              // At 300px wide: 80px radius = 26.7% of width. At 500px: 16%. Use 20% as a safe middle.
+              const moonRadiusXPct = compact ? 14 : 18;
+              return (
+                Math.abs(star.x - moonX) > moonRadiusXPct ||
+                Math.abs(star.y - moonY) > moonRadiusYPct
+              );
+            }).map((star, i) => (
               <circle
                 key={i}
                 cx={`${star.x}%`}
