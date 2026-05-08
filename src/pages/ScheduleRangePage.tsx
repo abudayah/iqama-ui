@@ -1,13 +1,21 @@
 import { useState } from 'react';
 import { useScheduleRange } from '../hooks/useScheduleRange';
 import { useOverrides } from '../hooks/useOverrides';
-import { DateRangePicker } from '../components/DateRangePicker';
+import { WeekSelect } from '../components/WeekSelect';
 import { ScheduleRangeTable } from '../components/ScheduleRangeTable';
 
-function getDefaultRange(): { start: string; end: string } {
+/** Return the Friday→Thursday week that contains today. */
+function getCurrentWeek(): { start: string; end: string } {
   const today = new Date();
-  const end = new Date(today);
-  end.setDate(today.getDate() + 6);
+  const dayOfWeek = today.getDay(); // 0=Sun … 5=Fri … 6=Sat
+  // Days since last Friday: Fri=0, Sat=1, Sun=2, Mon=3, Tue=4, Wed=5, Thu=6
+  const daysSinceFriday = (dayOfWeek + 2) % 7;
+
+  const friday = new Date(today);
+  friday.setDate(today.getDate() - daysSinceFriday);
+
+  const thursday = new Date(friday);
+  thursday.setDate(friday.getDate() + 6);
 
   const fmt = (d: Date) => {
     const y = d.getFullYear();
@@ -16,25 +24,28 @@ function getDefaultRange(): { start: string; end: string } {
     return `${y}-${m}-${day}`;
   };
 
-  return { start: fmt(today), end: fmt(end) };
+  return { start: fmt(friday), end: fmt(thursday) };
 }
 
 export function ScheduleRangePage() {
-  const defaultRange = getDefaultRange();
-  const [start, setStart] = useState(defaultRange.start);
-  const [end, setEnd] = useState(defaultRange.end);
+  const defaultWeek = getCurrentWeek();
+  const [start, setStart] = useState(defaultWeek.start);
+  const [end, setEnd] = useState(defaultWeek.end);
 
   const { data: schedules, loading, error } = useScheduleRange(start, end);
   const { overrides } = useOverrides();
 
-  const handleRangeChange = (newStart: string, newEnd: string) => {
+  function handleWeekChange(newStart: string, newEnd: string) {
     setStart(newStart);
     setEnd(newEnd);
-  };
+  }
 
   return (
     <div id="schedule-range-page">
-      <DateRangePicker start={start} end={end} onRangeChange={handleRangeChange} />
+      <div className="p-4 bg-white border-b border-gray-200">
+        <label className="block text-xs text-gray-500 mb-1">Week</label>
+        <WeekSelect start={start} end={end} onWeekChange={handleWeekChange} />
+      </div>
       <div id="schedule-range-content" className="p-4">
         <ScheduleRangeTable
           schedules={schedules}
