@@ -1,0 +1,25 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYMENT_PATH=/home2/theisbcc/public_html/iqama-ui
+
+    # 1. Install and Build
+    # Using 'npm install' if 'npm ci' fails due to lockfile mismatches on the server
+    - npm install
+    - npm run build
+
+    # 2. Clean and Deploy
+    # It's safer to use rsync to avoid downtime during the 'rm -rf' phase
+    - /usr/bin/rsync -avz --delete dist/ $DEPLOYMENT_PATH/
+
+    # 3. Ensure .htaccess is present for React Routing
+    # This prevents 404s on page refresh
+    - |
+      if [ ! -f $DEPLOYMENT_PATH/.htaccess ]; then
+        echo "RewriteEngine On
+        RewriteBase /
+        RewriteRule ^index\.html$ - [L]
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteRule . /index.html [L]" > $DEPLOYMENT_PATH/.htaccess
+      fi
