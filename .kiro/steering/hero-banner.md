@@ -54,19 +54,62 @@ Three SVG mountain silhouettes (back, mid, front) are tinted using the same keyf
 
 A fourth "mist" layer (semi-transparent white) sits between the back and mid mountains for depth.
 
-The mountain SVG is `position: absolute; bottom: -2px` and 170px tall, covering the lower portion of the 300px banner. The visual horizon sits at ~67% from the top (`HORIZON_PCT = 67`).
+The mountain SVG is `position: absolute; bottom: -2px` and `170px` tall by default (or `90px` in compact mode), covering the lower portion of the 300px banner. The visual horizon sits at ~67% from the top (`HORIZON_PCT = 67`).
 
 ---
 
 ## Sun
 
-Visible from **Fajr** to **Maghrib**.
+Visible from **Fajr** to **Maghrib** (hidden at all other times).
 
-- Travels a **quadratic Bézier arc**: rises at left=5%/top=67%, peaks at left=50%/top=8%, sets at left=95%/top=67%
-- `t = (nowMin − sunriseMin) / (maghribMin − sunriseMin)` maps 0→1 across the day
-- **Colour**: interpolates from warm orange (`#ffb347`) near the horizon to pale yellow (`#fff4ca`) at peak
-- **Opacity**: fades in over 20 min after Fajr, fades out over 20 min before Maghrib
-- **Transition**: `top 62s linear, left 62s linear` — position is computed from `celMin` (floored to the nearest whole minute) so it only changes once per minute. The 62s transition carries the sun smoothly to the next position before the next update arrives, giving continuous motion with zero per-second jumps. In peek mode, `0.6s ease-out` is used for a snappy response.
+### Arc
+
+The sun travels a **quadratic Bézier arc** from left to right across the sky:
+
+- **Rise point** (`t=0`): `left=20%, top=45%` — left side, just above the mountain horizon
+- **Apex** (`t=0.5`): `left=50%, top=8%` — center, high in the sky (solar noon)
+- **Set point** (`t=1`): `left=80%, top=45%` — right side, just above the mountain horizon
+
+`t` is computed as `(nowMin − sunriseMin) / (maghribMin − sunriseMin + SET_MINS)` — see sunrise/sunset windows below.
+
+**Color**: interpolates from warm orange (`#ffb347`) near the horizon to pale yellow (`#fff4ca`) at peak, based on vertical distance from `HORIZON_PCT`.
+
+**No CSS transition** on position — the sun snaps to its time-computed position every second tick. In peek mode, `0.6s ease-out` is used for a snappy jump.
+
+### Sunrise window (`RISE_MINS = 21`)
+
+The sun physically rises from behind the mountains over 21 minutes after sunrise:
+
+| Time | Position | Opacity |
+|---|---|---|
+| Before `sunriseMin` | Below mountains (`topPct = HORIZON_PCT + 10`) | 0 — hidden |
+| `sunriseMin` | At mountain line, beginning to emerge | 1 — visible but low |
+| `sunriseMin + 7min` | One-third up toward arc position | 1 |
+| `sunriseMin + 14min` | Two-thirds up | 1 |
+| `sunriseMin + 21min` | Fully at arc position | 1 |
+
+`topPct` is linearly interpolated from `HORIZON_PCT + 10` down to the arc's `topPct` over `RISE_MINS`. Opacity stays `1` throughout — this is a **position-only** emergence, not a fade.
+
+### Sunset window (`SET_MINS = 15`)
+
+The sun physically sinks behind the mountains over 15 minutes before Maghrib:
+
+| Time | Position | Opacity |
+|---|---|---|
+| `maghribMin − 15min` | At arc position, fully visible | 1 |
+| `maghribMin − 7min` | Halfway between arc and mountain line | 1 |
+| `maghribMin` | Below mountains (`topPct = HORIZON_PCT + 10`) | 1 — hidden |
+
+`topPct` is linearly interpolated from the arc's `topPct` up to `HORIZON_PCT + 10` over `SET_MINS`. Opacity stays `1` throughout — this is a **position-only** descent, not a fade.
+
+### Compact mode (widget)
+
+When `compact={true}` is passed to `HeroBanner` (used in `WidgetPage`):
+- Sun size: `54px` (vs `70px` default)
+- Moon size: `64px` (vs `80px` default)
+- Mountain SVG height: `90px` (vs `170px` default)
+
+This prevents the celestial bodies from appearing oversized in the widget's wide, short banner layout.
 
 ---
 
