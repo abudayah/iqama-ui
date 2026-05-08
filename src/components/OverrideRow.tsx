@@ -3,10 +3,10 @@ import { isActive } from '../logic/is-active';
 
 function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return '—';
-  const datePart = dateStr.split('T')[0]; // handle ISO timestamps like 2026-05-04T00:00:00.000Z
+  const datePart = dateStr.split('T')[0] ?? dateStr; // handle ISO timestamps like 2026-05-04T00:00:00.000Z
   const parts = datePart.split('-').map(Number);
   if (parts.length !== 3 || parts.some(isNaN)) return dateStr;
-  const [year, month, day] = parts;
+  const [year, month, day] = parts as [number, number, number];
   const date = new Date(year, month - 1, day);
   if (isNaN(date.getTime())) return dateStr;
   return new Intl.DateTimeFormat('en-US', {
