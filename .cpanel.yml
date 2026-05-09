@@ -6,3 +6,12 @@ deployment:
     - /bin/cp -r /home2/theisbcc/iqama.theisbc.ca/dist/.* /home2/theisbcc/iqama.theisbc.ca/ 2>/dev/null || true
     # Clean up the dist folder
     - /bin/rm -rf /home2/theisbcc/iqama.theisbc.ca/dist
+    # Create .htaccess for React Router
+    - /bin/bash -c 'cat > /home2/theisbcc/iqama.theisbc.ca/.htaccess << "EOF"
+RewriteEngine On
+RewriteBase /
+RewriteRule ^index\.html$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.html [L]
+EOF'
