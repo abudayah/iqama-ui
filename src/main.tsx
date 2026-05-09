@@ -13,3 +13,4 @@ createRoot(rootElement).render(
     <App />
   </StrictMode>,
 );
+console.log('Build with base path:', import.meta.env.BASE_URL);
