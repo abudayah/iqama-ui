@@ -76,23 +76,31 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Save .cpanel.yml before switching branches
-          cp .cpanel.yml /tmp/.cpanel.yml 2>/dev/null || echo "No .cpanel.yml found"
-          
           # Create a fresh orphan branch (no history)
           git checkout --orphan prod
           
           # Remove all files from staging
           git rm -rf .
           
-          # Copy only the build output
-          git add -f dist/
+          # Move files from dist/ to root
+          mv dist/* . 2>/dev/null || true
+          mv dist/.* . 2>/dev/null || true
           
-          # Restore .cpanel.yml if it exists
-          if [ -f /tmp/.cpanel.yml ]; then
-            cp /tmp/.cpanel.yml .cpanel.yml
-            git add -f .cpanel.yml
-          fi
+          # Remove the now-empty dist folder
+          rm -rf dist
+          
+          # Create .htaccess for React Router (SPA)
+          cat > .htaccess << 'EOF'
+RewriteEngine On
+RewriteBase /
+RewriteRule ^index\.html$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.html [L]
+EOF
+          
+          # Add all files to git
+          git add -A
           
           # Commit the build
           git commit -m "Build: ${{ github.sha }} from ${{ github.ref_name }}"
