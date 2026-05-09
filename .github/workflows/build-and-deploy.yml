@@ -33,7 +33,7 @@ jobs:
 
       - name: Build application
         env:
-          VITE_API_BASE_URL: https://api.iqama.theisbc.ca
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
         run: npm run build
 
       - name: Upload build artifacts
@@ -68,7 +68,7 @@ jobs:
 
       - name: Build application
         env:
-          VITE_API_BASE_URL: https://api.iqama.theisbc.ca
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
         run: npm run build
 
       - name: Deploy to prod branch
