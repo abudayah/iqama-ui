@@ -126,7 +126,10 @@ export function PrayerViewerPage() {
   );
 
   return (
-    <div id="prayer-viewer-page" className="min-h-screen bg-gray-100 flex flex-col pb-12 md:pb-0">
+    <div
+      id="prayer-viewer-page"
+      className="min-h-screen bg-gray-100 flex flex-col pb-[44px] md:pb-0"
+    >
       <OfflineBanner />
       {isSimulating && <SimulatorBanner simDateStr={simDateStr} simNow={simNow} />}
 
