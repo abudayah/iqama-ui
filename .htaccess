@@ -24,16 +24,16 @@ RewriteRule ^ http%{ENV:protossl}://%1%{REQUEST_URI} [L,R=301]
 </IfModule>
 
 # Fallback resource for SPA routing
-FallbackResource /iqama/index.html
+FallbackResource /index.html
 
 # Rewrite rules for React Router SPA
 <IfModule mod_rewrite.c>
   RewriteEngine on
-  RewriteBase /iqama/
+  RewriteBase /
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_URI} !=/favicon.ico
-  RewriteRule ^.*$ /iqama/index.html [NC,L,QSA]
+  RewriteRule ^.*$ /index.html [NC,L,QSA]
 </IfModule>
 
 # Various header fixes.
