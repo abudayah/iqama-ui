@@ -10,10 +10,9 @@ export function useInstallPrompt() {
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    // Already running as installed PWA
+    // Check if already running as installed PWA
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
-      return;
     }
 
     const handler = (e: Event) => {
@@ -33,7 +32,13 @@ export function useInstallPrompt() {
   }, []);
 
   const triggerInstall = async () => {
-    if (!promptEvent) return;
+    if (!promptEvent) {
+      // If running as installed app, show a message
+      if (isInstalled) {
+        alert('App is already installed! You can find it on your home screen.');
+      }
+      return;
+    }
     await promptEvent.prompt();
     const { outcome } = await promptEvent.userChoice;
     if (outcome === 'accepted') {
@@ -42,8 +47,11 @@ export function useInstallPrompt() {
     }
   };
 
+  // Show install button if:
+  // 1. Browser supports installation (promptEvent exists), OR
+  // 2. App is already installed (so users know it's installed)
   return {
-    canInstall: !isInstalled && promptEvent !== null,
+    canInstall: promptEvent !== null || isInstalled,
     triggerInstall,
   };
 }
