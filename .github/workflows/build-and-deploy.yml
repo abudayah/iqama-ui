@@ -82,14 +82,18 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Create or checkout prod branch
-          git checkout -B prod
+          # Create a fresh orphan branch (no history)
+          git checkout --orphan prod
           
-          # Add dist folder (even though it's in .gitignore)
+          # Remove all files from staging
+          git rm -rf .
+          
+          # Copy only the build output and deployment config
           git add -f dist/
+          git add -f .cpanel.yml
           
           # Commit the build
-          git commit -m "Build: ${{ github.sha }} from ${{ github.ref_name }}" || echo "No changes to commit"
+          git commit -m "Build: ${{ github.sha }} from ${{ github.ref_name }}"
           
-          # Push to prod branch
+          # Force push to prod branch (clean history)
           git push -f origin prod
