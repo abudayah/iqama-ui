@@ -1,0 +1,6 @@
+---
+deployment:
+  tasks:
+    # No build steps needed - static files are already built by GitHub Actions
+    # Files will be deployed to the repository path configured in cPanel Git Version Control
+    - echo "Static site deployment complete"

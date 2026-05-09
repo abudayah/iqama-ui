@@ -58,6 +58,7 @@ export default defineConfig(({ mode }) => {
   const apiBaseUrl = env['VITE_API_BASE_URL'] ?? '';
 
   return {
+    base: '/ui/',
     plugins: [
       react(),
       cspPlugin(apiBaseUrl),
