@@ -1,10 +1,10 @@
 import type { PrayerName, PrayerEntry } from '../types/index';
 
-// Helper to format time from 24hr to 12hr AM/PM
+// Helper to format time from 24hr to 12hr AM/PM with leading zero for hours
 const formatTime12Hr = (time24: string): string => {
   const [hours, minutes] = time24.split(':');
   const date = new Date(2000, 0, 1, parseInt(hours!), parseInt(minutes!));
-  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 };
 
 interface PrayerRowProps {
