@@ -34,7 +34,7 @@ jobs:
       - name: Build application
         env:
           VITE_API_BASE_URL: https://iqama.theisbc.ca/api
-          VITE_BASE_PATH: /ui/
+          VITE_BASE_PATH: /
         run: npm run build
 
       - name: Upload build artifacts
@@ -70,7 +70,7 @@ jobs:
       - name: Build application
         env:
           VITE_API_BASE_URL: https://iqama.theisbc.ca/api
-          VITE_BASE_PATH: /ui/
+          VITE_BASE_PATH: /
         run: npm run build
 
       - name: Deploy to prod branch
