@@ -56,9 +56,10 @@ function cspPlugin(apiBaseUrl: string): Plugin {
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const apiBaseUrl = env['VITE_API_BASE_URL'] ?? '';
+  const basePath = env['VITE_BASE_PATH'] ?? '/';
 
   return {
-    base: '/ui/',
+    base: basePath,
     plugins: [
       react(),
       cspPlugin(apiBaseUrl),
