@@ -1,15 +1,11 @@
 import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 
 const VERSION = '?v=20260506';
 
 export function useFavicon() {
-  const { pathname } = useLocation();
-  const isAdmin = pathname.startsWith('/admin');
-
   useEffect(() => {
-    const prefix = isAdmin ? '/favicon-admin' : '/favicon';
-    const appTitle = isAdmin ? 'Admin' : 'Iqama';
+    const prefix = '/favicon';
+    const appTitle = 'Iqama';
 
     const favicon96 = document.getElementById('favicon-96') as HTMLLinkElement | null;
     const faviconSvg = document.getElementById('favicon-svg') as HTMLLinkElement | null;
@@ -24,5 +20,5 @@ export function useFavicon() {
     if (appleTouchIcon) appleTouchIcon.href = `${prefix}/apple-touch-icon.png${VERSION}`;
     if (manifest) manifest.href = `${prefix}/site.webmanifest${VERSION}`;
     if (appTitleMeta) appTitleMeta.content = appTitle;
-  }, [isAdmin]);
+  }, []);
 }
