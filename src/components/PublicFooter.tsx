@@ -46,7 +46,7 @@ export function PublicFooter() {
   return (
     <footer
       id="public-footer"
-      className="mt-auto"
+      className="mt-auto fixed bottom-0 left-0 right-0 md:relative z-50"
       aria-label="Site footer"
       style={{ background: '#ffffff', borderTop: '1px solid #f0f0f0' }}
     >
