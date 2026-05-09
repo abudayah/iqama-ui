@@ -79,6 +79,9 @@ jobs:
           # Save the built dist folder to a temporary location
           cp -r dist /tmp/dist-build
           
+          # Stash any local changes (like compiled vite.config.js)
+          git stash --include-untracked || true
+          
           # Fetch the prod branch if it exists
           git fetch origin prod:prod 2>/dev/null || git checkout -b prod
           
