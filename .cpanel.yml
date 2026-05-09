@@ -1,5 +1,8 @@
 ---
 deployment:
   tasks:
-    - /usr/bin/rsync -avz --delete /home2/theisbcc/iqama.theisbc.ca/dist/ /home2/theisbcc/iqama.theisbc.ca/
+    # Copy built files from dist/ to the document root
+    - /bin/cp -r /home2/theisbcc/iqama.theisbc.ca/dist/* /home2/theisbcc/iqama.theisbc.ca/
+    - /bin/cp -r /home2/theisbcc/iqama.theisbc.ca/dist/.* /home2/theisbcc/iqama.theisbc.ca/ 2>/dev/null || true
+    # Clean up the dist folder
     - /bin/rm -rf /home2/theisbcc/iqama.theisbc.ca/dist
