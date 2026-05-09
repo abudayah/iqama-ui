@@ -2,7 +2,7 @@ import { apiFetch } from '../api/api-client';
 import { EidPrayerRecord, HijriCalendarStatus, SubmitOverridePayload } from '../types';
 
 export async function fetchHijriStatus(): Promise<HijriCalendarStatus> {
-  return apiFetch<HijriCalendarStatus>('/api/v1/hijri-calendar/status', { requiresAuth: true });
+  return apiFetch<HijriCalendarStatus>('/api/v1/hijri-calendar/status');
 }
 
 export async function submitOverride(payload: SubmitOverridePayload): Promise<void> {
