@@ -1,5 +1,12 @@
 import type { PrayerName, PrayerEntry } from '../types/index';
 
+// Helper to format time from 24hr to 12hr AM/PM
+const formatTime12Hr = (time24: string): string => {
+  const [hours, minutes] = time24.split(':');
+  const date = new Date(2000, 0, 1, parseInt(hours!), parseInt(minutes!));
+  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+};
+
 interface PrayerRowProps {
   name: PrayerName | 'sunrise';
   entry: PrayerEntry | { azan: string; iqama?: never };
@@ -101,10 +108,10 @@ export function PrayerRow({
       {/* Right: azan + iqama times */}
       <div className="flex gap-6 tabular-nums">
         <span className="text-[1.05rem] font-semibold" style={{ color: '#205072' }}>
-          {entry.azan}
+          {formatTime12Hr(entry.azan)}
         </span>
         <span className="text-[1.05rem] font-semibold" style={{ color: '#329D9C' }}>
-          {iqamaValue ?? ''}
+          {iqamaValue ? formatTime12Hr(iqamaValue) : ''}
         </span>
       </div>
     </div>

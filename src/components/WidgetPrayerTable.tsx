@@ -4,6 +4,13 @@ import type { PrayerEvent } from '../logic/derive-next-prayer';
 import type { CountdownMode } from '../hooks/usePrayerContext';
 import { formatWidgetDate } from '../logic/format-widget-date';
 
+// Helper to format time from 24hr to 12hr AM/PM
+const formatTime12Hr = (time24: string): string => {
+  const [hours, minutes] = time24.split(':');
+  const date = new Date(2000, 0, 1, parseInt(hours!), parseInt(minutes!));
+  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+};
+
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 
 export interface WidgetPrayerTableProps {
@@ -269,7 +276,7 @@ function DaySection({
                   ].join(' ')}
                   style={{ color: '#205072', ...colBg(col.eventKey) }}
                 >
-                  {col.azan}
+                  {formatTime12Hr(col.azan)}
                 </td>
               ))}
             </tr>
@@ -298,7 +305,7 @@ function DaySection({
                   ].join(' ')}
                   style={{ color: '#329D9C', ...colBg(col.eventKey) }}
                 >
-                  {col.iqama ?? <span className="opacity-30">—</span>}
+                  {col.iqama ? formatTime12Hr(col.iqama) : <span className="opacity-30">—</span>}
                 </td>
               ))}
             </tr>
