@@ -76,8 +76,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
+          # Save the built dist folder to a temporary location
+          cp -r dist /tmp/dist-build
+          
           # Fetch the prod branch if it exists
-          git fetch origin prod:prod || git checkout -b prod
+          git fetch origin prod:prod 2>/dev/null || git checkout -b prod
           
           # Switch to prod branch
           git checkout prod
@@ -85,15 +88,11 @@ jobs:
           # Remove all existing files except .git
           find . -maxdepth 1 ! -name '.git' ! -name '.' ! -name '..' -exec rm -rf {} +
           
-          # Copy build files from main branch
-          git checkout main -- dist/
+          # Copy build files from temporary location
+          cp -r /tmp/dist-build/* .
           
-          # Move files from dist/ to root
-          mv dist/* . 2>/dev/null || true
-          mv dist/.* . 2>/dev/null || true
-          
-          # Remove the now-empty dist folder
-          rm -rf dist
+          # Clean up temporary folder
+          rm -rf /tmp/dist-build
           
           # Create .htaccess for React Router (SPA) at domain root
           cat > .htaccess << 'EOF'
