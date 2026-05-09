@@ -76,11 +76,17 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Create a fresh orphan branch (no history)
-          git checkout --orphan prod
+          # Fetch the prod branch if it exists
+          git fetch origin prod:prod || git checkout -b prod
           
-          # Remove all files from staging
-          git rm -rf .
+          # Switch to prod branch
+          git checkout prod
+          
+          # Remove all existing files except .git
+          find . -maxdepth 1 ! -name '.git' ! -name '.' ! -name '..' -exec rm -rf {} +
+          
+          # Copy build files from main branch
+          git checkout main -- dist/
           
           # Move files from dist/ to root
           mv dist/* . 2>/dev/null || true
@@ -142,8 +148,8 @@ jobs:
           # Add all files to git
           git add -A
           
-          # Commit the build
-          git commit -m "Build: ${{ github.sha }} from ${{ github.ref_name }}"
+          # Commit the build (allow empty in case nothing changed)
+          git commit -m "Build: ${{ github.sha }} from ${{ github.ref_name }}" || echo "No changes to commit"
           
-          # Force push to prod branch (clean history)
-          git push -f origin prod
+          # Push to prod branch (no force, linear history)
+          git push origin prod
