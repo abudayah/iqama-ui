@@ -1,7 +1,5 @@
 ---
 deployment:
   tasks:
-    - /bin/bash -c "cd /home2/theisbcc/iqama.theisbc.ca && npm install"
-    - /bin/bash -c "cd /home2/theisbcc/iqama.theisbc.ca && npm run build"
     - /usr/bin/rsync -avz --delete /home2/theisbcc/iqama.theisbc.ca/dist/ /home2/theisbcc/iqama.theisbc.ca/
     - /bin/rm -rf /home2/theisbcc/iqama.theisbc.ca/dist

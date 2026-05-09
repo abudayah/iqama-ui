@@ -80,7 +80,8 @@ out
 
 # Nuxt.js build / generate output
 .nuxt
-dist
+# dist/ is committed for cPanel deployment (built locally)
+# dist
 .output
 
 # Gatsby files
