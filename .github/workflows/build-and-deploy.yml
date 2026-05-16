@@ -93,8 +93,8 @@ jobs:
           # Remove all existing files except .git
           find . -maxdepth 1 ! -name '.git' ! -name '.' ! -name '..' -exec rm -rf {} +
           
-          # Copy build files from temporary location
-          cp -r /tmp/dist-build/* .
+          # Copy build files from temporary location (including dotfiles like .htaccess)
+          cp -r /tmp/dist-build/. .
           
           # Clean up temporary folder
           rm -rf /tmp/dist-build
