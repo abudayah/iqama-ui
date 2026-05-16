@@ -205,7 +205,7 @@ function DaySection({
       {/* Section header — two columns: label left, dates right */}
       <div
         id={`${sectionId}-header`}
-        className="px-4 pt-3 pb-2 flex items-baseline justify-between gap-4"
+        className="px-4 pt-2 pb-1 flex items-baseline justify-between gap-4"
       >
         <h2 className="text-base font-bold text-gray-900 shrink-0">
           <span>{label}</span>
@@ -220,7 +220,7 @@ function DaySection({
       </div>
 
       {/* Horizontal prayer table — prayers as columns, Azan/Iqama as rows */}
-      <div className="overflow-x-auto flex-1">
+      <div className="flex-1">
         <table id={`${sectionId}-table`} className="w-full h-full border-collapse min-w-[520px]">
           <thead>
             <tr id={`${sectionId}-col-headers`} className="bg-slate-100">
@@ -257,7 +257,7 @@ function DaySection({
               <th
                 id={`${sectionId}-row-azan-label`}
                 scope="row"
-                className="px-3 py-4 text-right text-sm font-bold uppercase whitespace-nowrap"
+                className="px-3 py-2 text-right text-sm font-bold uppercase whitespace-nowrap"
                 style={{ color: '#205072' }}
               >
                 <span className="block">Azan</span>
@@ -270,7 +270,7 @@ function DaySection({
                   key={col.key}
                   id={`${sectionId}-azan-${col.key}`}
                   className={[
-                    'px-2 py-4 text-center tabular-nums text-xl transition-colors duration-300',
+                    'px-2 py-2 text-center tabular-nums text-xl transition-colors duration-300',
                     colCell(col.eventKey),
                     isPastCol(col.azan, col.eventKey) ? 'opacity-40' : '',
                   ].join(' ')}
@@ -286,7 +286,7 @@ function DaySection({
               <th
                 id={`${sectionId}-row-iqama-label`}
                 scope="row"
-                className="px-3 py-4 text-right text-sm font-bold uppercase whitespace-nowrap"
+                className="px-3 py-2 text-right text-sm font-bold uppercase whitespace-nowrap"
                 style={{ color: '#329D9C' }}
               >
                 <span className="block">Iqama</span>
@@ -299,7 +299,7 @@ function DaySection({
                   key={col.key}
                   id={`${sectionId}-iqama-${col.key}`}
                   className={[
-                    'px-2 py-4 text-center tabular-nums text-xl transition-colors duration-300',
+                    'px-2 py-2 text-center tabular-nums text-xl transition-colors duration-300',
                     colCell(col.eventKey),
                     isPastCol(col.azan, col.eventKey) ? 'opacity-40' : '',
                   ].join(' ')}
