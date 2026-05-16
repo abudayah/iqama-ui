@@ -5,27 +5,16 @@ import type { PeekTarget } from '../components/HeroBanner';
 import { useSchedule } from '../hooks/useSchedule';
 import { usePrayerContext } from '../hooks/usePrayerContext';
 import { useSimulator } from '../hooks/useSimulator';
-import { useSightingStatus, shouldShowSightingCard } from '../hooks/useSightingStatus';
 import { OfflineBanner } from '../components/OfflineBanner';
 import { PrayerTable } from '../components/PrayerTable';
 import { HeroBanner } from '../components/HeroBanner';
 import { SimulatorBanner } from '../components/SimulatorBanner';
-import { SightingCard } from '../components/SightingCard';
-import { EidPrayerModal } from '../components/EidPrayerModal';
-import { calculateEidDate } from '../logic/calculate-eid-date';
-import { submitOverride } from '../services/hijri-calendar-service';
 import { PublicFooter } from '../components/PublicFooter';
 
 const PEEK_DURATION_MS = 4_000;
 
 export function PrayerViewerPage() {
   const [activeTab, setActiveTab] = useState<'today' | 'tomorrow'>('today');
-
-  /* ── Sighting state ── */
-  const [eidModalOpen, setEidModalOpen] = useState(false);
-  const [pendingLength, setPendingLength] = useState<29 | 30 | null>(null);
-  const [sightingError, setSightingError] = useState<string | null>(null);
-  const [sightingSuccess, setSightingSuccess] = useState(false);
 
   /* ── Peek state ── */
   const [peekedPrayer, setPeekedPrayer] = useState<PeekTarget | null>(null);
@@ -72,9 +61,6 @@ export function PrayerViewerPage() {
 
   const { simNow, simDateStr, simTomorrowStr, isSimulating } = useSimulator();
 
-  /* ── Sighting status ── */
-  const { status: sightingStatus } = useSightingStatus();
-
   const {
     data: todaySchedule,
     loading: todayLoading,
@@ -99,31 +85,6 @@ export function PrayerViewerPage() {
   /* nextPrayer is only "active" in the today table when the schedule matches */
   const todayNextPrayer: PrayerEvent | null =
     nextSchedule === todaySchedule ? (nextPrayer ?? null) : null;
-
-  /* ── Moon-sighting decision handler ── */
-  const onDecision = useCallback(
-    async (length: 29 | 30) => {
-      if (!sightingStatus) return;
-      setSightingError(null);
-      setSightingSuccess(false);
-
-      if (sightingStatus.hijriMonth === 9 || sightingStatus.hijriMonth === 11) {
-        setPendingLength(length);
-        setEidModalOpen(true);
-      } else {
-        const hijriYear = new Date(sightingStatus.gregorianDate).getFullYear();
-        try {
-          await submitOverride({ hijriYear, hijriMonth: sightingStatus.hijriMonth, length });
-          setSightingSuccess(true);
-        } catch (err) {
-          setSightingError(
-            err instanceof Error ? err.message : 'Submission failed. Please try again.',
-          );
-        }
-      }
-    },
-    [sightingStatus],
-  );
 
   return (
     <div
@@ -184,33 +145,6 @@ export function PrayerViewerPage() {
           </div>
         )}
 
-        {/* Sighting card — shown on day 29, or day 30 without an override */}
-        {sightingStatus !== null &&
-          shouldShowSightingCard(sightingStatus.hijriDay, sightingStatus.hasOverride) && (
-            <div className="px-4 pt-4">
-              {sightingSuccess && (
-                <div
-                  className="mb-3 bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-emerald-700 text-sm"
-                  role="status"
-                >
-                  Moon-sighting decision saved successfully.
-                </div>
-              )}
-              {sightingError && (
-                <div
-                  className="mb-3 bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 text-sm"
-                  role="alert"
-                >
-                  {sightingError}
-                </div>
-              )}
-              <SightingCard
-                hijriMonth={sightingStatus.hijriMonth}
-                onDecision={(length) => void onDecision(length)}
-              />
-            </div>
-          )}
-
         {/* Prayer table — rendered once today's data is ready */}
         {todaySchedule && !isLoading && (
           <PrayerTable
@@ -226,24 +160,6 @@ export function PrayerViewerPage() {
           />
         )}
       </div>
-
-      {/* Eid prayer modal — opened when Imam selects a length for month 9 or 11 */}
-      {eidModalOpen && sightingStatus !== null && pendingLength !== null && (
-        <EidPrayerModal
-          eidType={sightingStatus.hijriMonth === 9 ? 'EID_AL_FITR' : 'EID_AL_ADHA'}
-          eidDate={calculateEidDate(
-            new Date(),
-            pendingLength === 29,
-            sightingStatus.hijriMonth === 9 ? 'FITR' : 'ADHA',
-          )}
-          sunriseTime={todaySchedule?.sunrise ?? '06:00'}
-          hijriYear={new Date(sightingStatus.gregorianDate).getFullYear()}
-          hijriMonth={sightingStatus.hijriMonth}
-          length={pendingLength}
-          onSubmit={submitOverride}
-          onClose={() => setEidModalOpen(false)}
-        />
-      )}
 
       <PublicFooter />
     </div>
