@@ -270,7 +270,7 @@ function DaySection({
                   key={col.key}
                   id={`${sectionId}-azan-${col.key}`}
                   className={[
-                    'px-2 py-2 text-center tabular-nums text-xl transition-colors duration-300',
+                    'px-2 py-2 text-center tabular-nums text-2xl transition-colors duration-300',
                     colCell(col.eventKey),
                     isPastCol(col.azan, col.eventKey) ? 'opacity-40' : '',
                   ].join(' ')}
@@ -299,7 +299,7 @@ function DaySection({
                   key={col.key}
                   id={`${sectionId}-iqama-${col.key}`}
                   className={[
-                    'px-2 py-2 text-center tabular-nums text-xl transition-colors duration-300',
+                    'px-2 py-2 text-center tabular-nums text-2xl transition-colors duration-300',
                     colCell(col.eventKey),
                     isPastCol(col.azan, col.eventKey) ? 'opacity-40' : '',
                   ].join(' ')}
