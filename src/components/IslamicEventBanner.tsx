@@ -25,11 +25,10 @@ function getIslamicEventGreeting(hijriMonth: number, hijriDay: number): IslamicE
   }
   // 12. Dhu al-Hijjah
   if (hijriMonth === 12) {
-    if (hijriDay >= 8 && hijriDay <= 13) {
-      if (hijriDay === 9) return '🤲 Day of Arafah';
-      if (hijriDay >= 10 && hijriDay <= 13) return '🐑 Eid al-Adha Mubarak';
-      return '🕋 Hajj Season';
-    }
+    if (hijriDay >= 1 && hijriDay <= 7) return '🕋 Hajj Season';
+    if (hijriDay === 9) return '🤲 Day of Arafah';
+    if (hijriDay >= 10 && hijriDay <= 13) return '🐑 Eid al-Adha Mubarak';
+    if (hijriDay === 8) return '🕋 Hajj Season';
   }
   return null;
 }
@@ -42,6 +41,7 @@ export const IslamicEventBanner: FC<IslamicEventBannerProps> = ({ hijriMonth, hi
 
   return (
     <div
+      id="islamic-events"
       className={[
         // Positioning — centered horizontally, bottom of hero
         'absolute bottom-8 left-1/2 -translate-x-1/2',

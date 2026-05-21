@@ -628,9 +628,7 @@ export function HeroBanner({
         )}
 
         {/* Subtitle */}
-        <p className="text-sm font-semibold mt-2 text-white/90">
-          {isDone ? 'All prayers complete' : subLine}
-        </p>
+        <p className="text-sm font-semibold mt-2 text-white/90">{isDone ? '--' : subLine}</p>
       </div>
 
       {/* ── Landscape layer ── */}

@@ -220,8 +220,8 @@ function DaySection({
       </div>
 
       {/* Horizontal prayer table — prayers as columns, Azan/Iqama as rows */}
-      <div className="flex-1">
-        <table id={`${sectionId}-table`} className="w-full h-full border-collapse min-w-[520px]">
+      <div className="flex-1 overflow-hidden">
+        <table id={`${sectionId}-table`} className="w-full h-full border-collapse table-fixed">
           <thead>
             <tr id={`${sectionId}-col-headers`} className="bg-slate-100">
               {/* Row-label header cell (top-left corner) */}
