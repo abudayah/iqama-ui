@@ -12,9 +12,13 @@ interface IslamicEventBannerProps {
 function getIslamicEventGreeting(hijriMonth: number, hijriDay: number): IslamicEvent {
   // 1. Muharram
   if (hijriMonth === 1) {
-    if (hijriDay === 1) return '✨ Hijri New Year';
+    if (hijriDay === 1) return '🗓️ Hijri New Year';
     if (hijriDay === 10) return '🤲 Day of Ashura';
   }
+  // 3. Rabi al-Awwal — Mawlid al-Nabi
+  if (hijriMonth === 3 && hijriDay === 12) return '🌹 Mawlid al-Nabi';
+  // 7. Rajab — Isra' and Mi'raj
+  if (hijriMonth === 7 && hijriDay === 27) return "🕌 Isra' and Mi'raj";
   // 9. Ramadan
   if (hijriMonth === 9) {
     return '🌙 Ramadan Mubarak';
@@ -26,9 +30,9 @@ function getIslamicEventGreeting(hijriMonth: number, hijriDay: number): IslamicE
   // 12. Dhu al-Hijjah
   if (hijriMonth === 12) {
     if (hijriDay >= 1 && hijriDay <= 7) return '🕋 Hajj Season';
+    if (hijriDay === 8) return '🕋 Hajj Season';
     if (hijriDay === 9) return '🤲 Day of Arafah';
     if (hijriDay >= 10 && hijriDay <= 13) return '🐑 Eid al-Adha Mubarak';
-    if (hijriDay === 8) return '🕋 Hajj Season';
   }
   return null;
 }
