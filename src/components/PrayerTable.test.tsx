@@ -60,6 +60,7 @@ function renderTable(schedule: DailySchedule) {
       todaySchedule={schedule}
       tomorrowSchedule={null}
       nextPrayer={null}
+      nextSchedule={null}
       activeTab="today"
       onTabChange={() => undefined}
     />,
@@ -99,6 +100,7 @@ describe('PrayerTable — Property 8: renders all required fields for any schedu
             todaySchedule={schedule}
             tomorrowSchedule={null}
             nextPrayer={null}
+            nextSchedule={null}
             activeTab="today"
             onTabChange={() => undefined}
           />,

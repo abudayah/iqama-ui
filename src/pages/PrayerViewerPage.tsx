@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
 import type { DailySchedule } from '../types/index';
-import type { PrayerEvent } from '../logic/derive-next-prayer';
 import type { PeekTarget } from '../components/HeroBanner';
 import { useSchedule } from '../hooks/useSchedule';
 import { usePrayerContext } from '../hooks/usePrayerContext';
@@ -82,10 +81,6 @@ export function PrayerViewerPage() {
   const error = activeTab === 'today' ? todayError : tomorrowError;
   const refetch = activeTab === 'today' ? refetchToday : refetchTomorrow;
 
-  /* nextPrayer is only "active" in the today table when the schedule matches */
-  const todayNextPrayer: PrayerEvent | null =
-    nextSchedule === todaySchedule ? (nextPrayer ?? null) : null;
-
   return (
     <div
       id="prayer-viewer-page"
@@ -150,7 +145,8 @@ export function PrayerViewerPage() {
           <PrayerTable
             todaySchedule={todaySchedule}
             tomorrowSchedule={tomorrowSchedule ?? null}
-            nextPrayer={todayNextPrayer}
+            nextPrayer={nextPrayer ?? null}
+            nextSchedule={nextSchedule ?? null}
             activeTab={activeTab}
             onTabChange={handleTabChange}
             countdownMode={countdownMode}

@@ -11,11 +11,12 @@ export function WidgetPage() {
 
   const { data: tomorrowSchedule } = useSchedule(simTomorrowStr);
 
-  const { nextPrayer, countdown, countdownMode, hijriDay, hijriMonth, tick } = usePrayerContext(
-    todaySchedule ?? null,
-    tomorrowSchedule ?? null,
-    isSimulating ? simNow : undefined,
-  );
+  const { nextPrayer, nextSchedule, countdown, countdownMode, hijriDay, hijriMonth, tick } =
+    usePrayerContext(
+      todaySchedule ?? null,
+      tomorrowSchedule ?? null,
+      isSimulating ? simNow : undefined,
+    );
 
   return (
     <main
@@ -76,6 +77,7 @@ export function WidgetPage() {
               todaySchedule={todaySchedule}
               tomorrowSchedule={tomorrowSchedule ?? null}
               nextPrayer={nextPrayer}
+              nextSchedule={nextSchedule ?? null}
               countdownMode={countdownMode}
               tick={tick}
             />

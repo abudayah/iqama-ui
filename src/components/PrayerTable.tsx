@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import type { DailySchedule, PrayerName } from '../types/index';
 import type { PrayerEvent } from '../logic/derive-next-prayer';
 import type { CountdownMode } from '../hooks/usePrayerContext';
@@ -8,7 +8,10 @@ import { PrayerRow } from './PrayerRow';
 interface PrayerTableProps {
   todaySchedule: DailySchedule;
   tomorrowSchedule: DailySchedule | null;
+  /** The next prayer name — belongs to whichever schedule nextSchedule points to */
   nextPrayer: PrayerEvent | null;
+  /** The schedule the next prayer belongs to (today or tomorrow) */
+  nextSchedule: DailySchedule | null;
   activeTab: 'today' | 'tomorrow';
   onTabChange: (tab: 'today' | 'tomorrow') => void;
   /** Increments every second — forces isPast recalculation */
@@ -80,6 +83,8 @@ function DayRows({
   peekedPrayer?: PeekTarget | null | undefined;
 }) {
   const now = new Date();
+
+  // activePrayer: only applies when we're in the azan→iqama window (isToday only)
   const activePrayer: PrayerName | null =
     isToday &&
     countdownMode === 'to_iqama' &&
@@ -89,6 +94,11 @@ function DayRows({
     nextPrayer !== 'eid-prayer-2'
       ? (nextPrayer as PrayerName)
       : null;
+
+  // isPast only applies to today's rows; tomorrow's rows are never dimmed
+  const prayerIsPast = (prayer: PrayerName) =>
+    isToday && isPrayerPast(schedule, prayer, now) && nextPrayer !== prayer;
+  const sunriseIsPast = () => isToday && isSunrisePast(schedule, now) && nextPrayer !== 'sunrise';
 
   const canPeekPrayer = (prayer: PrayerName) =>
     !!onPeekPrayer && !isPrayerPast(schedule, prayer, now) && activePrayer !== prayer;
@@ -101,9 +111,9 @@ function DayRows({
       <PrayerRow
         name="fajr"
         entry={schedule.fajr}
-        isNext={isToday && nextPrayer === 'fajr'}
+        isNext={nextPrayer === 'fajr'}
         isActive={activePrayer === 'fajr'}
-        isPast={isToday && isPrayerPast(schedule, 'fajr', now) && nextPrayer !== 'fajr'}
+        isPast={prayerIsPast('fajr')}
         isPeeked={peekedPrayer === 'fajr'}
         onTap={canPeekPrayer('fajr') ? () => onPeekPrayer!('fajr', schedule) : undefined}
       />
@@ -112,9 +122,9 @@ function DayRows({
       <PrayerRow
         name="sunrise"
         entry={{ azan: schedule.sunrise }}
-        isNext={isToday && nextPrayer === 'sunrise'}
+        isNext={nextPrayer === 'sunrise'}
         isActive={false}
-        isPast={isToday && isSunrisePast(schedule, now) && nextPrayer !== 'sunrise'}
+        isPast={sunriseIsPast()}
         isPeeked={peekedPrayer === 'sunrise'}
         onTap={canPeekSunrise() ? () => onPeekPrayer!('sunrise', schedule) : undefined}
       />
@@ -126,7 +136,7 @@ function DayRows({
           label="1st Eid Prayer"
           isEid
           entry={{ azan: schedule.eid_prayer_1, iqama: '' }}
-          isNext={isToday && nextPrayer === 'eid-prayer-1'}
+          isNext={nextPrayer === 'eid-prayer-1'}
           isActive={false}
           isPast={false}
           isPeeked={peekedPrayer === 'eid-prayer-1'}
@@ -148,7 +158,7 @@ function DayRows({
           label="2nd Eid Prayer"
           isEid
           entry={{ azan: schedule.eid_prayer_2, iqama: '' }}
-          isNext={isToday && nextPrayer === 'eid-prayer-2'}
+          isNext={nextPrayer === 'eid-prayer-2'}
           isActive={false}
           isPast={false}
           isPeeked={peekedPrayer === 'eid-prayer-2'}
@@ -174,9 +184,9 @@ function DayRows({
             name={prayer}
             {...(isFridayDhuhr ? { label: 'Friday' } : {})}
             entry={schedule[prayer]}
-            isNext={isToday && nextPrayer === prayer}
+            isNext={nextPrayer === prayer}
             isActive={activePrayer === prayer}
-            isPast={isToday && isPrayerPast(schedule, prayer, now) && nextPrayer !== prayer}
+            isPast={prayerIsPast(prayer)}
             isPeeked={peekedPrayer === prayer}
             onTap={canPeekPrayer(prayer) ? () => onPeekPrayer!(prayer, schedule) : undefined}
           />
@@ -204,6 +214,7 @@ export function PrayerTable({
   todaySchedule,
   tomorrowSchedule,
   nextPrayer,
+  nextSchedule,
   activeTab,
   onTabChange,
   tick = 0,
@@ -214,6 +225,21 @@ export function PrayerTable({
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const startXRef = useRef<number | null>(null);
+
+  // Which panel owns the next prayer highlight
+  const nextPrayerIsToday = nextSchedule === todaySchedule;
+  const nextPrayerIsTomorrow = nextSchedule === tomorrowSchedule && tomorrowSchedule !== null;
+
+  // Auto-switch tab when today's prayers are exhausted and next is tomorrow
+  useEffect(() => {
+    if (nextPrayerIsTomorrow) {
+      onTabChange('tomorrow');
+    } else if (nextPrayerIsToday) {
+      onTabChange('today');
+    }
+    // Only re-run when the ownership changes, not on every onTabChange reference update
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nextPrayerIsToday, nextPrayerIsTomorrow]);
 
   const activeSchedule =
     activeTab === 'today' ? todaySchedule : (tomorrowSchedule ?? todaySchedule);
@@ -323,7 +349,7 @@ export function PrayerTable({
           <div style={{ width: '50%' }}>
             <DayRows
               schedule={todaySchedule}
-              nextPrayer={nextPrayer}
+              nextPrayer={nextPrayerIsToday ? nextPrayer : null}
               isToday={true}
               countdownMode={countdownMode}
               tick={tick}
@@ -337,7 +363,7 @@ export function PrayerTable({
             {tomorrowSchedule ? (
               <DayRows
                 schedule={tomorrowSchedule}
-                nextPrayer={null}
+                nextPrayer={nextPrayerIsTomorrow ? nextPrayer : null}
                 isToday={false}
                 countdownMode="done"
                 tick={tick}

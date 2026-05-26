@@ -17,6 +17,8 @@ export interface WidgetPrayerTableProps {
   todaySchedule: DailySchedule;
   tomorrowSchedule: DailySchedule | null;
   nextPrayer: PrayerEvent | null;
+  /** The schedule the next prayer belongs to — used to route highlight to correct section */
+  nextSchedule: DailySchedule | null;
   countdownMode: CountdownMode;
   tick: number;
 }
@@ -28,6 +30,8 @@ interface DaySectionProps {
   nextPrayer: PrayerEvent | null;
   countdownMode: CountdownMode;
   isToday: boolean;
+  /** True when the next prayer belongs to this section — enables highlight + past-dimming */
+  isNextSection: boolean;
 }
 
 // ─── Bilingual label map ──────────────────────────────────────────────────────
@@ -171,13 +175,13 @@ function DaySection({
   nextPrayer,
   countdownMode,
   isToday,
+  isNextSection,
 }: DaySectionProps) {
-  // Two highlight states for the active column:
-  //   "next"   — counting down to this prayer's azan (upcoming)
-  //   "active" — between azan and iqama (prayer has called, iqama pending)
-  const nextPrayerKey = isToday && nextPrayer !== null ? (nextPrayer as string) : null;
-  const isActive = isToday && countdownMode === 'to_iqama';
-  const isNext = isToday && countdownMode === 'to_azan';
+  // Highlight logic uses isNextSection (not isToday) so tomorrow's Fajr gets highlighted
+  // when today's prayers are exhausted.
+  const nextPrayerKey = isNextSection && nextPrayer !== null ? (nextPrayer as string) : null;
+  const isActive = isNextSection && countdownMode === 'to_iqama';
+  const isNext = isNextSection && countdownMode === 'to_azan';
 
   // Column style helpers
   const colHeader = (prayerKey: string) => {
@@ -349,9 +353,13 @@ export function WidgetPrayerTable({
   todaySchedule,
   tomorrowSchedule,
   nextPrayer,
+  nextSchedule,
   countdownMode,
   tick: _tick,
 }: WidgetPrayerTableProps) {
+  const nextIsToday = nextSchedule === todaySchedule;
+  const nextIsTomorrow = nextSchedule === tomorrowSchedule && tomorrowSchedule !== null;
+
   return (
     <div id="widget-schedule" className="flex flex-col flex-1 min-h-0">
       {/* Today section — takes half the available space */}
@@ -360,9 +368,10 @@ export function WidgetPrayerTable({
           label="Today"
           labelAr="اليوم"
           schedule={todaySchedule}
-          nextPrayer={nextPrayer}
+          nextPrayer={nextIsToday ? nextPrayer : null}
           countdownMode={countdownMode}
           isToday={true}
+          isNextSection={nextIsToday}
         />
       </div>
 
@@ -376,9 +385,10 @@ export function WidgetPrayerTable({
             label="Tomorrow"
             labelAr="الغد"
             schedule={tomorrowSchedule}
-            nextPrayer={null}
-            countdownMode="done"
+            nextPrayer={nextIsTomorrow ? nextPrayer : null}
+            countdownMode={nextIsTomorrow ? countdownMode : 'done'}
             isToday={false}
+            isNextSection={nextIsTomorrow}
           />
         ) : (
           <div className="px-4 py-6 text-center text-gray-400 text-sm animate-pulse">
