@@ -18,6 +18,10 @@ interface PrayerRowProps {
   isPeeked: boolean;
   /** Override the display label (used for Eid prayer rows) */
   label?: string | undefined;
+  /** Marks this row as an Eid prayer — bold dark-yellow text */
+  isEid?: boolean | undefined;
+  /** Marks this row as Qiyam al-Layl — bold dark-purple text */
+  isQiyam?: boolean | undefined;
   /** Called when the row is tapped (only provided for future prayers) */
   onTap?: (() => void) | undefined;
 }
@@ -49,6 +53,8 @@ export function PrayerRow({
   isActive,
   isPeeked,
   label,
+  isEid = false,
+  isQiyam = false,
   onTap,
 }: PrayerRowProps) {
   const isSunrise = name === 'sunrise';
@@ -95,7 +101,15 @@ export function PrayerRow({
           className="text-[1.05rem]"
           style={{
             fontWeight: isNext || isActive ? 700 : 500,
-            color: isNext ? '#1e6c93' : isSunrise ? '#6b7280' : '#374151',
+            color: isEid
+              ? '#92610a'
+              : isQiyam
+                ? '#5b21b6'
+                : isNext
+                  ? '#1e6c93'
+                  : isSunrise
+                    ? '#6b7280'
+                    : '#374151',
             fontStyle: isSunrise ? 'italic' : undefined,
           }}
         >

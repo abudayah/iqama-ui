@@ -142,6 +142,26 @@ function buildColumns(schedule: DailySchedule, isFriday: boolean): ColDef[] {
   return cols;
 }
 
+// ─── Special-prayer colour helpers ───────────────────────────────────────────
+
+const EID_COLOR = '#92610a'; // dark yellow
+const QIYAM_COLOR = '#5b21b6'; // dark purple
+
+function isEidKey(key: string) {
+  return key === 'eid-1' || key === 'eid-2';
+}
+
+function isQiyamKey(key: string) {
+  return key === 'qiyam';
+}
+
+/** Returns an override text colour for Eid / Qiyam columns, or null for normal columns */
+function specialColor(key: string): string | null {
+  if (isEidKey(key)) return EID_COLOR;
+  if (isQiyamKey(key)) return QIYAM_COLOR;
+  return null;
+}
+
 // ─── DaySection ──────────────────────────────────────────────────────────────
 
 function DaySection({
@@ -230,6 +250,7 @@ function DaySection({
                 scope="col"
               />
               {columns.map((col) => {
+                const sc = specialColor(col.key);
                 return (
                   <th
                     key={col.key}
@@ -240,7 +261,7 @@ function DaySection({
                       colHeader(col.eventKey),
                       isPastCol(col.azan, col.eventKey) ? 'opacity-40' : '',
                     ].join(' ')}
-                    style={colBg(col.eventKey)}
+                    style={{ ...colBg(col.eventKey), ...(sc ? { color: sc } : {}) }}
                   >
                     <span className="block">{col.labels.en}</span>
                     <span className="block font-normal text-xs mt-0.5 opacity-75" lang="ar">
@@ -265,20 +286,23 @@ function DaySection({
                   أذان
                 </span>
               </th>
-              {columns.map((col) => (
-                <td
-                  key={col.key}
-                  id={`${sectionId}-azan-${col.key}`}
-                  className={[
-                    'px-2 py-2 text-center tabular-nums text-2xl transition-colors duration-300',
-                    colCell(col.eventKey),
-                    isPastCol(col.azan, col.eventKey) ? 'opacity-40' : '',
-                  ].join(' ')}
-                  style={{ color: '#205072', ...colBg(col.eventKey) }}
-                >
-                  {formatTime12Hr(col.azan)}
-                </td>
-              ))}
+              {columns.map((col) => {
+                const sc = specialColor(col.key);
+                return (
+                  <td
+                    key={col.key}
+                    id={`${sectionId}-azan-${col.key}`}
+                    className={[
+                      'px-2 py-2 text-center tabular-nums text-2xl transition-colors duration-300',
+                      colCell(col.eventKey),
+                      isPastCol(col.azan, col.eventKey) ? 'opacity-40' : '',
+                    ].join(' ')}
+                    style={{ color: sc ?? '#205072', ...colBg(col.eventKey) }}
+                  >
+                    {formatTime12Hr(col.azan)}
+                  </td>
+                );
+              })}
             </tr>
 
             {/* Iqama row */}
@@ -294,20 +318,23 @@ function DaySection({
                   إقامة
                 </span>
               </th>
-              {columns.map((col) => (
-                <td
-                  key={col.key}
-                  id={`${sectionId}-iqama-${col.key}`}
-                  className={[
-                    'px-2 py-2 text-center tabular-nums text-2xl transition-colors duration-300',
-                    colCell(col.eventKey),
-                    isPastCol(col.azan, col.eventKey) ? 'opacity-40' : '',
-                  ].join(' ')}
-                  style={{ color: '#329D9C', ...colBg(col.eventKey) }}
-                >
-                  {col.iqama ? formatTime12Hr(col.iqama) : <span className="opacity-30">—</span>}
-                </td>
-              ))}
+              {columns.map((col) => {
+                const sc = specialColor(col.key);
+                return (
+                  <td
+                    key={col.key}
+                    id={`${sectionId}-iqama-${col.key}`}
+                    className={[
+                      'px-2 py-2 text-center tabular-nums text-2xl transition-colors duration-300',
+                      colCell(col.eventKey),
+                      isPastCol(col.azan, col.eventKey) ? 'opacity-40' : '',
+                    ].join(' ')}
+                    style={{ color: sc ?? '#329D9C', ...colBg(col.eventKey) }}
+                  >
+                    {col.iqama ? formatTime12Hr(col.iqama) : <span className="opacity-30">—</span>}
+                  </td>
+                );
+              })}
             </tr>
           </tbody>
         </table>

@@ -124,6 +124,7 @@ function DayRows({
         <PrayerRow
           name="fajr"
           label="1st Eid Prayer"
+          isEid
           entry={{ azan: schedule.eid_prayer_1, iqama: '' }}
           isNext={isToday && nextPrayer === 'eid-prayer-1'}
           isActive={false}
@@ -145,6 +146,7 @@ function DayRows({
         <PrayerRow
           name="fajr"
           label="2nd Eid Prayer"
+          isEid
           entry={{ azan: schedule.eid_prayer_2, iqama: '' }}
           isNext={isToday && nextPrayer === 'eid-prayer-2'}
           isActive={false}
@@ -186,6 +188,7 @@ function DayRows({
         <PrayerRow
           name="isha"
           label="Qiyam"
+          isQiyam
           entry={{ azan: schedule.qiyam_time, iqama: '' }}
           isNext={false}
           isActive={false}
