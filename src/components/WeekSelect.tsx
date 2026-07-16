@@ -87,7 +87,6 @@ export function WeekSelect({ start, onWeekChange }: WeekSelectProps) {
   // Show current year + next year so the full upcoming calendar is available
   const weeks = useMemo(() => generateWeeks(currentYear, currentYear + 1), [currentYear]);
 
-  const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const selectedRef = useRef<HTMLLIElement>(null);
@@ -99,17 +98,12 @@ export function WeekSelect({ start, onWeekChange }: WeekSelectProps) {
     }
   }, [open]);
 
-  const filtered = search.trim()
-    ? weeks.filter((w) => w.label.toLowerCase().includes(search.trim().toLowerCase()))
-    : weeks;
-
   const selected = weeks.find((w) => w.start === start);
   const defaultIdx = currentWeekIndex(weeks);
   const displayLabel = selected?.label ?? weeks[defaultIdx]?.label ?? 'Select week';
 
   function choose(week: WeekOption) {
     onWeekChange(week.start, week.end);
-    setSearch('');
     setOpen(false);
   }
 
@@ -117,7 +111,6 @@ export function WeekSelect({ start, onWeekChange }: WeekSelectProps) {
     // Close only when focus leaves the entire container
     if (!containerRef.current?.contains(e.relatedTarget as Node)) {
       setOpen(false);
-      setSearch('');
     }
   }
 
@@ -147,25 +140,9 @@ export function WeekSelect({ start, onWeekChange }: WeekSelectProps) {
       {/* Dropdown */}
       {open && (
         <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded shadow-lg">
-          {/* Search input */}
-          <div className="p-2 border-b border-gray-100">
-            <input
-              autoFocus
-              type="text"
-              placeholder="Search week…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onMouseDown={(e) => e.stopPropagation()}
-              className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
           {/* Options list */}
           <ul role="listbox" className="max-h-64 overflow-y-auto py-1">
-            {filtered.length === 0 && (
-              <li className="px-3 py-2 text-sm text-gray-400">No weeks found</li>
-            )}
-            {filtered.map((week) => {
+            {weeks.map((week) => {
               const isSelected = week.start === start;
               const isCurrent = week.start === weeks[defaultIdx]?.start;
               return (

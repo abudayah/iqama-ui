@@ -32,3 +32,10 @@ export async function deleteOverride(id: number): Promise<void> {
     requiresAuth: true,
   });
 }
+
+export async function clearCache(): Promise<void> {
+  return apiFetch<void>('/api/v1/admin/cache', {
+    method: 'DELETE',
+    requiresAuth: true,
+  });
+}
