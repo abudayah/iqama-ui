@@ -9,6 +9,7 @@ export async function apiFetch<T>(
   const { requiresAuth, ...fetchOptions } = options ?? {};
 
   const headers = new Headers(fetchOptions.headers);
+  headers.set('Cache-Control', 'no-store');
   if (requiresAuth) {
     headers.set('x-api-key', apiKey);
   }
