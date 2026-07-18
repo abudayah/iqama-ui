@@ -39,8 +39,12 @@ export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModa
     initial?.overrideType ?? 'FIXED',
   );
   const [value, setValue] = useState(initial?.value ?? '');
-  const [startDate, setStartDate] = useState(initial?.startDate ?? '');
-  const [endDate, setEndDate] = useState(initial?.endDate ?? '');
+  const [startDate, setStartDate] = useState(
+    initial?.startDate
+      ? initial.startDate.substring(0, 10)
+      : new Date().toISOString().substring(0, 10),
+  );
+  const [endDate, setEndDate] = useState(initial?.endDate ? initial.endDate.substring(0, 10) : '');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 

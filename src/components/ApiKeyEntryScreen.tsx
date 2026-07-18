@@ -15,16 +15,16 @@ export function ApiKeyEntryScreen() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
       <div className="w-full max-w-sm bg-white rounded-lg shadow p-6">
         <h1 className="text-xl font-bold mb-4">Admin Login</h1>
-        <p className="text-gray-600 mb-4 text-sm">Enter your API key to access the admin panel.</p>
+        <p className="text-gray-600 mb-4 text-sm">Enter your password to access the admin panel.</p>
         <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="api-key">
-          API Key
+          Password
         </label>
         <input
           id="api-key"
           type="password"
           value={key}
           onChange={(e) => setKey(e.target.value)}
-          placeholder="Enter API key"
+          placeholder="Enter password"
           className="w-full border border-gray-300 rounded px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
           onKeyDown={(e) => e.key === 'Enter' && handleSave()}
         />
