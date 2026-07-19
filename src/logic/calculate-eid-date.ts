@@ -1,13 +1,15 @@
 /**
- * Calculates the Gregorian date of Eid based on the current date and the
- * moon-sighting decision.
+ * @deprecated
+ * This function duplicates business logic that is owned authoritatively by the
+ * iqama-engine backend (`computeFallbackDate` in
+ * `src/hijri-calendar/calendar-override.service.ts`).
  *
- * - When `isSighted` is true, the new month starts the next day (currentDate + 1).
- * - When `isSighted` is false, the current month completes 30 days (currentDate + 2).
- * - For EID_AL_FITR (1st of Shawwal), the Eid date is the month start itself (+ 0 days).
- * - For EID_AL_ADHA (10th of Dhul-Hijjah), the Eid date is month start + 9 days.
+ * Do NOT use this function for display or calculations — the backend already
+ * returns the resolved Eid date (with moon-sighting overrides applied) via the
+ * `GET /api/v1/hijri-calendar/eid-prayers` endpoint.  Use that instead.
  *
- * The input `currentDate` is never mutated.
+ * This file is kept only for historical reference and will be removed once
+ * any remaining callers have been migrated.
  */
 export function calculateEidDate(
   currentDate: Date,

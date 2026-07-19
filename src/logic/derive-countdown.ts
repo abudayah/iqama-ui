@@ -1,11 +1,6 @@
 import type { DailySchedule, CountdownState } from '../types/index';
 import type { PrayerEvent } from './derive-next-prayer';
-
-function parseTime(date: string, time: string): Date {
-  const [hours, minutes] = time.split(':').map(Number);
-  const [year, month, day] = date.split('-').map(Number);
-  return new Date(year!, month! - 1, day!, hours!, minutes!, 0, 0);
-}
+import { parseMasjidTime } from './masjid-time';
 
 function formatDuration(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
@@ -42,7 +37,7 @@ export function deriveCountdown(
   now: Date,
 ): CountdownState {
   const { azan, iqama } = resolveEventTimes(schedule, nextPrayer);
-  const azanTime = parseTime(schedule.date, azan);
+  const azanTime = parseMasjidTime(schedule.date, azan);
 
   if (now < azanTime) {
     return {
@@ -56,7 +51,7 @@ export function deriveCountdown(
     return { phase: 'done', display: 'All prayers complete' };
   }
 
-  const iqamaTime = parseTime(schedule.date, iqama);
+  const iqamaTime = parseMasjidTime(schedule.date, iqama);
 
   if (now < iqamaTime) {
     return {
