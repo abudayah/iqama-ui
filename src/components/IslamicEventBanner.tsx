@@ -15,8 +15,6 @@ function getIslamicEventGreeting(hijriMonth: number, hijriDay: number): IslamicE
     if (hijriDay === 1) return '🗓️ Hijri New Year';
     if (hijriDay === 10) return '🤲 Day of Ashura';
   }
-  // 3. Rabi al-Awwal — Mawlid al-Nabi
-  if (hijriMonth === 3 && hijriDay === 12) return '🌹 Mawlid al-Nabi';
   // 7. Rajab — Isra' and Mi'raj
   if (hijriMonth === 7 && hijriDay === 27) return "🕌 Isra' and Mi'raj";
   // 9. Ramadan
