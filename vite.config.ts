@@ -71,6 +71,8 @@ export default defineConfig(({ mode }) => {
         manifest: false,
         workbox: {
           runtimeCaching: [],
+          skipWaiting: true,
+          clientsClaim: true,
         },
       }),
     ],
