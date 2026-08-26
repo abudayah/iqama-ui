@@ -1,0 +1,8 @@
+PassengerEnabled on
+PassengerAppType node
+PassengerStartupFile dist/src/main.js
+PassengerAppRoot /home2/theisbcc/iqama.theisbc.ca/api
+PassengerNodejs /opt/cpanel/ea-nodejs22/bin/node
+PassengerBaseURI /api
+
+SetEnv TZ America/Vancouver
