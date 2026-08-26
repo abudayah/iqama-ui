@@ -55,11 +55,8 @@ export function parseMasjidTime(date: string, time: string): Date {
     const tzHour = get('hour') % 24;
     const tzMinute = get('minute');
 
-    const tzMs = Date.UTC(tzYear, tzMonth - 1, tzDay, tzHour, tzMinute, 0, 0);
-    const diff = naiveUtcMs - tzMs; // offset in ms between UTC and tz wall-clock
-    candidate = naiveUtcMs + diff;
-
-    // If the formatted output already matches our target, we're done.
+    // If the formatted output already matches our target, candidate is correct — stop now
+    // before recomputing, otherwise the diff calculation would corrupt it.
     if (
       tzYear === year &&
       tzMonth === month &&
@@ -69,6 +66,10 @@ export function parseMasjidTime(date: string, time: string): Date {
     ) {
       break;
     }
+
+    const tzMs = Date.UTC(tzYear, tzMonth - 1, tzDay, tzHour, tzMinute, 0, 0);
+    const diff = naiveUtcMs - tzMs; // offset in ms between UTC and tz wall-clock
+    candidate = naiveUtcMs + diff;
   }
 
   return new Date(candidate);
