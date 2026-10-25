@@ -8,6 +8,14 @@ import * as fc from 'fast-check';
 import { PrayerTable } from './PrayerTable';
 import type { DailySchedule } from '../types/index';
 
+// Mirrors formatTime12Hr in PrayerRow.tsx: the table renders 12-hour AM/PM times,
+// so assertions must compare against the formatted string, not the raw HH:mm input.
+const formatTime12Hr = (time24: string): string => {
+  const [hours, minutes] = time24.split(':');
+  const date = new Date(2000, 0, 1, parseInt(hours!), parseInt(minutes!));
+  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+};
+
 const fixtureSchedule: DailySchedule = {
   date: '2025-01-15',
   hijri_date: 'Rajab 15, 1446',
@@ -159,7 +167,7 @@ describe('PrayerTable — Qiyam row unit tests', () => {
 
     // The iqama span renders an empty string — confirm no iqama time is shown
     const timeSpans = row!.querySelectorAll('.tabular-nums span');
-    expect(timeSpans[0]?.textContent).toBe('01:30');
+    expect(timeSpans[0]?.textContent).toBe(formatTime12Hr('01:30'));
     expect(timeSpans[1]?.textContent).toBe('');
   });
 });
@@ -194,7 +202,7 @@ describe('PrayerTable — Property 3: Qiyam row present for any valid qiyam_time
         const row = qiyamLabels[0]!.closest('[data-testid="prayer-row-isha"]');
         expect(row).not.toBeNull();
         const timeSpans = row!.querySelectorAll('.tabular-nums span');
-        expect(timeSpans[0]?.textContent).toBe(qiyamTime);
+        expect(timeSpans[0]?.textContent).toBe(formatTime12Hr(qiyamTime));
 
         unmount();
       }),

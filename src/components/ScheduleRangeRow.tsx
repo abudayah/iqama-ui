@@ -26,6 +26,13 @@ function diffMinutes(a: string, b: string): number {
   return bh! * 60 + bm! - (ah! * 60 + am!);
 }
 
+/** Formats an HH:mm 24-hour time as a 12-hour AM/PM string (e.g. "05:30 AM"). */
+function formatTime12Hr(time24: string): string {
+  const [hours, minutes] = time24.split(':');
+  const date = new Date(2000, 0, 1, parseInt(hours!, 10), parseInt(minutes!, 10));
+  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+}
+
 export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps) {
   const activeOverrides = overrides.filter((o) => isActive(o, schedule.date));
 
@@ -45,7 +52,12 @@ export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps)
           return (
             <div key={prayer} className="flex-1 flex flex-col items-center py-3 px-1">
               <span className="text-xs text-gray-400">{PRAYER_LABELS[prayer]}</span>
-              <span className="text-xs text-gray-500 mt-0.5">{entry.azan}</span>
+              <span
+                className={`text-xs mt-0.5 ${entry.azan_customized ? 'font-medium text-orange-500' : 'text-gray-500'}`}
+                title={entry.azan_customized ? 'Customized Azan time' : undefined}
+              >
+                {formatTime12Hr(entry.azan)}
+              </span>
               <span className="text-xs font-semibold text-gray-900 mt-0.5">{entry.iqama}</span>
               {override ? (
                 <span className="text-xs font-medium text-orange-500 mt-0.5">
@@ -80,7 +92,12 @@ export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps)
           return (
             <div key={prayer} className="flex-1 flex flex-col items-center py-3 px-1">
               <span className="text-xs text-gray-400">{PRAYER_LABELS[prayer]}</span>
-              <span className="text-xs text-gray-500 mt-0.5">{entry.azan}</span>
+              <span
+                className={`text-xs mt-0.5 ${entry.azan_customized ? 'font-medium text-orange-500' : 'text-gray-500'}`}
+                title={entry.azan_customized ? 'Customized Azan time' : undefined}
+              >
+                {formatTime12Hr(entry.azan)}
+              </span>
               <span className="text-xs font-semibold text-gray-900 mt-0.5">{entry.iqama}</span>
               {override ? (
                 <span className="text-xs font-medium text-orange-500 mt-0.5">

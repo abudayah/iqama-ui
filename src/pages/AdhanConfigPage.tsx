@@ -6,13 +6,12 @@
  * Sections:
  *   - Overview: prayer cards + general settings summary
  *   - Periods: seasonal profiles
- *   - History: audit trail
  *
  * Changes accumulate in a local draft. A sticky bar appears when there are
  * unsaved changes. The Review & Save flow runs preview → confirm → apply.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type {
   PrayerKey,
   AdhanSettings,
@@ -22,15 +21,18 @@ import type {
 } from '../types';
 import { useAdhanConfig } from '../hooks/useAdhanConfig';
 import { useAdhanDraft } from '../hooks/useAdhanDraft';
-import { previewVersion, applyBaseVersion } from '../services/adhan-config-service';
-import type { PreviewResponse } from '../types';
+import {
+  previewVersion,
+  applyBaseVersion,
+  fetchTodaySchedule,
+} from '../services/adhan-config-service';
+import type { PreviewResponse, DailySchedule } from '../types';
 
 import { PrayerCard } from '../components/adhan-config/PrayerCard';
 import { GeneralSettingsDrawer } from '../components/adhan-config/GeneralSettingsDrawer';
 import { PrayerOffsetDrawer } from '../components/adhan-config/PrayerOffsetDrawer';
 import { ReviewDialog } from '../components/adhan-config/ReviewDialog';
 import { PeriodsSection } from '../components/adhan-config/PeriodsSection';
-import { HistorySection } from '../components/adhan-config/HistorySection';
 import {
   METHOD_LABELS,
   HIGH_LAT_LABELS,
@@ -77,11 +79,22 @@ function periodLabelsForPrayer(activePeriods: AdhanConfigPeriod[], prayer: Praye
 
 // ─── Page component ────────────────────────────────────────────────────────────
 
-type ActiveTab = 'overview' | 'periods' | 'history';
+type ActiveTab = 'overview' | 'periods';
 
 export function AdhanConfigPage() {
   const { config, catalog, loading, error, refresh } = useAdhanConfig();
   const draft = useAdhanDraft(config?.today);
+
+  const [todaySchedule, setTodaySchedule] = useState<DailySchedule | null>(null);
+  const scheduleToday = config?.today;
+  useEffect(() => {
+    if (!scheduleToday) return;
+    fetchTodaySchedule(scheduleToday)
+      .then(setTodaySchedule)
+      .catch(() => {
+        /* non-critical */
+      });
+  }, [scheduleToday]);
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
   const [generalDrawerOpen, setGeneralDrawerOpen] = useState(false);
@@ -125,7 +138,7 @@ export function AdhanConfigPage() {
     }
   };
 
-  const handleConfirm = async (reason: string) => {
+  const handleConfirm = async () => {
     if (!proposedSettings || !preview) return;
     setSaving(true);
     try {
@@ -134,7 +147,6 @@ export function AdhanConfigPage() {
         draft.draft.effectiveFrom,
         preview.previewId,
         config?.currentRevision ?? 0,
-        reason || undefined,
       );
       draft.reset();
       setReviewOpen(false);
@@ -188,6 +200,7 @@ export function AdhanConfigPage() {
     prayerDrawerPrayer != null
       ? (draft.draft.prayers[prayerDrawerPrayer]?.offsetMinutes ??
         baseSettings?.prayers[prayerDrawerPrayer]?.offsetMinutes ??
+        effective?.perPrayer[prayerDrawerPrayer]?.offsetMinutes ??
         0)
       : 0;
 
@@ -195,7 +208,7 @@ export function AdhanConfigPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Sub-tabs */}
       <nav className="flex border-b border-gray-200 bg-white sticky top-0 z-10">
-        {(['overview', 'periods', 'history'] as ActiveTab[]).map((tab) => (
+        {(['overview', 'periods'] as ActiveTab[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -249,15 +262,6 @@ export function AdhanConfigPage() {
         {/* ── Overview tab ─────────────────────────────────────────────── */}
         {activeTab === 'overview' && (
           <>
-            {/* Periods coverage warning */}
-            {config.periodsWarning && (
-              <div
-                role="alert"
-                className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800"
-              >
-                ⚠️ {config.periodsWarning}
-              </div>
-            )}
             {/* Config version banner */}
             {config.currentRevision > 0 &&
               (() => {
@@ -306,8 +310,14 @@ export function AdhanConfigPage() {
                       key={prayer}
                       prayer={prayer}
                       effective={effective}
+                      baseSettings={baseSettings}
                       activePeriodLabels={periodLabelsForPrayer(todayActivePeriods, prayer)}
                       draftOffset={draft.draft.prayers[prayer]?.offsetMinutes}
+                      azanTime={
+                        prayer === 'sunrise'
+                          ? (todaySchedule?.sunrise ?? null)
+                          : (todaySchedule?.[prayer]?.azan ?? null)
+                      }
                       onClick={() => setPrayerDrawerPrayer(prayer)}
                     />
                   ))}
@@ -339,6 +349,13 @@ export function AdhanConfigPage() {
                   </dd>
                 </div>
                 <div className="flex gap-2">
+                  <dt className="text-gray-400 w-28 shrink-0">Location</dt>
+                  <dd className="font-medium font-mono">
+                    {config.latitude?.toFixed(7)}, {config.longitude?.toFixed(7)}{' '}
+                    <span className="text-gray-400 font-normal font-sans">(read-only)</span>
+                  </dd>
+                </div>
+                <div className="mt-2 pt-2 border-t border-gray-100 flex gap-2">
                   <dt className="text-gray-400 w-28 shrink-0">Method</dt>
                   <dd className="font-medium">{METHOD_LABELS[currentGeneral.method]}</dd>
                 </div>
@@ -362,9 +379,6 @@ export function AdhanConfigPage() {
 
         {/* ── Periods tab ──────────────────────────────────────────────── */}
         {activeTab === 'periods' && <PeriodsSection periods={config.periods} onRefresh={refresh} />}
-
-        {/* ── History tab ──────────────────────────────────────────────── */}
-        {activeTab === 'history' && <HistorySection onRefresh={refresh} />}
       </div>
 
       {/* Drawers */}
@@ -416,7 +430,6 @@ export function AdhanConfigPage() {
           onConfirm={handleConfirm}
           currentSettings={baseSettings}
           proposedSettings={proposedSettings}
-          effectiveFrom={draft.draft.effectiveFrom}
           preview={preview}
           previewLoading={previewLoading}
           previewError={previewError}

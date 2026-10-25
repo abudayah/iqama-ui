@@ -3,6 +3,8 @@ export type PrayerName = 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha';
 export interface PrayerEntry {
   azan: string; // HH:mm
   iqama: string; // HH:mm
+  /** True when a non-zero per-prayer Azan offset is applied (base or active period). */
+  azan_customized?: boolean;
 }
 
 export interface DailySchedule {
@@ -148,7 +150,6 @@ export interface AdhanConfigVersion {
   id: number;
   effectiveFrom: string; // YYYY-MM-DD
   settings: string; // JSON
-  reason: string | null;
   createdBy: string;
   createdAt: string;
 }
@@ -163,18 +164,6 @@ export interface AdhanConfigPeriod {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
-}
-
-export interface AdhanConfigAuditEntry {
-  id: number;
-  entity: 'VERSION' | 'PERIOD';
-  entityId: number;
-  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'REVERT';
-  before: string | null;
-  after: string | null;
-  actor: string;
-  reason: string | null;
-  createdAt: string;
 }
 
 export interface MethodCatalogEntry {
@@ -222,8 +211,9 @@ export interface AdhanConfigResponse {
   today: string;
   /** IANA timezone of the masjid */
   timezone: string;
-  /** Non-null when a seasonal period is missing for next year */
-  periodsWarning: string | null;
+  /** Masjid coordinates */
+  latitude: number;
+  longitude: number;
 }
 
 export interface PreviewResponse {

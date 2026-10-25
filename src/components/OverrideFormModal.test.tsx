@@ -1,7 +1,7 @@
 // Validates: Requirements 9.1, 9.2, 9.3, 10.1, 10.2
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { OverrideFormModal } from './OverrideFormModal';
 import type { Override } from '../types/index';
@@ -53,12 +53,11 @@ describe('OverrideFormModal — FIXED validation', () => {
 
     // Fill in the time input
     const timeInput = getTimeInput();
-    await user.clear(timeInput);
-    await user.type(timeInput, '05:45');
+    fireEvent.change(timeInput, { target: { value: '05:45' } });
 
     const { startDateInput, endDateInput } = getDateInputs();
-    await user.type(startDateInput, '2025-01-10');
-    await user.type(endDateInput, '2025-01-20');
+    fireEvent.change(startDateInput, { target: { value: '2025-01-10' } });
+    fireEvent.change(endDateInput, { target: { value: '2025-01-20' } });
 
     await user.click(screen.getByRole('button', { name: /Save/i }));
 
@@ -100,8 +99,8 @@ describe('OverrideFormModal — OFFSET slider', () => {
     await user.click(screen.getByDisplayValue('OFFSET'));
 
     const { startDateInput, endDateInput } = getDateInputs();
-    await user.type(startDateInput, '2025-01-10');
-    await user.type(endDateInput, '2025-01-20');
+    fireEvent.change(startDateInput, { target: { value: '2025-01-10' } });
+    fireEvent.change(endDateInput, { target: { value: '2025-01-20' } });
 
     await user.click(screen.getByRole('button', { name: /Save/i }));
 
@@ -187,12 +186,12 @@ describe('OverrideFormModal — invalid inputs prevent submission', () => {
 
     // Fill in a valid time value
     const timeInput = getTimeInput();
-    await user.clear(timeInput);
-    await user.type(timeInput, '05:45');
+    fireEvent.change(timeInput, { target: { value: '05:45' } });
 
-    // Only fill end date, leave start date empty
-    const { endDateInput } = getDateInputs();
-    await user.type(endDateInput, '2025-01-20');
+    // Clear the start date (it defaults to today), leave it empty, fill end date
+    const { startDateInput, endDateInput } = getDateInputs();
+    fireEvent.change(startDateInput, { target: { value: '' } });
+    fireEvent.change(endDateInput, { target: { value: '2025-01-20' } });
 
     await user.click(screen.getByRole('button', { name: /Save/i }));
 
@@ -226,12 +225,11 @@ describe('OverrideFormModal — invalid inputs prevent submission', () => {
     render(<OverrideFormModal onSave={onSave} onClose={vi.fn()} />);
 
     const timeInput = getTimeInput();
-    await user.clear(timeInput);
-    await user.type(timeInput, '05:45');
+    fireEvent.change(timeInput, { target: { value: '05:45' } });
 
     const { startDateInput, endDateInput } = getDateInputs();
-    await user.type(startDateInput, '2025-01-20');
-    await user.type(endDateInput, '2025-01-10');
+    fireEvent.change(startDateInput, { target: { value: '2025-01-20' } });
+    fireEvent.change(endDateInput, { target: { value: '2025-01-10' } });
 
     await user.click(screen.getByRole('button', { name: /Save/i }));
 

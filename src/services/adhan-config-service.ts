@@ -10,10 +10,10 @@ import type {
   AdhanCatalogResponse,
   AdhanConfigVersion,
   AdhanConfigPeriod,
-  AdhanConfigAuditEntry,
   AdhanSettings,
   PartialAdhanSettings,
   PreviewResponse,
+  DailySchedule,
 } from '../types';
 
 const BASE = '/api/v1/admin/adhan-config';
@@ -28,13 +28,8 @@ export function fetchAdhanCatalog(): Promise<AdhanCatalogResponse> {
   return apiFetch<AdhanCatalogResponse>(`${BASE}/catalog`, { requiresAuth: true });
 }
 
-export function fetchAdhanHistory(
-  page = 1,
-  pageSize = 20,
-): Promise<{ items: AdhanConfigAuditEntry[]; total: number; page: number; pageSize: number }> {
-  return apiFetch(`${BASE}/history?page=${page}&pageSize=${pageSize}`, {
-    requiresAuth: true,
-  });
+export function fetchTodaySchedule(today: string): Promise<DailySchedule> {
+  return apiFetch<DailySchedule>(`/api/v1/schedule?date=${today}`);
 }
 
 // ── Preview (required before any write) ───────────────────────────────────────
@@ -80,7 +75,6 @@ export function applyBaseVersion(
   effectiveFrom: string,
   previewId: string,
   expectedRevision: number,
-  reason?: string,
 ): Promise<AdhanConfigVersion> {
   return apiFetch<AdhanConfigVersion>(`${BASE}/base`, {
     method: 'PUT',
@@ -91,7 +85,6 @@ export function applyBaseVersion(
       effectiveFrom,
       previewId,
       expectedRevision,
-      reason,
     }),
   });
 }
@@ -146,13 +139,6 @@ export function updatePeriod(
 export function deletePeriod(id: number, previewId: string): Promise<void> {
   return apiFetch<void>(`${BASE}/periods/${id}?previewId=${encodeURIComponent(previewId)}`, {
     method: 'DELETE',
-    requiresAuth: true,
-  });
-}
-
-export function revertHistory(id: number): Promise<AdhanConfigVersion> {
-  return apiFetch<AdhanConfigVersion>(`${BASE}/history/${id}/revert`, {
-    method: 'POST',
     requiresAuth: true,
   });
 }

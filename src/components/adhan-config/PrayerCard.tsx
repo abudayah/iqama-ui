@@ -5,17 +5,20 @@
  * any "Customized" / "Period active" badges. Clicking opens the offset drawer.
  */
 
-import type { PrayerKey, AdhanConfigResponse } from '../../types';
-import { METHOD_LABELS } from './method-labels';
+import type { PrayerKey, AdhanConfigResponse, AdhanSettings } from '../../types';
 
 interface Props {
   prayer: PrayerKey;
   /** Effective (merged) settings for today */
   effective: NonNullable<AdhanConfigResponse['effective']>;
+  /** Raw base version settings (un-merged, no periods) — used for isCustomized */
+  baseSettings: AdhanSettings | null;
   /** Active period labels for this prayer */
   activePeriodLabels: string[];
   /** Current draft offset for this prayer (may differ from saved) */
   draftOffset: number | undefined;
+  /** Today's Azan time from the schedule API (HH:mm), null while loading */
+  azanTime: string | null;
   onClick: () => void;
 }
 
@@ -28,17 +31,34 @@ const PRAYER_DISPLAY: Record<PrayerKey, string> = {
   isha: 'Isha',
 };
 
-export function PrayerCard({ prayer, effective, activePeriodLabels, draftOffset, onClick }: Props) {
+/** Formats an HH:mm 24-hour time as a 12-hour AM/PM string (e.g. "05:30 AM"). */
+function formatTime12Hr(time24: string): string {
+  const [hours, minutes] = time24.split(':');
+  const date = new Date(2000, 0, 1, parseInt(hours!, 10), parseInt(minutes!, 10));
+  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+}
+
+export function PrayerCard({
+  prayer,
+  effective,
+  baseSettings,
+  activePeriodLabels,
+  draftOffset,
+  azanTime,
+  onClick,
+}: Props) {
   const perPrayer = effective.perPrayer[prayer];
   const savedOffset = perPrayer?.offsetMinutes ?? 0;
 
-  const isCustomized = savedOffset !== 0 || perPrayer?.method !== effective.general.method;
+  // isCustomized reflects what's permanently saved in the base version,
+  // not the period-merged effective (periods are shown separately via hasPeriod)
+  const basePerPrayer = baseSettings?.prayers[prayer];
+  const baseOffset = basePerPrayer?.offsetMinutes ?? 0;
+  const isCustomized =
+    baseOffset !== 0 ||
+    (basePerPrayer?.method !== undefined && basePerPrayer.method !== effective.general.method);
   const hasPeriod = activePeriodLabels.length > 0;
   const hasDraftChange = draftOffset !== undefined && draftOffset !== savedOffset;
-
-  const methodLabel = perPrayer?.method
-    ? METHOD_LABELS[perPrayer.method]
-    : METHOD_LABELS[effective.general.method];
 
   const displayOffset = draftOffset !== undefined ? draftOffset : savedOffset;
   const offsetLabel =
@@ -64,11 +84,15 @@ export function PrayerCard({ prayer, effective, activePeriodLabels, draftOffset,
         {PRAYER_DISPLAY[prayer]}
       </span>
 
-      <span className="mt-1 text-xs text-gray-500 truncate max-w-full">{methodLabel}</span>
+      {azanTime && (
+        <span className="mt-0.5 text-sm font-semibold text-gray-800">
+          {formatTime12Hr(azanTime)}
+        </span>
+      )}
 
       {offsetLabel && (
         <span
-          className={`mt-1 text-xs font-medium ${
+          className={`mt-0.5 text-xs font-medium ${
             hasDraftChange ? 'text-blue-700' : 'text-amber-700'
           }`}
         >
