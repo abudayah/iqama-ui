@@ -218,6 +218,12 @@ export interface AdhanConfigResponse {
     activePeriodIds: number[];
   } | null;
   recommendedHighLatitudeRule: HighLatitudeRuleName;
+  /** Server-computed today in masjid timezone (YYYY-MM-DD) */
+  today: string;
+  /** IANA timezone of the masjid */
+  timezone: string;
+  /** Non-null when a seasonal period is missing for next year */
+  periodsWarning: string | null;
 }
 
 export interface PreviewResponse {
