@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import type { AdhanConfigAuditEntry } from '../../types';
+import type { AdhanConfigAuditEntry, AdhanSettings, PartialAdhanSettings } from '../../types';
 import { fetchAdhanHistory, revertHistory } from '../../services/adhan-config-service';
 
 interface Props {
@@ -25,6 +25,122 @@ const ACTION_COLORS: Record<AdhanConfigAuditEntry['action'], string> = {
   DELETE: 'text-red-700 bg-red-50 border-red-200',
   REVERT: 'text-purple-700 bg-purple-50 border-purple-200',
 };
+
+const PRAYER_LABELS: Record<string, string> = {
+  fajr: 'Fajr',
+  sunrise: 'Sunrise',
+  dhuhr: 'Dhuhr',
+  asr: 'Asr',
+  maghrib: 'Maghrib',
+  isha: 'Isha',
+};
+
+const FIELD_LABELS: Record<string, string> = {
+  method: 'Method',
+  madhab: 'Madhab',
+  highLatitudeRule: 'High latitude',
+  polarCircleResolution: 'Polar circle',
+  rounding: 'Rounding',
+  shafaq: 'Shafaq',
+  offsetMinutes: 'Offset',
+  fajrAngle: 'Fajr angle',
+  ishaAngle: 'Isha angle',
+  ishaInterval: 'Isha interval',
+  maghribAngle: 'Maghrib angle',
+};
+
+function fmtVal(key: string, val: unknown): string {
+  if (val === undefined || val === null) return '—';
+  if (key === 'offsetMinutes') {
+    const n = Number(val);
+    return n === 0 ? '0 min' : n > 0 ? `+${n} min` : `${n} min`;
+  }
+  if (key === 'fajrAngle' || key === 'ishaAngle' || key === 'maghribAngle') return `${val}°`;
+  if (key === 'ishaInterval') return `${val} min after Maghrib`;
+  return String(val);
+}
+
+/** Build human-readable change lines from before/after JSON strings. */
+function buildChangeSummary(
+  entity: AdhanConfigAuditEntry['entity'],
+  action: AdhanConfigAuditEntry['action'],
+  before: string | null,
+  after: string | null,
+): string[] {
+  if (action === 'DELETE') return ['Deleted'];
+  if (!after) return [];
+
+  try {
+    if (entity === 'VERSION') {
+      const a = JSON.parse(after) as AdhanSettings;
+      const b = before ? (JSON.parse(before) as AdhanSettings) : null;
+      const lines: string[] = [];
+
+      // General settings diff
+      for (const [k, av] of Object.entries(a.general ?? {})) {
+        const bv = b?.general?.[k as keyof typeof b.general];
+        if (bv !== undefined && bv !== av) {
+          lines.push(`${FIELD_LABELS[k] ?? k}: ${fmtVal(k, bv)} → ${fmtVal(k, av)}`);
+        } else if (bv === undefined && !b) {
+          lines.push(`${FIELD_LABELS[k] ?? k}: ${fmtVal(k, av)}`);
+        }
+      }
+
+      // Per-prayer diff
+      for (const [prayer, ps] of Object.entries(a.prayers ?? {})) {
+        const bps = (b?.prayers?.[prayer as keyof typeof b.prayers] ?? {}) as Record<
+          string,
+          unknown
+        >;
+        for (const [k, av] of Object.entries(ps ?? {})) {
+          const bv = bps[k];
+          const label = `${PRAYER_LABELS[prayer] ?? prayer} ${FIELD_LABELS[k] ?? k}`;
+          if (bv !== undefined && bv !== av) {
+            lines.push(`${label}: ${fmtVal(k, bv)} → ${fmtVal(k, av)}`);
+          } else if (bv === undefined) {
+            lines.push(`${label}: ${fmtVal(k, av)}`);
+          }
+        }
+        // Removed fields
+        for (const k of Object.keys(bps)) {
+          if ((ps as Record<string, unknown>)[k] === undefined) {
+            lines.push(`${PRAYER_LABELS[prayer] ?? prayer} ${FIELD_LABELS[k] ?? k}: removed`);
+          }
+        }
+      }
+
+      return lines;
+    }
+
+    if (entity === 'PERIOD') {
+      const a = JSON.parse(after) as PartialAdhanSettings;
+      const b = before ? (JSON.parse(before) as PartialAdhanSettings) : null;
+      const lines: string[] = [];
+
+      for (const [prayer, ps] of Object.entries(a.prayers ?? {})) {
+        const bps = (b?.prayers?.[prayer as keyof typeof b.prayers] ?? {}) as Record<
+          string,
+          unknown
+        >;
+        for (const [k, av] of Object.entries(ps ?? {})) {
+          const bv = bps[k];
+          const label = `${PRAYER_LABELS[prayer] ?? prayer} ${FIELD_LABELS[k] ?? k}`;
+          if (bv !== undefined && bv !== av) {
+            lines.push(`${label}: ${fmtVal(k, bv)} → ${fmtVal(k, av)}`);
+          } else if (bv === undefined) {
+            lines.push(`${label}: ${fmtVal(k, av)}`);
+          }
+        }
+      }
+
+      return lines;
+    }
+  } catch {
+    // malformed JSON — show nothing
+  }
+
+  return [];
+}
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString('en-CA', {
@@ -115,39 +231,53 @@ export function HistorySection({ onRefresh }: Props) {
         <p className="text-sm text-gray-400 text-center py-6">No history yet.</p>
       ) : (
         <ul className="space-y-2">
-          {entries.map((e) => (
-            <li
-              key={e.id}
-              className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-start gap-3"
-            >
-              <span
-                className={`shrink-0 mt-0.5 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${ACTION_COLORS[e.action]}`}
+          {entries.map((e) => {
+            const changes = buildChangeSummary(e.entity, e.action, e.before, e.after);
+            return (
+              <li
+                key={e.id}
+                className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-start gap-3"
               >
-                {ACTION_LABELS[e.action]}
-              </span>
-
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-900">
-                  <span className="font-medium">{e.entity}</span> #{e.entityId}
-                  {e.reason && <span className="text-gray-500"> — {e.reason}</span>}
-                </p>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  {formatDate(e.createdAt)} · by {e.actor}
-                </p>
-              </div>
-
-              {e.entity === 'VERSION' && e.action !== 'DELETE' && (
-                <button
-                  onClick={() => handleRevert(e)}
-                  disabled={revertingId === e.id}
-                  className="shrink-0 text-xs text-blue-600 hover:text-blue-700 px-2 py-1.5 min-h-[44px] disabled:opacity-50"
-                  aria-label={`Revert to config from ${formatDate(e.createdAt)}`}
+                <span
+                  className={`shrink-0 mt-0.5 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${ACTION_COLORS[e.action]}`}
                 >
-                  {revertingId === e.id ? '…' : 'Revert'}
-                </button>
-              )}
-            </li>
-          ))}
+                  {ACTION_LABELS[e.action]}
+                </span>
+
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-900 font-medium">
+                    {e.entity === 'VERSION' ? 'Base config' : 'Period'} #{e.entityId}
+                    {e.reason && <span className="text-gray-500 font-normal"> — {e.reason}</span>}
+                  </p>
+
+                  {changes.length > 0 && (
+                    <ul className="mt-1 space-y-0.5">
+                      {changes.map((line, i) => (
+                        <li key={i} className="text-xs text-gray-600 font-mono">
+                          {line}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  <p className="text-xs text-gray-400 mt-1">
+                    {formatDate(e.createdAt)} · by {e.actor}
+                  </p>
+                </div>
+
+                {e.entity === 'VERSION' && e.action !== 'DELETE' && (
+                  <button
+                    onClick={() => handleRevert(e)}
+                    disabled={revertingId === e.id}
+                    className="shrink-0 text-xs text-blue-600 hover:text-blue-700 px-2 py-1.5 min-h-[44px] disabled:opacity-50"
+                    aria-label={`Revert to config from ${formatDate(e.createdAt)}`}
+                  >
+                    {revertingId === e.id ? '…' : 'Revert'}
+                  </button>
+                )}
+              </li>
+            );
+          })}
         </ul>
       )}
 
