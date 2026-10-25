@@ -45,7 +45,12 @@ export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps)
           return (
             <div key={prayer} className="flex-1 flex flex-col items-center py-3 px-1">
               <span className="text-xs text-gray-400">{PRAYER_LABELS[prayer]}</span>
-              <span className="text-xs text-gray-500 mt-0.5">{entry.azan}</span>
+              <span
+                className={`text-xs mt-0.5 ${override ? 'font-medium text-orange-500' : 'text-gray-500'}`}
+                title={override ? 'Customized Azan time' : undefined}
+              >
+                {entry.azan}
+              </span>
               <span className="text-xs font-semibold text-gray-900 mt-0.5">{entry.iqama}</span>
               {override ? (
                 <span className="text-xs font-medium text-orange-500 mt-0.5">
@@ -80,7 +85,12 @@ export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps)
           return (
             <div key={prayer} className="flex-1 flex flex-col items-center py-3 px-1">
               <span className="text-xs text-gray-400">{PRAYER_LABELS[prayer]}</span>
-              <span className="text-xs text-gray-500 mt-0.5">{entry.azan}</span>
+              <span
+                className={`text-xs mt-0.5 ${override ? 'font-medium text-orange-500' : 'text-gray-500'}`}
+                title={override ? 'Customized Azan time' : undefined}
+              >
+                {entry.azan}
+              </span>
               <span className="text-xs font-semibold text-gray-900 mt-0.5">{entry.iqama}</span>
               {override ? (
                 <span className="text-xs font-medium text-orange-500 mt-0.5">
