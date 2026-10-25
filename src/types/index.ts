@@ -222,6 +222,9 @@ export interface AdhanConfigResponse {
   today: string;
   /** IANA timezone of the masjid */
   timezone: string;
+  /** Masjid coordinates */
+  latitude: number;
+  longitude: number;
 }
 
 export interface PreviewResponse {

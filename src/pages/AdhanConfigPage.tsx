@@ -330,6 +330,13 @@ export function AdhanConfigPage() {
                   </dd>
                 </div>
                 <div className="flex gap-2">
+                  <dt className="text-gray-400 w-28 shrink-0">Location</dt>
+                  <dd className="font-medium font-mono">
+                    {config.latitude?.toFixed(7)}, {config.longitude?.toFixed(7)}{' '}
+                    <span className="text-gray-400 font-normal font-sans">(read-only)</span>
+                  </dd>
+                </div>
+                <div className="mt-2 pt-2 border-t border-gray-100 flex gap-2">
                   <dt className="text-gray-400 w-28 shrink-0">Method</dt>
                   <dd className="font-medium">{METHOD_LABELS[currentGeneral.method]}</dd>
                 </div>
