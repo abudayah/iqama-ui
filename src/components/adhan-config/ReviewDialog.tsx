@@ -12,10 +12,9 @@ import { METHOD_LABELS, HIGH_LAT_LABELS, MADHAB_LABELS, ROUNDING_LABELS } from '
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (reason: string) => void;
+  onConfirm: () => void;
   currentSettings: AdhanSettings | null;
   proposedSettings: AdhanSettings;
-  effectiveFrom: string;
   preview: PreviewResponse | null;
   previewLoading: boolean;
   previewError: string | null;
@@ -90,20 +89,17 @@ export function ReviewDialog({
   onConfirm,
   currentSettings,
   proposedSettings,
-  effectiveFrom,
   preview,
   previewLoading,
   previewError,
 }: Props) {
   const [confirmed, setConfirmed] = useState(false);
-  const [reason, setReason] = useState('');
   const dialogRef = useRef<HTMLDivElement>(null);
 
   // Reset state when dialog opens
   useEffect(() => {
     if (isOpen) {
       setConfirmed(false);
-      setReason('');
     }
   }, [isOpen]);
 
@@ -142,9 +138,6 @@ export function ReviewDialog({
           <h2 id="review-dialog-title" className="text-lg font-semibold text-gray-900">
             Review changes
           </h2>
-          <p className="text-sm text-gray-500 mt-1">
-            These changes will take effect on <strong>{effectiveFrom}</strong>
-          </p>
         </div>
 
         {/* Body */}
@@ -200,21 +193,6 @@ export function ReviewDialog({
             </div>
           )}
 
-          {/* Reason */}
-          <div>
-            <label htmlFor="review-reason" className="block text-sm font-medium text-gray-700 mb-1">
-              Reason (optional)
-            </label>
-            <input
-              id="review-reason"
-              type="text"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. Switching to MWL for Ramadan"
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
           {/* Confirmation checkbox */}
           <label className="flex items-start gap-3 cursor-pointer select-none">
             <input
@@ -239,7 +217,7 @@ export function ReviewDialog({
             Cancel
           </button>
           <button
-            onClick={() => onConfirm(reason)}
+            onClick={() => onConfirm()}
             disabled={!canApply}
             className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
           >

@@ -14,7 +14,7 @@ export function AdminNav() {
           }`
         }
       >
-        Overrides
+        Iqama
       </NavLink>
       <NavLink
         to="/admin/schedule"
@@ -26,7 +26,7 @@ export function AdminNav() {
           }`
         }
       >
-        Schedule
+        Weekly View
       </NavLink>
       <NavLink
         to="/admin/eid"
@@ -50,7 +50,7 @@ export function AdminNav() {
           }`
         }
       >
-        Adhan Config
+        Adhan
       </NavLink>
     </nav>
   );

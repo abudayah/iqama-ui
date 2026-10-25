@@ -148,7 +148,6 @@ export interface AdhanConfigVersion {
   id: number;
   effectiveFrom: string; // YYYY-MM-DD
   settings: string; // JSON
-  reason: string | null;
   createdBy: string;
   createdAt: string;
 }
@@ -163,18 +162,6 @@ export interface AdhanConfigPeriod {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
-}
-
-export interface AdhanConfigAuditEntry {
-  id: number;
-  entity: 'VERSION' | 'PERIOD';
-  entityId: number;
-  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'REVERT';
-  before: string | null;
-  after: string | null;
-  actor: string;
-  reason: string | null;
-  createdAt: string;
 }
 
 export interface MethodCatalogEntry {

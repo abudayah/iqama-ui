@@ -5,12 +5,14 @@
  * any "Customized" / "Period active" badges. Clicking opens the offset drawer.
  */
 
-import type { PrayerKey, AdhanConfigResponse } from '../../types';
+import type { PrayerKey, AdhanConfigResponse, AdhanSettings } from '../../types';
 
 interface Props {
   prayer: PrayerKey;
   /** Effective (merged) settings for today */
   effective: NonNullable<AdhanConfigResponse['effective']>;
+  /** Raw base version settings (un-merged, no periods) — used for isCustomized */
+  baseSettings: AdhanSettings | null;
   /** Active period labels for this prayer */
   activePeriodLabels: string[];
   /** Current draft offset for this prayer (may differ from saved) */
@@ -32,6 +34,7 @@ const PRAYER_DISPLAY: Record<PrayerKey, string> = {
 export function PrayerCard({
   prayer,
   effective,
+  baseSettings,
   activePeriodLabels,
   draftOffset,
   azanTime,
@@ -40,7 +43,13 @@ export function PrayerCard({
   const perPrayer = effective.perPrayer[prayer];
   const savedOffset = perPrayer?.offsetMinutes ?? 0;
 
-  const isCustomized = savedOffset !== 0 || perPrayer?.method !== effective.general.method;
+  // isCustomized reflects what's permanently saved in the base version,
+  // not the period-merged effective (periods are shown separately via hasPeriod)
+  const basePerPrayer = baseSettings?.prayers[prayer];
+  const baseOffset = basePerPrayer?.offsetMinutes ?? 0;
+  const isCustomized =
+    baseOffset !== 0 ||
+    (basePerPrayer?.method !== undefined && basePerPrayer.method !== effective.general.method);
   const hasPeriod = activePeriodLabels.length > 0;
   const hasDraftChange = draftOffset !== undefined && draftOffset !== savedOffset;
 

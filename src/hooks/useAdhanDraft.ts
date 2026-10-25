@@ -16,13 +16,6 @@ export interface AdhanDraft {
   prayers: Partial<Record<PrayerKey, PrayerSettings>>;
   /** ISO date the change should take effect */
   effectiveFrom: string;
-  reason: string;
-}
-
-function tomorrowFrom(today: string): string {
-  const d = new Date(today + 'T12:00:00'); // noon avoids any DST edge
-  d.setDate(d.getDate() + 1);
-  return d.toLocaleDateString('sv-SE'); // YYYY-MM-DD in local
 }
 
 function emptyDraft(serverToday?: string): AdhanDraft {
@@ -30,8 +23,7 @@ function emptyDraft(serverToday?: string): AdhanDraft {
   return {
     general: {},
     prayers: {},
-    effectiveFrom: tomorrowFrom(base),
-    reason: '',
+    effectiveFrom: base, // immediate: take effect today
   };
 }
 
@@ -41,7 +33,6 @@ type DraftAction =
   | { type: 'SET_GENERAL'; payload: Partial<GeneralSettings> }
   | { type: 'SET_PRAYER'; prayer: PrayerKey; payload: PrayerSettings }
   | { type: 'SET_EFFECTIVE_FROM'; date: string }
-  | { type: 'SET_REASON'; reason: string }
   | { type: 'RESET' };
 
 function reducer(state: AdhanDraft, action: DraftAction): AdhanDraft {
@@ -58,8 +49,6 @@ function reducer(state: AdhanDraft, action: DraftAction): AdhanDraft {
       };
     case 'SET_EFFECTIVE_FROM':
       return { ...state, effectiveFrom: action.date };
-    case 'SET_REASON':
-      return { ...state, reason: action.reason };
     case 'RESET':
       return emptyDraft();
     default:
@@ -75,7 +64,6 @@ export interface UseAdhanDraft {
   setGeneral: (patch: Partial<GeneralSettings>) => void;
   setPrayer: (prayer: PrayerKey, patch: PrayerSettings) => void;
   setEffectiveFrom: (date: string) => void;
-  setReason: (reason: string) => void;
   reset: () => void;
   /** Merge draft on top of the current base settings to produce a full AdhanSettings */
   buildFullSettings: (base: AdhanSettings) => AdhanSettings;
@@ -84,13 +72,13 @@ export interface UseAdhanDraft {
 export function useAdhanDraft(serverToday?: string): UseAdhanDraft {
   const [draft, dispatch] = useReducer(reducer, emptyDraft(serverToday));
 
-  // When serverToday arrives (async), update effectiveFrom if still at the
-  // initialised default so the imam's local midnight doesn't flip the date.
+  // When serverToday arrives (async), update effectiveFrom so we use the
+  // server's authoritative today date rather than the client's local clock.
   const prevToday = useRef<string | undefined>(undefined);
   useEffect(() => {
     if (serverToday && serverToday !== prevToday.current) {
       prevToday.current = serverToday;
-      dispatch({ type: 'SET_EFFECTIVE_FROM', date: tomorrowFrom(serverToday) });
+      dispatch({ type: 'SET_EFFECTIVE_FROM', date: serverToday });
     }
   }, [serverToday]);
 
@@ -104,10 +92,6 @@ export function useAdhanDraft(serverToday?: string): UseAdhanDraft {
 
   const setEffectiveFrom = useCallback((date: string) => {
     dispatch({ type: 'SET_EFFECTIVE_FROM', date });
-  }, []);
-
-  const setReason = useCallback((reason: string) => {
-    dispatch({ type: 'SET_REASON', reason });
   }, []);
 
   const reset = useCallback(() => {
@@ -130,7 +114,6 @@ export function useAdhanDraft(serverToday?: string): UseAdhanDraft {
     setGeneral,
     setPrayer,
     setEffectiveFrom,
-    setReason,
     reset,
     buildFullSettings,
   };
