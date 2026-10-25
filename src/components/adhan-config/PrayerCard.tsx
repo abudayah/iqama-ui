@@ -6,7 +6,6 @@
  */
 
 import type { PrayerKey, AdhanConfigResponse } from '../../types';
-import { METHOD_LABELS } from './method-labels';
 
 interface Props {
   prayer: PrayerKey;
@@ -36,10 +35,6 @@ export function PrayerCard({ prayer, effective, activePeriodLabels, draftOffset,
   const hasPeriod = activePeriodLabels.length > 0;
   const hasDraftChange = draftOffset !== undefined && draftOffset !== savedOffset;
 
-  const methodLabel = perPrayer?.method
-    ? METHOD_LABELS[perPrayer.method]
-    : METHOD_LABELS[effective.general.method];
-
   const displayOffset = draftOffset !== undefined ? draftOffset : savedOffset;
   const offsetLabel =
     displayOffset === 0
@@ -63,8 +58,6 @@ export function PrayerCard({ prayer, effective, activePeriodLabels, draftOffset,
       <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
         {PRAYER_DISPLAY[prayer]}
       </span>
-
-      <span className="mt-1 text-xs text-gray-500 truncate max-w-full">{methodLabel}</span>
 
       {offsetLabel && (
         <span
