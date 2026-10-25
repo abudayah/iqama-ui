@@ -3,6 +3,8 @@ export type PrayerName = 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha';
 export interface PrayerEntry {
   azan: string; // HH:mm
   iqama: string; // HH:mm
+  /** True when a non-zero per-prayer Azan offset is applied (base or active period). */
+  azan_customized?: boolean;
 }
 
 export interface DailySchedule {
