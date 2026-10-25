@@ -6,7 +6,7 @@
  * Review & Save flow.
  */
 
-import { useReducer, useCallback } from 'react';
+import { useReducer, useCallback, useRef, useEffect } from 'react';
 import type { AdhanSettings, GeneralSettings, PrayerSettings, PrayerKey } from '../types';
 
 // ─── Draft state ──────────────────────────────────────────────────────────────
@@ -19,17 +19,18 @@ export interface AdhanDraft {
   reason: string;
 }
 
-function todayString(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 1); // default: tomorrow
-  return d.toISOString().split('T')[0]!;
+function tomorrowFrom(today: string): string {
+  const d = new Date(today + 'T12:00:00'); // noon avoids any DST edge
+  d.setDate(d.getDate() + 1);
+  return d.toLocaleDateString('sv-SE'); // YYYY-MM-DD in local
 }
 
-function emptyDraft(): AdhanDraft {
+function emptyDraft(serverToday?: string): AdhanDraft {
+  const base = serverToday ?? new Date().toLocaleDateString('sv-SE');
   return {
     general: {},
     prayers: {},
-    effectiveFrom: todayString(),
+    effectiveFrom: tomorrowFrom(base),
     reason: '',
   };
 }
@@ -80,8 +81,18 @@ export interface UseAdhanDraft {
   buildFullSettings: (base: AdhanSettings) => AdhanSettings;
 }
 
-export function useAdhanDraft(): UseAdhanDraft {
-  const [draft, dispatch] = useReducer(reducer, emptyDraft());
+export function useAdhanDraft(serverToday?: string): UseAdhanDraft {
+  const [draft, dispatch] = useReducer(reducer, emptyDraft(serverToday));
+
+  // When serverToday arrives (async), update effectiveFrom if still at the
+  // initialised default so the imam's local midnight doesn't flip the date.
+  const prevToday = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (serverToday && serverToday !== prevToday.current) {
+      prevToday.current = serverToday;
+      dispatch({ type: 'SET_EFFECTIVE_FROM', date: tomorrowFrom(serverToday) });
+    }
+  }, [serverToday]);
 
   const setGeneral = useCallback((patch: Partial<GeneralSettings>) => {
     dispatch({ type: 'SET_GENERAL', payload: patch });

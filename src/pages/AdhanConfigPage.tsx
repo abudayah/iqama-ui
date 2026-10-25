@@ -39,27 +39,26 @@ import {
 
 const ALL_PRAYERS: PrayerKey[] = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
-// ─── Derive the "base" AdhanSettings from the current config snapshot ──────────
+// ─── Derive the "base" AdhanSettings from the stored base version ──────────────
+// IMPORTANT: must NOT use config.effective (which already has periods merged in).
+// Using the resolved result would bake seasonal offsets into the permanent base.
 
 function configToSettings(
   config: ReturnType<typeof useAdhanConfig>['config'],
 ): AdhanSettings | null {
   if (!config?.effective) return null;
-  const { general, perPrayer } = config.effective;
-  return {
-    general: general as GeneralSettings,
-    prayers: Object.fromEntries(
-      ALL_PRAYERS.map((p) => [p, { offsetMinutes: perPrayer[p]?.offsetMinutes ?? 0 }]).filter(
-        ([, v]) => (v as { offsetMinutes: number }).offsetMinutes !== 0,
-      ),
-    ),
-  };
+  const baseVersion = config.versions.find((v) => v.id === config.effective!.baseVersionId);
+  if (!baseVersion) return null;
+  try {
+    return JSON.parse(baseVersion.settings) as AdhanSettings;
+  } catch {
+    return null;
+  }
 }
 
 // ─── Which periods are active today ───────────────────────────────────────────
 
-function activePeriodsToday(periods: AdhanConfigPeriod[]): AdhanConfigPeriod[] {
-  const today = new Date().toISOString().split('T')[0]!;
+function activePeriodsToday(periods: AdhanConfigPeriod[], today: string): AdhanConfigPeriod[] {
   return periods.filter((p) => p.startDate <= today && p.endDate >= today && !p.deletedAt);
 }
 
@@ -82,7 +81,7 @@ type ActiveTab = 'overview' | 'periods' | 'history';
 
 export function AdhanConfigPage() {
   const { config, catalog, loading, error, refresh } = useAdhanConfig();
-  const draft = useAdhanDraft();
+  const draft = useAdhanDraft(config?.today);
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
   const [generalDrawerOpen, setGeneralDrawerOpen] = useState(false);
@@ -96,8 +95,12 @@ export function AdhanConfigPage() {
 
   const baseSettings = useMemo(() => configToSettings(config), [config]);
   const todayActivePeriods = useMemo(
-    () => activePeriodsToday(config?.periods ?? []),
-    [config?.periods],
+    () =>
+      activePeriodsToday(
+        config?.periods ?? [],
+        config?.today ?? new Date().toISOString().split('T')[0]!,
+      ),
+    [config?.periods, config?.today],
   );
 
   // Compute proposed full settings (base merged with draft)
@@ -246,6 +249,15 @@ export function AdhanConfigPage() {
         {/* ── Overview tab ─────────────────────────────────────────────── */}
         {activeTab === 'overview' && (
           <>
+            {/* Periods coverage warning */}
+            {config.periodsWarning && (
+              <div
+                role="alert"
+                className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800"
+              >
+                ⚠️ {config.periodsWarning}
+              </div>
+            )}
             {/* Config version banner */}
             {config.currentRevision > 0 &&
               (() => {
@@ -322,7 +334,8 @@ export function AdhanConfigPage() {
                 <div className="flex gap-2">
                   <dt className="text-gray-400 w-28 shrink-0">Timezone</dt>
                   <dd className="font-medium">
-                    America/Vancouver <span className="text-gray-400 font-normal">(read-only)</span>
+                    {config.timezone ?? 'America/Vancouver'}{' '}
+                    <span className="text-gray-400 font-normal">(read-only)</span>
                   </dd>
                 </div>
                 <div className="flex gap-2">
