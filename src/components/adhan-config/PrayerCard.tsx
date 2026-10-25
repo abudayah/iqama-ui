@@ -31,6 +31,13 @@ const PRAYER_DISPLAY: Record<PrayerKey, string> = {
   isha: 'Isha',
 };
 
+/** Formats an HH:mm 24-hour time as a 12-hour AM/PM string (e.g. "05:30 AM"). */
+function formatTime12Hr(time24: string): string {
+  const [hours, minutes] = time24.split(':');
+  const date = new Date(2000, 0, 1, parseInt(hours!, 10), parseInt(minutes!, 10));
+  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+}
+
 export function PrayerCard({
   prayer,
   effective,
@@ -77,7 +84,11 @@ export function PrayerCard({
         {PRAYER_DISPLAY[prayer]}
       </span>
 
-      {azanTime && <span className="mt-0.5 text-sm font-semibold text-gray-800">{azanTime}</span>}
+      {azanTime && (
+        <span className="mt-0.5 text-sm font-semibold text-gray-800">
+          {formatTime12Hr(azanTime)}
+        </span>
+      )}
 
       {offsetLabel && (
         <span
