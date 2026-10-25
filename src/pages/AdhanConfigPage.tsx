@@ -203,6 +203,7 @@ export function AdhanConfigPage() {
     prayerDrawerPrayer != null
       ? (draft.draft.prayers[prayerDrawerPrayer]?.offsetMinutes ??
         baseSettings?.prayers[prayerDrawerPrayer]?.offsetMinutes ??
+        effective?.perPrayer[prayerDrawerPrayer]?.offsetMinutes ??
         0)
       : 0;
 
