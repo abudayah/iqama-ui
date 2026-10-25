@@ -76,13 +76,13 @@ function buildChangeSummary(
       const b = before ? (JSON.parse(before) as AdhanSettings) : null;
       const lines: string[] = [];
 
-      // General settings diff
-      for (const [k, av] of Object.entries(a.general ?? {})) {
-        const bv = b?.general?.[k as keyof typeof b.general];
-        if (bv !== undefined && bv !== av) {
-          lines.push(`${FIELD_LABELS[k] ?? k}: ${fmtVal(k, bv)} → ${fmtVal(k, av)}`);
-        } else if (bv === undefined && !b) {
-          lines.push(`${FIELD_LABELS[k] ?? k}: ${fmtVal(k, av)}`);
+      // General settings diff — only when updating over a previous version
+      if (b) {
+        for (const [k, av] of Object.entries(a.general ?? {})) {
+          const bv = b.general?.[k as keyof typeof b.general];
+          if (bv !== undefined && bv !== av) {
+            lines.push(`${FIELD_LABELS[k] ?? k}: ${fmtVal(k, bv)} → ${fmtVal(k, av)}`);
+          }
         }
       }
 
