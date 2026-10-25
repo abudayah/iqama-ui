@@ -222,8 +222,6 @@ export interface AdhanConfigResponse {
   today: string;
   /** IANA timezone of the masjid */
   timezone: string;
-  /** Non-null when a seasonal period is missing for next year */
-  periodsWarning: string | null;
 }
 
 export interface PreviewResponse {

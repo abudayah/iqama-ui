@@ -142,7 +142,14 @@ function mergeDeep(
 ): Partial<Record<PrayerKey, PrayerSettings>> {
   const result = { ...base };
   for (const [k, v] of Object.entries(patch) as [PrayerKey, PrayerSettings][]) {
-    result[k] = { ...(result[k] ?? {}), ...v };
+    const merged = { ...(result[k] ?? {}), ...v };
+    // Remove the entry entirely if it holds only zero/undefined values
+    const hasNonZero = Object.values(merged).some((val) => val !== undefined && val !== 0);
+    if (hasNonZero) {
+      result[k] = merged;
+    } else {
+      delete result[k];
+    }
   }
   return result;
 }

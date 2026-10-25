@@ -249,15 +249,6 @@ export function AdhanConfigPage() {
         {/* ── Overview tab ─────────────────────────────────────────────── */}
         {activeTab === 'overview' && (
           <>
-            {/* Periods coverage warning */}
-            {config.periodsWarning && (
-              <div
-                role="alert"
-                className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800"
-              >
-                ⚠️ {config.periodsWarning}
-              </div>
-            )}
             {/* Config version banner */}
             {config.currentRevision > 0 &&
               (() => {
