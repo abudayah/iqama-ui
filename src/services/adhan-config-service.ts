@@ -14,6 +14,7 @@ import type {
   AdhanSettings,
   PartialAdhanSettings,
   PreviewResponse,
+  DailySchedule,
 } from '../types';
 
 const BASE = '/api/v1/admin/adhan-config';
@@ -26,6 +27,10 @@ export function fetchAdhanConfig(): Promise<AdhanConfigResponse> {
 
 export function fetchAdhanCatalog(): Promise<AdhanCatalogResponse> {
   return apiFetch<AdhanCatalogResponse>(`${BASE}/catalog`, { requiresAuth: true });
+}
+
+export function fetchTodaySchedule(today: string): Promise<DailySchedule> {
+  return apiFetch<DailySchedule>(`/api/v1/schedule?date=${today}`);
 }
 
 export function fetchAdhanHistory(

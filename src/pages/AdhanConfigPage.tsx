@@ -12,7 +12,7 @@
  * unsaved changes. The Review & Save flow runs preview → confirm → apply.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type {
   PrayerKey,
   AdhanSettings,
@@ -22,8 +22,12 @@ import type {
 } from '../types';
 import { useAdhanConfig } from '../hooks/useAdhanConfig';
 import { useAdhanDraft } from '../hooks/useAdhanDraft';
-import { previewVersion, applyBaseVersion } from '../services/adhan-config-service';
-import type { PreviewResponse } from '../types';
+import {
+  previewVersion,
+  applyBaseVersion,
+  fetchTodaySchedule,
+} from '../services/adhan-config-service';
+import type { PreviewResponse, DailySchedule } from '../types';
 
 import { PrayerCard } from '../components/adhan-config/PrayerCard';
 import { GeneralSettingsDrawer } from '../components/adhan-config/GeneralSettingsDrawer';
@@ -82,6 +86,17 @@ type ActiveTab = 'overview' | 'periods' | 'history';
 export function AdhanConfigPage() {
   const { config, catalog, loading, error, refresh } = useAdhanConfig();
   const draft = useAdhanDraft(config?.today);
+
+  const [todaySchedule, setTodaySchedule] = useState<DailySchedule | null>(null);
+  const scheduleToday = config?.today;
+  useEffect(() => {
+    if (!scheduleToday) return;
+    fetchTodaySchedule(scheduleToday)
+      .then(setTodaySchedule)
+      .catch(() => {
+        /* non-critical */
+      });
+  }, [scheduleToday]);
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview');
   const [generalDrawerOpen, setGeneralDrawerOpen] = useState(false);
@@ -299,6 +314,11 @@ export function AdhanConfigPage() {
                       effective={effective}
                       activePeriodLabels={periodLabelsForPrayer(todayActivePeriods, prayer)}
                       draftOffset={draft.draft.prayers[prayer]?.offsetMinutes}
+                      azanTime={
+                        prayer === 'sunrise'
+                          ? (todaySchedule?.sunrise ?? null)
+                          : (todaySchedule?.[prayer]?.azan ?? null)
+                      }
                       onClick={() => setPrayerDrawerPrayer(prayer)}
                     />
                   ))}

@@ -15,6 +15,8 @@ interface Props {
   activePeriodLabels: string[];
   /** Current draft offset for this prayer (may differ from saved) */
   draftOffset: number | undefined;
+  /** Today's Azan time from the schedule API (HH:mm), null while loading */
+  azanTime: string | null;
   onClick: () => void;
 }
 
@@ -27,7 +29,14 @@ const PRAYER_DISPLAY: Record<PrayerKey, string> = {
   isha: 'Isha',
 };
 
-export function PrayerCard({ prayer, effective, activePeriodLabels, draftOffset, onClick }: Props) {
+export function PrayerCard({
+  prayer,
+  effective,
+  activePeriodLabels,
+  draftOffset,
+  azanTime,
+  onClick,
+}: Props) {
   const perPrayer = effective.perPrayer[prayer];
   const savedOffset = perPrayer?.offsetMinutes ?? 0;
 
@@ -59,9 +68,11 @@ export function PrayerCard({ prayer, effective, activePeriodLabels, draftOffset,
         {PRAYER_DISPLAY[prayer]}
       </span>
 
+      {azanTime && <span className="mt-0.5 text-sm font-semibold text-gray-800">{azanTime}</span>}
+
       {offsetLabel && (
         <span
-          className={`mt-1 text-xs font-medium ${
+          className={`mt-0.5 text-xs font-medium ${
             hasDraftChange ? 'text-blue-700' : 'text-amber-700'
           }`}
         >
