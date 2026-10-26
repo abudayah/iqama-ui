@@ -28,7 +28,7 @@ const PRAYER_DISPLAY: Record<PrayerKey, string> = {
 /** Describes which prayers have a rule-fixed iqama (not driven by Azan value). */
 const RULE_FIXED_IQAMA: Partial<Record<PrayerKey, string>> = {
   dhuhr: 'Iqama is fixed at 12:45 / 13:45 (DST-aware) and is not affected by the Azan offset.',
-  asr: 'Iqama follows a seasonal fixed schedule (4 changes/year) and is not directly affected by the Azan offset.',
+  asr: 'Iqama follows a Friday-anchored seasonal fixed schedule (each season starts on the first Friday of its month) and is not directly affected by the Azan offset.',
 };
 
 export function PrayerOffsetDrawer({ isOpen, onClose, prayer, currentOffset, onApply }: Props) {
