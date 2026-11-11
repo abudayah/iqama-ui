@@ -23,6 +23,7 @@ A React-based display app for the Iqama Engine. Shows live prayer times, countdo
 - Dynamic sky scene (dawn, day, dusk, night) driven by the current prayer
 - Moon phase visualization based on the Hijri calendar date
 - Today / Tomorrow prayer schedule table
+- **Iqama Rules admin tab** (`/admin/iqama`): edit each prayer's iqama rule, preview the next 365 days, then save
 - **URL-based simulator** for testing any date and time without touching the system clock
 
 ## Getting Started
@@ -61,6 +62,8 @@ npm run dev
 
 The app will be available at `http://localhost:5173`.
 
+> **Local dev note:** `VITE_API_BASE_URL` must match the CSP origin exactly. The dev server only allows requests to that origin, and the browser remembers the API URL in localStorage. Use `http://localhost:3000`, not `http://127.0.0.1:3000`. A mismatch shows "Network request failed". The engine's `CORS_ORIGIN` must include `http://localhost:5173`.
+
 ### Build
 
 ```bash
@@ -68,6 +71,18 @@ npm run build
 ```
 
 ---
+
+## Iqama Rules tab
+
+`/admin/iqama` (tab "Iqama Rules"; the "Iqama" tab is the overrides page) manages the engine's iqama rules. It needs an engine with `IQAMA_RULES=db`; otherwise it shows a notice.
+
+- **Cards:** one per prayer, with a plain-English sentence such as "Azan + 5 min, rounded up to the next 5".
+- **Edit sheet:** tap a card to pick a rule type, fill its fields, and toggle modifiers. Forms are built from the engine catalog. A live 7-day strip shows Azan → Iqama, with an "Adjusted" badge on days a fixed rule moved later.
+- **Review & save:** shows the effective date (default: next Friday) and a 365-day scan (days changed, days adjusted, first dates). Fajr, Dhuhr, Asr and Isha changes must start on a Friday; Maghrib can start any day.
+- **Always applied:** a read-only numbered list at the bottom of the page: iqama at least 3 min after Azan, Fajr at least 60 min before sunrise, Friday starts, Maghrib any day. Values come from the catalog.
+- **Overrides tab:** an override shows a warning when a fixed rule would move its time on some day in the next 31 days.
+
+Spec: `.kiro/specs/iqama-rules-admin/`.
 
 ## Simulator
 
