@@ -6,6 +6,7 @@ import { AdminPage } from './pages/AdminPage';
 import { OverridesPage } from './pages/OverridesPage';
 import { ScheduleRangePage } from './pages/ScheduleRangePage';
 import { RamadanEidPage } from './pages/RamadanEidPage';
+import { IqamaRulesPage } from './pages/IqamaRulesPage';
 import { AdhanConfigPage } from './pages/AdhanConfigPage';
 import { WidgetPage } from './pages/WidgetPage';
 import { useFavicon } from './hooks/useFavicon';
@@ -28,6 +29,7 @@ function AppRoutes() {
           <Route index element={<OverridesPage />} />
           <Route path="schedule" element={<ScheduleRangePage />} />
           <Route path="eid" element={<RamadanEidPage />} />
+          <Route path="iqama" element={<IqamaRulesPage />} />
           <Route path="adhan" element={<AdhanConfigPage />} />
         </Route>
       </Routes>

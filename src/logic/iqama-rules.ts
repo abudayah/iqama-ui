@@ -1,0 +1,88 @@
+import type { PrayerName } from '../types/index';
+import type { PrayerRule, RuleBase, RuleSet, Weekday } from '../types/iqama-rules';
+
+export const PRAYER_LABELS: Record<PrayerName, string> = {
+  fajr: 'Fajr',
+  dhuhr: 'Dhuhr',
+  asr: 'Asr',
+  maghrib: 'Maghrib',
+  isha: 'Isha',
+};
+
+const WEEKDAY_LABELS: Record<Weekday, string> = {
+  SUN: 'Sun',
+  MON: 'Mon',
+  TUE: 'Tue',
+  WED: 'Wed',
+  THU: 'Thu',
+  FRI: 'Fri',
+  SAT: 'Sat',
+};
+
+const signed = (n: number) => `${n < 0 ? '−' : '+'} ${Math.abs(n)} min`;
+
+function describeBase(base: RuleBase): string {
+  switch (base.type) {
+    case 'OFFSET':
+      return base.minutes === 0 ? 'At Azan' : `Azan ${signed(base.minutes)}`;
+    case 'FIXED_TIME':
+      return `Fixed at ${base.time}`;
+    case 'SCALED_GAP': {
+      const gaps = base.points.map((p) => p.gapMinutes);
+      return `Gap after Azan scales from ${Math.min(...gaps)} to ${Math.max(...gaps)} min`;
+    }
+    case 'SEASONAL':
+      return `Seasonal fixed times (${base.segments.length} periods)`;
+  }
+}
+
+/** Plain-English one-liner, e.g. "Azan + 5 min, rounded up to the next 5". */
+export function describeRule(rule: PrayerRule): string {
+  const parts = [describeBase(rule.base)];
+  const { rounding, limits, weekdayAdjust, weeklyLock } = rule;
+  if (rounding && rounding.step > 1) {
+    const s = rounding.step;
+    parts.push(
+      rounding.mode === 'CEIL'
+        ? `rounded up to the next ${s}`
+        : rounding.mode === 'FLOOR'
+          ? `rounded down to the previous ${s}`
+          : `rounded to the nearest ${s}`,
+    );
+  }
+  if (limits?.minAfterAzan !== undefined)
+    parts.push(`at least ${limits.minAfterAzan} min after Azan`);
+  if (limits?.latestBeforeSunrise !== undefined)
+    parts.push(`at least ${limits.latestBeforeSunrise} min before sunrise`);
+  const adj = Object.entries(weekdayAdjust ?? {}).filter(([, v]) => v);
+  if (adj.length)
+    parts.push(
+      adj.map(([d, v]) => `${WEEKDAY_LABELS[d as Weekday]} ${signed(v as number)}`).join(', '),
+    );
+  if (weeklyLock) parts.push('held Friday to Thursday');
+  return parts.join(', ');
+}
+
+export function isFriday(date: string): boolean {
+  return new Date(`${date}T12:00:00Z`).getUTCDay() === 5;
+}
+
+/** The next `count` Fridays on or after `from` (YYYY-MM-DD). */
+export function upcomingFridays(from: string, count: number): string[] {
+  const d = new Date(`${from}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + ((5 - d.getUTCDay() + 7) % 7));
+  return Array.from({ length: count }, (_, i) => {
+    const x = new Date(d);
+    x.setUTCDate(x.getUTCDate() + 7 * i);
+    return x.toISOString().slice(0, 10);
+  });
+}
+
+export const sameRule = (a: PrayerRule, b: PrayerRule) => JSON.stringify(a) === JSON.stringify(b);
+
+export const DEFAULT_RULE: PrayerRule = { base: { type: 'OFFSET', minutes: 10 } };
+
+/** Prayers whose rule differs between `base` and `draft`. */
+export function changedPrayers(base: RuleSet, draft: Partial<RuleSet>): PrayerName[] {
+  return (Object.keys(draft) as PrayerName[]).filter((p) => !sameRule(draft[p]!, base[p]));
+}

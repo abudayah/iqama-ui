@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Override, OverridePayload } from '../types/index';
 import { OverrideRow } from './OverrideRow';
 import { OverrideFormModal } from './OverrideFormModal';
+import { useOverrideClamps } from '../hooks/useOverrideClamps';
 
 interface OverrideListProps {
   overrides: Override[];
@@ -12,6 +13,7 @@ interface OverrideListProps {
 
 export function OverrideList({ overrides, today, onUpdate, onRemove }: OverrideListProps) {
   const [editingOverride, setEditingOverride] = useState<Override | null>(null);
+  const clamped = useOverrideClamps(overrides, today);
 
   const handleDelete = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this override?')) {
@@ -36,6 +38,7 @@ export function OverrideList({ overrides, today, onUpdate, onRemove }: OverrideL
             key={override.id}
             override={override}
             today={today}
+            clamped={clamped.has(override.id)}
             onEdit={setEditingOverride}
             onDelete={(id) => void handleDelete(id)}
           />

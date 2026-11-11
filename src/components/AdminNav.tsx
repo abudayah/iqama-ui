@@ -41,6 +41,18 @@ export function AdminNav() {
         Ramadan &amp; Eid
       </NavLink>
       <NavLink
+        to="/admin/iqama"
+        className={({ isActive }) =>
+          `flex-1 py-3 text-sm font-medium text-center min-h-[44px] flex items-center justify-center whitespace-nowrap px-2 ${
+            isActive
+              ? 'border-b-2 border-blue-600 text-blue-600'
+              : 'text-gray-500 hover:text-gray-700'
+          }`
+        }
+      >
+        Iqama Rules
+      </NavLink>
+      <NavLink
         to="/admin/adhan"
         className={({ isActive }) =>
           `flex-1 py-3 text-sm font-medium text-center min-h-[44px] flex items-center justify-center whitespace-nowrap px-2 ${
