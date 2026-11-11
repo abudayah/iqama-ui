@@ -20,14 +20,14 @@ export function GuardrailsNote({ catalog }: { catalog: IqamaCatalog }) {
       >
         Always applied
       </h3>
-      <ul className="mt-2 space-y-2 text-sm text-gray-700">
+      <ol className="mt-2 space-y-2 text-sm text-gray-700 list-decimal list-outside pl-5">
         <li>
           Iqama is at least {minGapAfterAzanMinutes} min after Azan (all prayers, overrides too).
         </li>
         <li>Fajr iqama is at least {fajrEndsBeforeSunriseMinutes} min before sunrise.</li>
         {friday.length > 0 && <li>Rule changes for {names(friday)} must start on a Friday.</li>}
         {anyDay.length > 0 && <li>{names(anyDay)} can start any day.</li>}
-      </ul>
+      </ol>
       <p className="mt-3 text-xs text-gray-500">
         These cannot be changed here. A time that breaks them is moved later and marked
         &ldquo;adjusted&rdquo;.

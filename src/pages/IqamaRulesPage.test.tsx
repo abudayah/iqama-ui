@@ -143,6 +143,8 @@ describe('IqamaRulesPage', () => {
     expect(note).toHaveTextContent('Fajr iqama is at least 10 min before sunrise');
     expect(note).toHaveTextContent('Fajr, Dhuhr, Asr, Isha must start on a Friday');
     expect(note).toHaveTextContent('Maghrib can start any day');
+    expect(within(note).getAllByRole('listitem')).toHaveLength(4);
+    expect(note.querySelector('ol')).toHaveClass('list-decimal');
     expect(within(note).queryAllByRole('button')).toHaveLength(0);
     expect(within(note).queryAllByRole('textbox')).toHaveLength(0);
   });
