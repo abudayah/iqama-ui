@@ -15,6 +15,7 @@ import type { PrayerName } from '../types/index';
 import type { IqamaPreviewResponse, PrayerRule, RuleSet } from '../types/iqama-rules';
 import { RuleCard } from '../components/iqama-rules/RuleCard';
 import { RuleSheet } from '../components/iqama-rules/RuleSheet';
+import { GuardrailsNote } from '../components/iqama-rules/GuardrailsNote';
 import { RuleReviewDialog } from '../components/iqama-rules/RuleReviewDialog';
 
 export function IqamaRulesPage() {
@@ -169,6 +170,8 @@ export function IqamaRulesPage() {
             />
           ))}
         </div>
+
+        <GuardrailsNote catalog={catalog} />
       </div>
 
       <RuleSheet

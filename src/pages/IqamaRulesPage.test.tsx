@@ -135,6 +135,18 @@ describe('IqamaRulesPage', () => {
     expect(screen.queryByText('Unsaved changes')).toBeNull();
   });
 
+  it('lists the fixed guardrails from the catalog, read-only', async () => {
+    render(<IqamaRulesPage />);
+    const note = await screen.findByTestId('guardrails-note');
+    expect(note).toHaveTextContent('Always applied');
+    expect(note).toHaveTextContent('at least 5 min after Azan');
+    expect(note).toHaveTextContent('Fajr iqama is at least 10 min before sunrise');
+    expect(note).toHaveTextContent('Fajr, Dhuhr, Asr, Isha must start on a Friday');
+    expect(note).toHaveTextContent('Maghrib can start any day');
+    expect(within(note).queryAllByRole('button')).toHaveLength(0);
+    expect(within(note).queryAllByRole('textbox')).toHaveLength(0);
+  });
+
   it('shows a 7-day strip with clamp badges from /preview', async () => {
     render(<IqamaRulesPage />);
     fireEvent.click(await screen.findByTestId('rule-card-isha'));
