@@ -77,7 +77,12 @@ export interface IqamaCatalog {
     rounding: { modes: RoundingMode[]; steps: number[] };
     weekdayAdjust: { weekdays: Weekday[]; min: number; max: number };
   };
-  guardrails: { minGapAfterAzanMinutes: number; fajrEndsBeforeSunriseMinutes: number };
+  guardrails: {
+    minGapAfterAzanMinutes: number;
+    fajrEndsBeforeSunriseMinutes: number;
+    /** Every iqama lands on a multiple of this (absent on older engines). */
+    iqamaStepMinutes?: number;
+  };
 }
 
 // ── Preview ──────────────────────────────────────────────────────────────────

@@ -158,6 +158,8 @@ export function RuleSheet({
   };
   const baseValues: Record<string, unknown> = { ...rule.base };
   delete baseValues.type;
+  const stepMin = catalog.guardrails.iqamaStepMinutes ?? 1;
+  const allowedSteps = rounding.steps.filter((s) => s % stepMin === 0);
   const strip = preview?.days.slice(0, 7) ?? [];
 
   return (
@@ -248,7 +250,11 @@ export function RuleSheet({
             <Toggle
               label="Rounding"
               checked={!!rule.rounding}
-              onChange={(on) => patch({ rounding: on ? { mode: 'CEIL', step: 5 } : undefined })}
+              onChange={(on) =>
+                patch({
+                  rounding: on ? { mode: 'CEIL', step: allowedSteps[0] ?? stepMin } : undefined,
+                })
+              }
             />
             {rule.rounding && (
               <div className="pl-8 grid grid-cols-2 gap-2">
@@ -279,7 +285,12 @@ export function RuleSheet({
                   }
                   className={`${inputCls} bg-white`}
                 >
-                  {rounding.steps.map((s) => (
+                  {!allowedSteps.includes(rule.rounding.step) && (
+                    <option value={rule.rounding.step} disabled>
+                      to {rule.rounding.step} min (not allowed)
+                    </option>
+                  )}
+                  {allowedSteps.map((s) => (
                     <option key={s} value={s}>
                       to {s} min
                     </option>

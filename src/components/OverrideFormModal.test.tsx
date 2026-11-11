@@ -237,3 +237,11 @@ describe('OverrideFormModal — invalid inputs prevent submission', () => {
     expect(onSave).not.toHaveBeenCalled();
   });
 });
+
+describe('OverrideFormModal — 5-minute mark', () => {
+  it('uses a 5-minute time step and shows a hint for FIXED overrides', () => {
+    const { container } = render(<OverrideFormModal onSave={vi.fn()} onClose={vi.fn()} />);
+    expect(container.querySelector('input[type="time"]')).toHaveAttribute('step', '300');
+    expect(screen.getByText(/5-minute mark/i)).toBeInTheDocument();
+  });
+});

@@ -3,7 +3,10 @@ import { PRAYER_LABELS } from '../../logic/iqama-rules';
 
 /** Read-only list of the fixed guardrails, taken from GET /catalog. */
 export function GuardrailsNote({ catalog }: { catalog: IqamaCatalog }) {
-  const { minGapAfterAzanMinutes, fajrEndsBeforeSunriseMinutes } = catalog.guardrails;
+  const { minGapAfterAzanMinutes, fajrEndsBeforeSunriseMinutes, iqamaStepMinutes } =
+    catalog.guardrails;
+  // Example for the step rule: 9:04 moves up to the next mark.
+  const exampleMinute = iqamaStepMinutes ? Math.ceil(4 / iqamaStepMinutes) * iqamaStepMinutes : 0;
   const friday = catalog.prayers.filter((p) => p.fridayStartRequired);
   const anyDay = catalog.prayers.filter((p) => !p.fridayStartRequired);
   const names = (list: typeof friday) => list.map((p) => PRAYER_LABELS[p.name]).join(', ');
@@ -25,6 +28,12 @@ export function GuardrailsNote({ catalog }: { catalog: IqamaCatalog }) {
           Iqama is at least {minGapAfterAzanMinutes} min after Azan (all prayers, overrides too).
         </li>
         <li>Fajr iqama is at least {fajrEndsBeforeSunriseMinutes} min before sunrise.</li>
+        {iqamaStepMinutes && (
+          <li>
+            Every iqama is on a {iqamaStepMinutes}-minute mark (e.g. 9:04 becomes 9:
+            {String(exampleMinute).padStart(2, '0')}).
+          </li>
+        )}
         {friday.length > 0 && <li>Rule changes for {names(friday)} must start on a Friday.</li>}
         {anyDay.length > 0 && <li>{names(anyDay)} can start any day.</li>}
       </ol>

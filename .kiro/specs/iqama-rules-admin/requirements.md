@@ -53,6 +53,7 @@ The admin area gets an "Iqama Rules" tab at `/admin/iqama`. It lets the Imam vie
 2. N and M and the prayer lists SHALL come from the catalog, not be hard-coded.
 3. A note SHALL say these cannot be changed here and that breaking times are moved later and marked "adjusted".
 4. THE section SHALL have no edit controls.
+5. WHEN the catalog has `guardrails.iqamaStepMinutes`, THE section SHALL add an item "Every iqama is on a N-minute mark"; the item is hidden when the field is missing. THE rounding step list SHALL offer only multiples of N, and the override time input SHALL use a 5-minute step with a hint.
 
 ### Requirement 6: Override warnings
 

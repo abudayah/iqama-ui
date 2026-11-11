@@ -135,13 +135,19 @@ export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModa
         </label>
 
         {overrideType === 'FIXED' ? (
-          <input
-            type="time"
-            step={300}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-3 text-sm mb-1 min-h-[44px]"
-          />
+          <>
+            <input
+              type="time"
+              step={300}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-3 text-sm mb-1 min-h-[44px]"
+              aria-describedby="override-step-hint"
+            />
+            <p id="override-step-hint" className="text-xs text-gray-500 mb-1">
+              Iqama times are on a 5-minute mark. A time like 9:04 becomes 9:05.
+            </p>
+          </>
         ) : (
           <div className="mb-1">
             <div className="flex justify-between items-center mb-2">

@@ -47,7 +47,7 @@ const catalog = {
       max: 60,
     },
   },
-  guardrails: { minGapAfterAzanMinutes: 5, fajrEndsBeforeSunriseMinutes: 10 },
+  guardrails: { minGapAfterAzanMinutes: 5, fajrEndsBeforeSunriseMinutes: 10, iqamaStepMinutes: 5 },
 };
 const prayerDay = { azan: '06:00', current: { iqama: '06:05', clamped: false } };
 const previewBody = {
@@ -143,10 +143,31 @@ describe('IqamaRulesPage', () => {
     expect(note).toHaveTextContent('Fajr iqama is at least 10 min before sunrise');
     expect(note).toHaveTextContent('Fajr, Dhuhr, Asr, Isha must start on a Friday');
     expect(note).toHaveTextContent('Maghrib can start any day');
-    expect(within(note).getAllByRole('listitem')).toHaveLength(4);
+    expect(within(note).getAllByRole('listitem')).toHaveLength(5);
+    expect(note).toHaveTextContent('Every iqama is on a 5-minute mark (e.g. 9:04 becomes 9:05)');
     expect(note.querySelector('ol')).toHaveClass('list-decimal');
     expect(within(note).queryAllByRole('button')).toHaveLength(0);
     expect(within(note).queryAllByRole('textbox')).toHaveLength(0);
+  });
+
+  it('hides the 5-minute item when the catalog has no step (older engine)', async () => {
+    const { iqamaStepMinutes: _s, ...guardrails } = catalog.guardrails;
+    void _s;
+    server.use(http.get(`${R}/catalog`, () => HttpResponse.json({ ...catalog, guardrails })));
+    render(<IqamaRulesPage />);
+    const note = await screen.findByTestId('guardrails-note');
+    expect(within(note).getAllByRole('listitem')).toHaveLength(4);
+    expect(note).not.toHaveTextContent('minute mark');
+  });
+
+  it('only offers rounding steps that are multiples of the iqama step', async () => {
+    render(<IqamaRulesPage />);
+    fireEvent.click(await screen.findByTestId('rule-card-maghrib'));
+    const select = await screen.findByLabelText('Rounding step');
+    const options = within(select)
+      .getAllByRole('option')
+      .map((o) => o.textContent);
+    expect(options).toEqual(['to 5 min', 'to 10 min', 'to 15 min', 'to 30 min', 'to 60 min']);
   });
 
   it('shows a 7-day strip with clamp badges from /preview', async () => {
