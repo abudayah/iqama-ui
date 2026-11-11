@@ -12,10 +12,12 @@ interface Props {
   /** Locked prayers (Fajr, Dhuhr, Asr, Isha) among `changed`. */
   needsFriday: PrayerName[];
   preview: IqamaPreviewResponse | null;
+  /** Catalog value for the Fajr-before-sunrise limit, used in the wording. */
+  fajrMinBeforeSunrise?: number;
   loading: boolean;
   error: string | null;
   saving: boolean;
-  onConfirm: () => void;
+  onConfirm: (extra: { reason: string; acknowledgeConflicts: boolean }) => void;
   onClose: () => void;
 }
 
@@ -26,6 +28,7 @@ export function RuleReviewDialog({
   changed,
   needsFriday,
   preview,
+  fajrMinBeforeSunrise: catalogFajrMin,
   loading,
   error,
   saving,
@@ -33,6 +36,11 @@ export function RuleReviewDialog({
   onClose,
 }: Props) {
   const [confirmed, setConfirmed] = useState(false);
+  const [reason, setReason] = useState('');
+  const [ackConflicts, setAckConflicts] = useState(false);
+  const conflicts = preview?.conflicts ?? [];
+  // New scan, new conflicts: the acknowledgement must be given again.
+  useEffect(() => setAckConflicts(false), [preview]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !saving && onClose();
     document.addEventListener('keydown', onKey);
@@ -44,7 +52,14 @@ export function RuleReviewDialog({
       ? `${needsFriday.map((p) => PRAYER_LABELS[p]).join(', ')} can only change on a Friday. Pick a Friday.`
       : null;
   const s = preview?.summary;
-  const canSave = !!preview && !fridayError && !error && confirmed && !loading && !saving;
+  const canSave =
+    !!preview &&
+    !fridayError &&
+    !error &&
+    confirmed &&
+    (conflicts.length === 0 || ackConflicts) &&
+    !loading &&
+    !saving;
 
   return (
     <div
@@ -152,6 +167,37 @@ export function RuleReviewDialog({
             </div>
           )}
 
+          {conflicts.length > 0 && (
+            <div
+              data-testid="fajr-conflicts"
+              className="bg-red-50 border border-red-200 rounded-lg p-3 space-y-2"
+            >
+              <p className="text-sm font-medium text-red-800">
+                ⛔ Fajr will be too close to sunrise on {conflicts.length} day
+                {conflicts.length === 1 ? '' : 's'}
+              </p>
+              <ul className="text-sm text-red-800 space-y-1 max-h-40 overflow-y-auto">
+                {conflicts.map((c) => (
+                  <li key={`${c.date}-${c.prayer}`}>
+                    {c.date}: iqama {c.iqama}, sunrise {c.sunrise}
+                  </li>
+                ))}
+              </ul>
+              <label className="flex items-start gap-3 min-h-[44px] select-none">
+                <input
+                  type="checkbox"
+                  checked={ackConflicts}
+                  onChange={(e) => setAckConflicts(e.target.checked)}
+                  className="mt-0.5 h-5 w-5 rounded border-gray-300 text-red-600"
+                />
+                <span className="text-sm text-red-900">
+                  I understand Fajr will be less than {catalogFajrMin ?? 60} min before sunrise on
+                  these days
+                </span>
+              </label>
+            </div>
+          )}
+
           {preview?.warnings.map((w, i) => (
             <p key={i} className="text-sm text-amber-700">
               ⚠ {w.message}
@@ -166,6 +212,19 @@ export function RuleReviewDialog({
               ⛔ {error}
             </p>
           )}
+
+          <label className="block text-sm font-medium text-gray-700" htmlFor="iqama-reason">
+            Reason for change <span className="font-normal text-gray-400">(optional)</span>
+            <textarea
+              id="iqama-reason"
+              value={reason}
+              maxLength={500}
+              rows={2}
+              onChange={(e) => setReason(e.target.value)}
+              className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            />
+            <span className="block text-xs text-gray-400 text-right">{reason.length}/500</span>
+          </label>
 
           <label className="flex items-start gap-3 min-h-[44px] select-none">
             <input
@@ -190,7 +249,7 @@ export function RuleReviewDialog({
             Cancel
           </button>
           <button
-            onClick={onConfirm}
+            onClick={() => onConfirm({ reason, acknowledgeConflicts: ackConflicts })}
             disabled={!canSave}
             className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white font-medium disabled:opacity-40 min-h-[44px]"
           >

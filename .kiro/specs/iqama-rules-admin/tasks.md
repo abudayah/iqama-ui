@@ -40,3 +40,11 @@ UI side of the iqama rule engine. Phase 3 (this UI) is complete. The engine phas
 - [ ] 4. Not done
   - [ ] 4.1 Pre-save clamp warning in the override form (needs an engine endpoint)
   - [ ] 4.2 Browser check on a real phone
+
+- [x] 5. Phase 5: overrides tab rename, reason, conflicts, overlap errors
+  - [x] 5.1 One "Iqama" nav tab with a Rules | Overrides segmented control (`IqamaTabLayout`); draft kept across views
+  - [x] 5.2 Reason box and `reason` in `PUT /base`
+  - [x] 5.3 Fajr conflicts list, required acknowledgement, `acknowledgeConflicts`
+  - [x] 5.4 Inline 409 overlap message in the override form
+  - [x] 5.5 "Conflict" badge in Weekly View
+  - _Requirements: 8_

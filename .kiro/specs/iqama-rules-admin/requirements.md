@@ -17,7 +17,7 @@ The admin area gets an "Iqama Rules" tab at `/admin/iqama`. It lets the Imam vie
 
 ### Requirement 1: Tab and route
 
-1. THE Admin_Nav SHALL show an "Iqama Rules" tab linking to `/admin/iqama`, next to the existing "Iqama" (overrides) tab.
+1. THE nav SHALL have one "Iqama" tab; `/admin/iqama` is its "Rules" view (see Requirement 8.5).
 2. THE route SHALL render `IqamaRulesPage` inside the existing admin auth gate.
 
 ### Requirement 2: Prayer cards
@@ -65,3 +65,11 @@ The admin area gets an "Iqama Rules" tab at `/admin/iqama`. It lets the Imam vie
 1. All controls SHALL have 44px touch targets.
 2. THE UI SHALL use no drag-and-drop and no new libraries.
 3. Dialogs SHALL have `role="dialog"`, `aria-modal`, a label, and close on Escape.
+
+### Requirement 8: Reason, Fajr conflicts, overlaps, Weekly View (phase 5)
+
+1. THE review dialog SHALL have an optional "Reason for change" box (max 500) sent as `reason` in `PUT /base` when not empty.
+2. WHEN the preview returns `conflicts`, THE dialog SHALL list them and require a checkbox "I understand Fajr will be less than N min before sunrise on these days" before Save; THE save SHALL send `acknowledgeConflicts: true`. Without `conflicts`, nothing changes.
+3. WHEN saving an override returns 409, THE override form SHALL show the server message near the dates.
+4. THE Weekly View SHALL show a small "Conflict" badge for days or prayers with `iqama_conflict`, when the field is present.
+5. THE nav SHALL have 4 tabs: Iqama, Weekly View, Ramadan & Eid, Adhan. The single "Iqama" tab SHALL cover `/admin` (Overrides, default) and `/admin/iqama` (Rules), with a segmented control (`role=tablist`, arrow keys, 44px) at the top. The Rules draft SHALL survive switching, with a dot on "Rules" while it has changes.

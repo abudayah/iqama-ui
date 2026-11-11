@@ -74,7 +74,7 @@ npm run build
 
 ## Iqama Rules tab
 
-`/admin/iqama` (tab "Iqama Rules"; the "Iqama" tab is the overrides page) manages the engine's iqama rules. It needs an engine with `IQAMA_RULES=db`; otherwise it shows a notice.
+`/admin/iqama` (the "Rules" view of the single "Iqama" nav tab; "Overrides" at `/admin` is the default view, and a dot on "Rules" shows unsaved changes) manages the engine's iqama rules. It needs an engine with `IQAMA_RULES=db`; otherwise it shows a notice.
 
 - **Cards:** one per prayer, with a plain-English sentence such as "Azan + 5 min, rounded up to the next 5".
 - **Edit sheet:** tap a card to pick a rule type, fill its fields, and toggle modifiers. Forms are built from the engine catalog. A live 7-day strip shows Azan → Iqama, with an "Adjusted" badge on days a fixed rule moved later.

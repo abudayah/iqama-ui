@@ -6,12 +6,12 @@ A new admin page, `IqamaRulesPage` at `/admin/iqama`, modelled on the Adhan tab:
 
 ## API contract (engine)
 
-| Call | Use |
-|---|---|
-| `GET /` | `mode`, `currentRevision`, `versions`, `effective` (RuleSet or null), `today`, `defaultEffectiveFrom` (next Friday) |
-| `GET /catalog` | prayers (`weeklyLockAllowed`, `fridayStartRequired`, `sunriseLimitAllowed`), base types with fields, modifier ranges, `guardrails` |
+| Call            | Use                                                                                                                                      |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /`         | `mode`, `currentRevision`, `versions`, `effective` (RuleSet or null), `today`, `defaultEffectiveFrom` (next Friday)                      |
+| `GET /catalog`  | prayers (`weeklyLockAllowed`, `fridayStartRequired`, `sunriseLimitAllowed`), base types with fields, modifier ranges, `guardrails`       |
 | `POST /preview` | body `{ settings: JSON string, effectiveFrom }` → `previewId`, 14 sample `days` (current vs proposed, with `clamped`), 365-day `summary` |
-| `PUT /base` | body `{ settings, effectiveFrom, previewId, expectedRevision }`; 409 stale, 422 bad token, 400 non-Friday start |
+| `PUT /base`     | body `{ settings, effectiveFrom, previewId, expectedRevision }`; 409 stale, 422 bad token, 400 non-Friday start                          |
 
 Daily schedule entries may carry `iqama_clamped`.
 
@@ -32,21 +32,21 @@ graph TD
     OL --> OR[OverrideRow warning]
 ```
 
-| File | Role |
-|---|---|
-| `src/pages/IqamaRulesPage.tsx` | State, preview-on-review effect, save and error handling |
-| `src/components/iqama-rules/RuleCard.tsx` | Prayer card with sentence and "Edited" badge |
-| `src/components/iqama-rules/RuleSheet.tsx` | Rule type, modifiers, live 7-day strip |
-| `src/components/iqama-rules/RuleFields.tsx` | Renders catalog fields (`int`, `time`, `list`, `oneOf`) |
-| `src/components/iqama-rules/RuleReviewDialog.tsx` | Date, Friday check, year scan, confirm |
-| `src/components/iqama-rules/GuardrailsNote.tsx` | Read-only "Always applied" numbered list from `catalog.guardrails` and `catalog.prayers` |
-| `src/hooks/useIqamaRules.ts` | Loads config and catalog |
-| `src/hooks/useIqamaRulesDraft.ts` | `SET_RULE` (drops a rule equal to the saved one), `SET_EFFECTIVE_FROM`, `RESET` |
-| `src/hooks/useOverrideClamps.ts` | Ids of overrides with adjusted days |
-| `src/logic/iqama-rules.ts` | `describeRule`, `isFriday`, `upcomingFridays`, `changedPrayers` |
-| `src/logic/rule-defaults.ts` | Default values for catalog fields |
-| `src/services/iqama-rules-service.ts` | `apiFetch` wrappers |
-| `src/types/iqama-rules.ts` | Contract types |
+| File                                              | Role                                                                                     |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `src/pages/IqamaRulesPage.tsx`                    | State, preview-on-review effect, save and error handling                                 |
+| `src/components/iqama-rules/RuleCard.tsx`         | Prayer card with sentence and "Edited" badge                                             |
+| `src/components/iqama-rules/RuleSheet.tsx`        | Rule type, modifiers, live 7-day strip                                                   |
+| `src/components/iqama-rules/RuleFields.tsx`       | Renders catalog fields (`int`, `time`, `list`, `oneOf`)                                  |
+| `src/components/iqama-rules/RuleReviewDialog.tsx` | Date, Friday check, year scan, confirm                                                   |
+| `src/components/iqama-rules/GuardrailsNote.tsx`   | Read-only "Always applied" numbered list from `catalog.guardrails` and `catalog.prayers` |
+| `src/hooks/useIqamaRules.ts`                      | Loads config and catalog                                                                 |
+| `src/hooks/useIqamaRulesDraft.ts`                 | `SET_RULE` (drops a rule equal to the saved one), `SET_EFFECTIVE_FROM`, `RESET`          |
+| `src/hooks/useOverrideClamps.ts`                  | Ids of overrides with adjusted days                                                      |
+| `src/logic/iqama-rules.ts`                        | `describeRule`, `isFriday`, `upcomingFridays`, `changedPrayers`                          |
+| `src/logic/rule-defaults.ts`                      | Default values for catalog fields                                                        |
+| `src/services/iqama-rules-service.ts`             | `apiFetch` wrappers                                                                      |
+| `src/types/iqama-rules.ts`                        | Contract types                                                                           |
 
 ## Key decisions
 

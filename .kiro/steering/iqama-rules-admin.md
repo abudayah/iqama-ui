@@ -5,7 +5,7 @@ fileMatchPattern: 'src/pages/IqamaRulesPage*,src/components/iqama-rules/*,src/ho
 
 # Iqama Rules Admin Page
 
-`/admin/iqama` (tab label "Iqama Rules") edits the per-prayer iqama rules via the engine's `/api/v1/admin/iqama-rules` API. The "Iqama" tab at `/admin` is the overrides page; do not confuse them. Spec: `.kiro/specs/iqama-rules-admin/`.
+`/admin/iqama` ("Rules" view of the "Iqama" nav tab) edits the per-prayer iqama rules via the engine's `/api/v1/admin/iqama-rules` API. `/admin` (default view "Overrides") shares the tab through `IqamaTabLayout`, which owns the Rules draft so it survives switching views (a dot on "Rules" marks unsaved changes). Spec: `.kiro/specs/iqama-rules-admin/`.
 
 ## Flow
 

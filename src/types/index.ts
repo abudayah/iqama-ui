@@ -7,6 +7,8 @@ export interface PrayerEntry {
   azan_customized?: boolean;
   /** True when the hard guardrails moved this iqama (min gap / Fajr before sunrise). */
   iqama_clamped?: boolean;
+  /** True when this iqama clashes with another rule (e.g. Fajr too close to sunrise). */
+  iqama_conflict?: boolean;
 }
 
 export interface DailySchedule {
@@ -14,6 +16,8 @@ export interface DailySchedule {
   hijri_date: string; // e.g. "Dhul Hijjah 25, 1446"
   day_of_week: string; // e.g. "Friday"
   is_dst: boolean;
+  /** Day-level conflict flag, if the engine sends one. */
+  iqama_conflict?: boolean;
   fajr: PrayerEntry;
   sunrise: string; // HH:mm
   dhuhr: PrayerEntry;

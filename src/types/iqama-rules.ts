@@ -36,6 +36,8 @@ export interface IqamaRuleVersion {
   settings: string; // JSON RuleSet
   createdBy: string;
   createdAt: string;
+  /** Why the change was made (absent on older engines). */
+  reason?: string | null;
 }
 
 export interface IqamaRulesConfig {
@@ -93,11 +95,22 @@ export interface PreviewDayPrayer {
   proposed: { iqama: string; clamped: boolean };
 }
 
+export interface IqamaConflict {
+  date: string;
+  prayer: PrayerName;
+  azan: string;
+  sunrise: string;
+  iqama: string;
+  broken?: boolean;
+}
+
 export interface IqamaPreviewResponse {
   previewId: string;
   currentRevision: number;
   effectiveFrom: string;
   warnings: { path?: string; message: string }[];
+  /** Days where Fajr clashes with the sunrise guardrail (absent on older engines). */
+  conflicts?: IqamaConflict[];
   days: { date: string; day_of_week: string; prayers: Record<PrayerName, PreviewDayPrayer> }[];
   summary: {
     from: string;

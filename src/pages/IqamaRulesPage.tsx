@@ -5,6 +5,7 @@
  * Review & save scans the next 365 days before anything is written.
  */
 import { useEffect, useMemo, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { useIqamaRules } from '../hooks/useIqamaRules';
 import { useIqamaRulesDraft } from '../hooks/useIqamaRulesDraft';
 import { previewIqamaRules, saveIqamaRules } from '../services/iqama-rules-service';
@@ -20,7 +21,11 @@ import { RuleReviewDialog } from '../components/iqama-rules/RuleReviewDialog';
 
 export function IqamaRulesPage() {
   const { config, catalog, loading, error, refresh } = useIqamaRules();
-  const { draft, hasChanges, setRule, setEffectiveFrom, reset } = useIqamaRulesDraft();
+  // Inside the Iqama tab the draft is owned by IqamaTabLayout so it survives a
+  // switch to Overrides; standalone (tests) the page keeps its own.
+  const shared = useOutletContext<ReturnType<typeof useIqamaRulesDraft> | null>();
+  const own = useIqamaRulesDraft();
+  const { draft, hasChanges, setRule, setEffectiveFrom, reset } = shared ?? own;
 
   const [sheetPrayer, setSheetPrayer] = useState<PrayerName | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -64,12 +69,18 @@ export function IqamaRulesPage() {
     };
   }, [reviewOpen, proposedKey, effectiveFrom, scan]);
 
-  const handleConfirm = async () => {
+  const handleConfirm = async (extra: { reason: string; acknowledgeConflicts: boolean }) => {
     if (!preview || !config) return;
     setSaving(true);
     setReviewError(null);
     try {
-      await saveIqamaRules(proposed, effectiveFrom, preview.previewId, config.currentRevision);
+      await saveIqamaRules(
+        proposed,
+        effectiveFrom,
+        preview.previewId,
+        config.currentRevision,
+        extra,
+      );
       reset();
       setReviewOpen(false);
       setSuccessMsg('Rules saved. The public schedule has been updated.');
@@ -195,7 +206,8 @@ export function IqamaRulesPage() {
           loading={previewLoading}
           error={reviewError}
           saving={saving}
-          onConfirm={() => void handleConfirm()}
+          onConfirm={(extra) => void handleConfirm(extra)}
+          fajrMinBeforeSunrise={catalog.guardrails.fajrEndsBeforeSunriseMinutes}
           onClose={() => {
             setReviewOpen(false);
             if (stale) {

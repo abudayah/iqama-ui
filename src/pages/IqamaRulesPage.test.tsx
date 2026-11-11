@@ -83,6 +83,7 @@ const previewBody = {
   },
 };
 
+let previewConflicts: unknown[] | undefined;
 let previewDates: (string | undefined)[] = [];
 let putBody: Record<string, unknown> | null = null;
 let putStatus = 200;
@@ -95,6 +96,7 @@ afterEach(() => {
 });
 beforeEach(() => {
   previewDates = [];
+  previewConflicts = undefined;
   putBody = null;
   putStatus = 200;
   localStorage.setItem(CONFIG_KEYS.BASE_URL, BASE);
@@ -105,7 +107,11 @@ beforeEach(() => {
     http.post(`${R}/preview`, async ({ request }) => {
       const b = (await request.json()) as { effectiveFrom?: string };
       previewDates.push(b.effectiveFrom);
-      return HttpResponse.json({ ...previewBody, effectiveFrom: b.effectiveFrom });
+      return HttpResponse.json({
+        ...previewBody,
+        effectiveFrom: b.effectiveFrom,
+        ...(previewConflicts ? { conflicts: previewConflicts } : {}),
+      });
     }),
     http.put(`${R}/base`, async ({ request }) => {
       putBody = (await request.json()) as Record<string, unknown>;
@@ -233,6 +239,65 @@ describe('IqamaRulesPage', () => {
     fireEvent.click(screen.getByLabelText(/I understand/));
     fireEvent.click(screen.getByRole('button', { name: 'Save rules' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Rules changed since you opened');
+  });
+});
+
+describe('IqamaRulesPage — reason and Fajr conflicts', () => {
+  async function openReview() {
+    render(<IqamaRulesPage />);
+    await editPrayerMinutes('isha', '15');
+    fireEvent.click(screen.getByRole('button', { name: /review & save/i }));
+    await screen.findByTestId('year-scan');
+  }
+
+  it('sends the trimmed reason, capped at 500 characters', async () => {
+    await openReview();
+    const box = screen.getByLabelText(/Reason for change/);
+    expect(box).toHaveAttribute('maxlength', '500');
+    fireEvent.change(box, { target: { value: '  Summer schedule  ' } });
+    fireEvent.click(screen.getByLabelText(/I understand this changes/));
+    fireEvent.click(screen.getByRole('button', { name: 'Save rules' }));
+    await waitFor(() => expect(putBody).not.toBeNull());
+    expect(putBody).toMatchObject({ reason: 'Summer schedule' });
+    expect(putBody).not.toHaveProperty('acknowledgeConflicts');
+  });
+
+  it('omits reason when empty', async () => {
+    await openReview();
+    fireEvent.click(screen.getByLabelText(/I understand this changes/));
+    fireEvent.click(screen.getByRole('button', { name: 'Save rules' }));
+    await waitFor(() => expect(putBody).not.toBeNull());
+    expect(putBody).not.toHaveProperty('reason');
+  });
+
+  it('lists conflicts and blocks Save until acknowledged, then sends acknowledgeConflicts', async () => {
+    previewConflicts = [
+      {
+        date: '2027-06-20',
+        prayer: 'fajr',
+        azan: '03:40',
+        sunrise: '05:05',
+        iqama: '04:30',
+        broken: true,
+      },
+    ];
+    await openReview();
+    const list = screen.getByTestId('fajr-conflicts');
+    expect(list).toHaveTextContent('2027-06-20');
+    expect(list).toHaveTextContent('sunrise 05:05');
+    fireEvent.click(screen.getByLabelText(/I understand this changes/));
+    const save = screen.getByRole('button', { name: 'Save rules' });
+    expect(save).toBeDisabled();
+    fireEvent.click(screen.getByLabelText(/Fajr will be less than 10 min before sunrise/));
+    expect(save).toBeEnabled();
+    fireEvent.click(save);
+    await waitFor(() => expect(putBody).not.toBeNull());
+    expect(putBody).toMatchObject({ acknowledgeConflicts: true });
+  });
+
+  it('shows no conflict box when the preview has none', async () => {
+    await openReview();
+    expect(screen.queryByTestId('fajr-conflicts')).toBeNull();
   });
 });
 

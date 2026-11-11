@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ApiError } from '../api/errors';
 import type { Override, OverridePayload, PrayerName } from '../types/index';
 
 interface OverrideFormModalProps {
@@ -88,7 +89,9 @@ export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModa
       await onSave({ prayer, overrideType, value, startDate, endDate });
       onClose();
     } catch (err) {
-      setErrors({ submit: err instanceof Error ? err.message : 'Save failed' });
+      // 409 = overlaps another override for the same prayer: show it by the dates.
+      if (err instanceof ApiError && err.status === 409) setErrors({ overlap: err.message });
+      else setErrors({ submit: err instanceof Error ? err.message : 'Save failed' });
     } finally {
       setSaving(false);
     }
@@ -197,6 +200,16 @@ export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModa
           className="w-full border border-gray-300 rounded px-3 py-3 text-sm mb-1 min-h-[44px]"
         />
         {errors['endDate'] && <p className="text-red-600 text-xs mb-2">{errors['endDate']}</p>}
+
+        {errors['overlap'] && (
+          <p
+            role="alert"
+            data-testid="override-overlap-error"
+            className="text-red-600 text-xs mb-2"
+          >
+            {errors['overlap']}
+          </p>
+        )}
 
         {errors['submit'] && <p className="text-red-600 text-xs mb-2">{errors['submit']}</p>}
 
