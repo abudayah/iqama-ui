@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { validateRule } from './rule-validator';
-import { describeRule, canonicalJson, savedMessage, sameRule } from './iqama-rules';
+import { describeRule, canonicalJson, sameRule } from './iqama-rules';
 import { pruneEmpty } from './rule-defaults';
 import { CATALOG, SEED_RULES, PRAYERS } from '../test/iqama-fixtures';
 import type { CatalogField } from '../types/iqama-rules';
@@ -157,11 +157,5 @@ describe('helpers', () => {
         { weeklyLock: true, base: { minutes: 5, type: 'OFFSET' } },
       ),
     ).toBe(true);
-  });
-
-  it('savedMessage depends on the mode', () => {
-    expect(savedMessage('db', '2026-11-13')).toMatch(/published.*2026-11-13/);
-    expect(savedMessage('shadow', 'x')).toMatch(/comparing in the background/);
-    expect(savedMessage('legacy', 'x')).toMatch(/built-in rules/);
   });
 });

@@ -104,18 +104,6 @@ export function changedPrayers(base: RuleSet, draft: Partial<RuleSet>): PrayerNa
   return (Object.keys(draft) as PrayerName[]).filter((p) => !sameRule(draft[p]!, base[p]));
 }
 
-/** Success text that says what the save did, by engine mode. */
-export function savedMessage(mode: 'legacy' | 'shadow' | 'db', effectiveFrom: string): string {
-  switch (mode) {
-    case 'db':
-      return `Saved and published. The public schedule uses these rules from ${effectiveFrom}.`;
-    case 'shadow':
-      return 'Saved. The engine is still comparing in the background; the public schedule is unchanged.';
-    case 'legacy':
-      return 'Saved. The public schedule still uses the built-in rules.';
-  }
-}
-
 /** "Fri, Nov 13" for a YYYY-MM-DD date. */
 export function formatDay(date: string): string {
   return new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', {

@@ -53,7 +53,7 @@ UI side of the iqama rule engine. Phase 3 (this UI) is complete. The engine phas
   - [x] 6.1 Baseline from `latest`; versions panel (editing on top of, in force, upcoming, history)
   - [x] 6.2 Confirmation and Fajr acknowledgement bound to one preview; request key; revision check; late answers ignored; 422 / 409 / 400 handling
   - [x] 6.3 Catalog-driven recursive validator, structured fields, no invented defaults
-  - [x] 6.4 Mode-aware success text; guardrail copy; override hint
+  - [x] 6.4 Success text (single message after the engine dropped legacy/shadow modes); guardrail copy; override hint
   - [x] 6.5 Dialog focus trap, return, inert background (`useModalA11y`)
   - [x] 6.6 `useOverrideClamps` keyed on type and value, shared requests, hook tests
   - [x] 6.7 Contract tests against engine snapshots (catalog and seed rules)

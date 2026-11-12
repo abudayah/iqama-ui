@@ -57,13 +57,11 @@ export interface IqamaRuleVersion {
 }
 
 export interface IqamaRulesConfig {
-  mode: 'legacy' | 'shadow' | 'db';
-  cutover: string;
   currentRevision: number;
   today: string;
   timezone: string;
   defaultEffectiveFrom: string;
-  /** In force today; null before the cutover or when there is no version. */
+  /** In force today; null when there is no version. */
   effective: IqamaVersion | null;
   /** The newest version: the baseline every new version is built on. */
   latest: IqamaVersion | null;

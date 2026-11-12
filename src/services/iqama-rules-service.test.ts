@@ -94,12 +94,10 @@ describe('iqama-rules-service (contract with the engine)', () => {
     const c = makeConfig();
     expect(Object.keys(c).sort()).toEqual(
       [
-        'cutover',
         'currentRevision',
         'defaultEffectiveFrom',
         'effective',
         'latest',
-        'mode',
         'timezone',
         'today',
         'upcoming',
