@@ -41,13 +41,11 @@ export const version = (
 export function makeConfig(patch: Partial<IqamaRulesConfig> = {}): IqamaRulesConfig {
   const v3 = version(3, '2026-11-13', SEED_RULES, 'Initial import');
   return {
-    mode: 'db',
-    cutover: '2026-11-13',
     currentRevision: 3,
     today: '2026-11-11',
     timezone: 'America/Vancouver',
     defaultEffectiveFrom: '2026-11-13',
-    effective: null, // before the cutover
+    effective: null,
     latest: v3,
     upcoming: [v3],
     versions: [

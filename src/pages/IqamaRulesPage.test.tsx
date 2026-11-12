@@ -342,7 +342,7 @@ describe('review and save', () => {
     fireEvent.click(saveButton());
     await waitFor(() => expect(state.putBodies).toHaveLength(2));
     expect(state.putBodies[1]!['previewId']).not.toBe(state.putBodies[0]!['previewId']);
-    expect(await screen.findByText(/Saved and published/)).toBeInTheDocument();
+    expect(await screen.findByText('✓ Rules saved and published.')).toBeInTheDocument();
   });
 
   it('blocks publishing when the preview was made for another revision', async () => {
@@ -433,16 +433,11 @@ describe('review and save', () => {
     expect(screen.queryByTestId('fajr-conflicts')).toBeNull();
   });
 
-  it.each([
-    ['db', /Saved and published.*from 2026-11-13/],
-    ['shadow', /Saved\. The engine is still comparing in the background/],
-    ['legacy', /Saved\. The public schedule still uses the built-in rules/],
-  ] as const)('says what the save did in %s mode', async (mode, text) => {
-    state.config = makeConfig({ mode });
+  it('shows one plain success message after a save', async () => {
     await reviewMaghribEdit();
     fireEvent.click(understand());
     fireEvent.click(saveButton());
-    expect(await screen.findByText(text)).toBeInTheDocument();
+    expect(await screen.findByText('✓ Rules saved and published.')).toBeInTheDocument();
   });
 });
 
@@ -817,19 +812,33 @@ describe('dialog accessibility', () => {
   });
 });
 
-describe('mode notices', () => {
-  it.each([
-    ['legacy', /"legacy".*built-in rules/],
-    ['shadow', /"shadow".*public schedule is unchanged/],
-  ] as const)('explains %s mode', async (mode, text) => {
-    state.config = makeConfig({ mode });
+describe('public schedule note', () => {
+  it('shows one plain line and no mode or cutover wording', async () => {
     render(<IqamaRulesPage />);
-    expect(await screen.findByText(text)).toBeInTheDocument();
+    expect(await screen.findByTestId('public-schedule-note')).toHaveTextContent(
+      'The public schedule uses these rules.',
+    );
+    const text = document.body.textContent ?? '';
+    expect(text).not.toMatch(/legacy|shadow|built-in rules|earlier dates|cutover/i);
   });
 
-  it('says when the rules start to apply (db mode before the cutover)', async () => {
+  it.each([
+    ['legacy', '2026-11-13'],
+    ['shadow', '2026-11-13'],
+    ['db', '2030-01-01'],
+  ])('ignores a leftover mode (%s) and cutover from an older engine', async (mode, cutover) => {
+    state.config = { ...makeConfig(), mode, cutover } as never;
     render(<IqamaRulesPage />);
-    expect(await screen.findByText(/uses these rules from 2026-11-13/)).toBeInTheDocument();
+    expect(await screen.findByTestId('public-schedule-note')).toBeInTheDocument();
+    expect(screen.getByTestId('rule-card-maghrib')).toBeInTheDocument();
+    expect(document.body.textContent ?? '').not.toMatch(/legacy|shadow|built-in rules|2030-01-01/i);
+  });
+
+  it('works when mode and cutover are missing (current engine)', async () => {
+    expect(state.config).not.toHaveProperty('mode');
+    expect(state.config).not.toHaveProperty('cutover');
+    render(<IqamaRulesPage />);
+    expect(await screen.findByTestId('rule-card-fajr')).toBeInTheDocument();
   });
 });
 

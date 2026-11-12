@@ -14,7 +14,7 @@ import { useIqamaRules } from '../hooks/useIqamaRules';
 import { overlappingPrayers, useIqamaRulesDraft } from '../hooks/useIqamaRulesDraft';
 import { previewIqamaRules, saveIqamaRules } from '../services/iqama-rules-service';
 import { ApiError } from '../api/errors';
-import { canonicalJson, changedPrayers, prayerLabel, savedMessage } from '../logic/iqama-rules';
+import { canonicalJson, changedPrayers, prayerLabel } from '../logic/iqama-rules';
 import type { PrayerName } from '../types/index';
 import type { IqamaPreviewResponse, PrayerRule, RuleSet } from '../types/iqama-rules';
 import { RuleCard } from '../components/iqama-rules/RuleCard';
@@ -169,7 +169,7 @@ export function IqamaRulesPage() {
       );
       reset();
       setReviewOpen(false);
-      setSuccessMsg(savedMessage(config.mode, effectiveFrom));
+      setSuccessMsg('Rules saved and published.');
       setTimeout(() => setSuccessMsg(null), 6000);
       refresh();
     } catch (e) {
@@ -215,15 +215,6 @@ export function IqamaRulesPage() {
   }
   if (!config || !catalog) return null;
 
-  const modeNote =
-    config.mode === 'legacy'
-      ? 'Rules mode is "legacy": saved rules are stored, but the public schedule still uses the built-in rules.'
-      : config.mode === 'shadow'
-        ? 'Rules mode is "shadow": the engine compares saved rules in the background; the public schedule is unchanged.'
-        : config.today < config.cutover
-          ? `The public schedule uses these rules from ${config.cutover}; earlier dates keep the built-in rules.`
-          : null;
-
   return (
     <div className="min-h-screen bg-gray-50">
       {successMsg && (
@@ -262,11 +253,9 @@ export function IqamaRulesPage() {
       )}
 
       <div className="p-4 space-y-4">
-        {modeNote && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800">
-            {modeNote}
-          </div>
-        )}
+        <p className="text-sm text-gray-600" data-testid="public-schedule-note">
+          The public schedule uses these rules.
+        </p>
 
         {!latest && (
           <div

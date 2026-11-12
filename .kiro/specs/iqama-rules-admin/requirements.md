@@ -25,7 +25,7 @@ The admin area gets an "Iqama Rules" tab at `/admin/iqama`. It lets the Imam vie
 1. THE page SHALL show one card per prayer (Fajr, Dhuhr, Asr, Maghrib, Isha).
 2. EACH card SHALL show a plain-English sentence for the rule, e.g. "Azan + 5 min, rounded up to the next 5".
 3. A card with unsaved changes SHALL show an "Edited" badge.
-4. IF the engine mode is not `db`, THEN the page SHALL show a notice that the public schedule does not use these rules yet.
+4. THE page SHALL say once, in plain words, that the public schedule uses these rules. It SHALL ignore a `mode` or `cutover` field if an engine still sends one.
 5. IF nothing is saved on the engine, THEN the page SHALL say so and offer no editing (no invented default rule).
 
 ### Requirement 3: Edit sheet
@@ -45,7 +45,7 @@ The admin area gets an "Iqama Rules" tab at `/admin/iqama`. It lets the Imam vie
 4. SAVING SHALL require an explicit confirmation checkbox, then `PUT /base` with the preview token, `requestHash` and the revision the page loaded.
 5. ON 409 or `IQAMA_REVISION_STALE` THE dialog SHALL show the server message and block saving; "Reload latest rules" discards the draft and reloads.
 6. ON any 422 THE page SHALL drop the preview, show the message, and scan again; the confirmation is needed again.
-7. ON success THE page SHALL clear the draft, reload, and show a success message that depends on the engine mode (`db` published, `shadow` still comparing, `legacy` public schedule unchanged).
+7. ON success THE page SHALL clear the draft, reload, and show the success message "Rules saved and published."
 
 ### Requirement 5: Always applied
 
@@ -81,5 +81,5 @@ The admin area gets an "Iqama Rules" tab at `/admin/iqama`. It lets the Imam vie
 3. THE confirmation and the Fajr acknowledgement SHALL belong to one preview (its `previewId`); any change of rules, date or revision SHALL remove the preview at once and unset both. Late answers for older requests SHALL be ignored. A preview for another revision than the loaded one SHALL block saving.
 4. THE rule form SHALL use catalog defaults only; fields without a default start empty and must be entered. A cleared optional field SHALL be removed, never sent as 0 or NaN; decimals SHALL NOT be truncated.
 5. THE rule sheet and review dialog SHALL move focus in, trap it, return it to the trigger, close on Escape, and make the background inert.
-7. "Reload latest rules" SHALL keep the user's edits and re-apply them on top of the new newest version, clear the preview and both confirmations, name any edited prayer that the new version also changed (with a per-prayer "Use the saved version instead"), and move the effective date only if it is now earlier than the new newest version's date (saying so).
-6. THE override warning SHALL be recomputed when prayer, type, value or dates change, share identical range requests, and show nothing when the request fails.
+6. "Reload latest rules" SHALL keep the user's edits and re-apply them on top of the new newest version, clear the preview and both confirmations, name any edited prayer that the new version also changed (with a per-prayer "Use the saved version instead"), and move the effective date only if it is now earlier than the new newest version's date (saying so).
+7. THE override warning SHALL be recomputed when prayer, type, value or dates change, share identical range requests, and show nothing when the request fails.

@@ -13,8 +13,8 @@ Auth for every call: header `x-api-key`. Dates `YYYY-MM-DD`, times `HH:mm`.
 ### `GET /`
 
 ```
-{ mode: 'legacy'|'shadow'|'db', cutover, currentRevision, today, timezone, defaultEffectiveFrom,
-  effective: V | null,   // in force today; null before the cutover or when nothing is saved
+{ currentRevision, today, timezone, defaultEffectiveFrom,
+  effective: V | null,   // in force today; null when nothing is saved
   latest:    V | null,   // NEWEST version = the baseline for every proposal
   upcoming:  V[],        // effectiveFrom > today, oldest first
   versions:  [{ id, effectiveFrom, createdAt, createdBy, reason, settings }] }
@@ -51,13 +51,13 @@ Body `{ settings: string (JSON of the RuleSet), effectiveFrom }`. Response:
 
 Body `{ settings, effectiveFrom, previewId, expectedRevision, reason?, acknowledgeConflicts?, requestHash? }`. The UI sends `reason` only when not empty (max 500), `acknowledgeConflicts: true` only when the Fajr checkbox is ticked, and always the preview's `requestHash`.
 
-| Status | Meaning | UI |
-|---|---|---|
-| 400 `{ message, errors:[{path,message}] }` | invalid rules, past date, date before the newest version, non-Friday start for a changed Fajr/Dhuhr/Asr/Isha | message + field list in the dialog |
-| 409 | `expectedRevision` is stale | stale notice, Save blocked, "Reload latest rules" |
-| 422 `IQAMA_PREVIEW_INVALID` / `_MISMATCH` | token expired, used, or for other settings/date | drop the preview, show the message, scan again, confirmation needed again |
-| 422 `IQAMA_REVISION_STALE` | preview made for another revision | same as 409 |
-| 422 `IQAMA_CONFLICTS_NOT_ACKNOWLEDGED` | Fajr conflicts not acknowledged | same as the other 422s |
+| Status                                     | Meaning                                                                                                      | UI                                                                        |
+| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| 400 `{ message, errors:[{path,message}] }` | invalid rules, past date, date before the newest version, non-Friday start for a changed Fajr/Dhuhr/Asr/Isha | message + field list in the dialog                                        |
+| 409                                        | `expectedRevision` is stale                                                                                  | stale notice, Save blocked, "Reload latest rules"                         |
+| 422 `IQAMA_PREVIEW_INVALID` / `_MISMATCH`  | token expired, used, or for other settings/date                                                              | drop the preview, show the message, scan again, confirmation needed again |
+| 422 `IQAMA_REVISION_STALE`                 | preview made for another revision                                                                            | same as 409                                                               |
+| 422 `IQAMA_CONFLICTS_NOT_ACKNOWLEDGED`     | Fajr conflicts not acknowledged                                                                              | same as the other 422s                                                    |
 
 ### Schedule and overrides
 
@@ -100,7 +100,7 @@ A confirmation is only valid for the preview it was given on.
 
 ## Copy
 
-"Always applied" (`GuardrailsNote`) is built from the catalog: the hard minimum after Azan always holds (overrides included); the Fajr sunrise buffer is normally enforced, and when both cannot hold, the minimum wins, the day is flagged as a conflict and the admin must acknowledge it (shown when `fajrSunriseConflictPolicy` is `gap-wins-with-acknowledgement`); the 5-minute mark; Friday-start prayers; Maghrib any day. Times the guardrails move are called "adjusted". After a save the success text depends on `mode`: `db` "Saved and published", `shadow` "Saved … still comparing in the background", `legacy` "Saved … still uses the built-in rules".
+"Always applied" (`GuardrailsNote`) is built from the catalog: the hard minimum after Azan always holds (overrides included); the Fajr sunrise buffer is normally enforced, and when both cannot hold, the minimum wins, the day is flagged as a conflict and the admin must acknowledge it (shown when `fajrSunriseConflictPolicy` is `gap-wins-with-acknowledgement`); the 5-minute mark; Friday-start prayers; Maghrib any day. Times the guardrails move are called "adjusted". The page says "The public schedule uses these rules." and a save shows one message, "Rules saved and published." The engine no longer has legacy/shadow modes; a leftover `mode` or `cutover` field in `GET /` is ignored.
 
 The override form's 5-minute hint says the final time can be moved further to keep the safety rules and that the schedule and warning show the real time.
 
@@ -130,7 +130,7 @@ graph TD
 
 Vitest + msw + Testing Library. The shared server and fixtures are in `src/test/iqama-fixtures.ts` (shapes from the engine contract; catalog and seed rules are engine snapshots).
 
-- `IqamaRulesPage.test.tsx`: baseline with a scheduled future version, date change after confirm, out-of-order previews, 422 / 409 / 400 handling, revision mismatch, Fajr conflicts and acknowledgement reset, reason, mode-specific success text, form validation (empty, decimal, range, Seasonal, Scaled gap, no invented defaults), guardrail copy, dialog focus/Escape/inert.
+- `IqamaRulesPage.test.tsx`: baseline with a scheduled future version, date change after confirm, out-of-order previews, 422 / 409 / 400 handling, revision mismatch, Fajr conflicts and acknowledgement reset, reason, the single success text, tolerance of a leftover mode/cutover field, form validation (empty, decimal, range, Seasonal, Scaled gap, no invented defaults), guardrail copy, dialog focus/Escape/inert.
 - `rule-validator.test.ts`: the validator accepts every rule of the engine seed and rejects the invalid cases above.
 - `iqama-rules-service.test.ts`: request bodies, header, `ApiError.code`/`errors`.
 - `useOverrideClamps.test.ts`: clamped, value change both ways, type change, dates change, delete, fetch failure, shared requests.
@@ -144,4 +144,4 @@ Vitest + msw + Testing Library. The shared server and fixtures are in `src/test/
 
 ## Review dialog layout (simplified)
 
-Title, subtitle "<Prayers> · from <Fri, Nov 13>" and the date picker. For each CHANGED prayer only: the old → new sentence (`describeRule`), up to three example days where the time changes ("Fri 13  17:35 → 17:40", from `preview.days`), and one line ("Changes every day" / "Changes on N days" / "No time changes"). A warning "⚠ N days will be moved by safety rules" appears only for days moved because of this change: `summary.newlyMoved` (a number, or per prayer), else the fallback proposed − current (per prayer when `byPrayer[p].daysClampedCurrent` exists, else overall totals); zero shows nothing, so days that were already moved never warn. Totals, the per-prayer table, first dates and the "already today / new from this change" split are under a collapsed "Details" disclosure (`aria-expanded`). All safety logic (preview binding, resets, revision checks, Fajr acknowledgement, Friday rule, reason, 409/422) is unchanged. The user-facing word is "moved by safety rules"; "Adjusted" remains as the short strip badge, with that text as its tooltip.
+Title, subtitle "<Prayers> · from <Fri, Nov 13>" and the date picker. For each CHANGED prayer only: the old → new sentence (`describeRule`), up to three example days where the time changes ("Fri 13 17:35 → 17:40", from `preview.days`), and one line ("Changes every day" / "Changes on N days" / "No time changes"). A warning "⚠ N days will be moved by safety rules" appears only for days moved because of this change: `summary.newlyMoved` (a number, or per prayer), else the fallback proposed − current (per prayer when `byPrayer[p].daysClampedCurrent` exists, else overall totals); zero shows nothing, so days that were already moved never warn. Totals, the per-prayer table, first dates and the "already today / new from this change" split are under a collapsed "Details" disclosure (`aria-expanded`). All safety logic (preview binding, resets, revision checks, Fajr acknowledgement, Friday rule, reason, 409/422) is unchanged. The user-facing word is "moved by safety rules"; "Adjusted" remains as the short strip badge, with that text as its tooltip.

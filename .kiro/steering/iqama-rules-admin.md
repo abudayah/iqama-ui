@@ -29,7 +29,7 @@ fileMatchPattern: 'src/pages/IqamaRulesPage*,src/components/iqama-rules/*,src/ho
 
 ## Local dev
 
-`VITE_API_BASE_URL` must match the CSP origin exactly. `vite.config.ts` sets `connect-src` to the origin of this variable, and the browser keeps the API URL in localStorage (`iqama_ui_base_url`). Use `http://localhost:3000`, not `http://127.0.0.1:3000`; a mismatch shows "Network request failed". The engine's `CORS_ORIGIN` must include `http://localhost:5173`, and its `IQAMA_RULES` must be `db` for the public schedule to use the rules.
+`VITE_API_BASE_URL` must match the CSP origin exactly. `vite.config.ts` sets `connect-src` to the origin of this variable, and the browser keeps the API URL in localStorage (`iqama_ui_base_url`). Use `http://localhost:3000`, not `http://127.0.0.1:3000`; a mismatch shows "Network request failed". The engine's `CORS_ORIGIN` must include `http://localhost:5173`.
 9. **Build every proposal from `latest.rules`** and show "Editing on top of version N" plus scheduled versions. Building from today's effective rules would revert changes scheduled in an upcoming version.
 10. **Confirmation belongs to one preview.** The confirmation and the Fajr acknowledgement are stored against `previewId`; the preview is only used while its request key (rules, date, revision) is current; late answers are ignored; any 422 drops the preview and scans again; a revision mismatch blocks saving.
 11. **Dialogs** use `useModalA11y` (focus in and back, trap, Escape, inert background) and render in a portal.
