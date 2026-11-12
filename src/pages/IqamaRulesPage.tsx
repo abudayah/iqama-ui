@@ -14,7 +14,12 @@ import { useIqamaRules } from '../hooks/useIqamaRules';
 import { overlappingPrayers, useIqamaRulesDraft } from '../hooks/useIqamaRulesDraft';
 import { previewIqamaRules, saveIqamaRules } from '../services/iqama-rules-service';
 import { ApiError } from '../api/errors';
-import { canonicalJson, changedPrayers, prayerLabel } from '../logic/iqama-rules';
+import {
+  canonicalJson,
+  changedPrayers,
+  prayerLabel,
+  publicScheduleNote,
+} from '../logic/iqama-rules';
 import type { PrayerName } from '../types/index';
 import type { IqamaPreviewResponse, PrayerRule, RuleSet } from '../types/iqama-rules';
 import { RuleCard } from '../components/iqama-rules/RuleCard';
@@ -254,7 +259,7 @@ export function IqamaRulesPage() {
 
       <div className="p-4 space-y-4">
         <p className="text-sm text-gray-600" data-testid="public-schedule-note">
-          The public schedule uses these rules.
+          {publicScheduleNote(config)}
         </p>
 
         {!latest && (

@@ -142,3 +142,37 @@ export function newlyMovedDays(summary: Summary, changed: PrayerName[]): number 
   }
   return Math.max(0, summary.daysClamped - summary.daysClampedCurrent);
 }
+
+/** Configuration object from GET /api/v1/admin/iqama-rules (top-level shape only). */
+interface _NoteConfig {
+  today: string;
+  effective: { versionId: number; effectiveFrom: string } | null;
+  latest: { versionId: number; effectiveFrom: string } | null;
+  versions: { id: number; effectiveFrom: string }[];
+}
+
+/**
+ * Plain note telling the admin what the public schedule uses today.
+ * When the newest version is in force (or there is only one future-dated
+ * version — earlier dates fall back to the earliest stored version), returns
+ * "The public schedule uses these rules."
+ * Otherwise names the in-force version and when these rules start.
+ */
+export function publicScheduleNote(config: _NoteConfig | null | undefined): string {
+  const latest = config?.latest;
+  if (!config || !latest || latest.effectiveFrom <= config.today) {
+    return 'The public schedule uses these rules.';
+  }
+  // Identify which version is actually in force today.
+  const sorted = [...config.versions].sort((a, b) =>
+    a.effectiveFrom === b.effectiveFrom ? a.id - b.id : a.effectiveFrom < b.effectiveFrom ? -1 : 1,
+  );
+  const inForceId = config.effective?.versionId ?? sorted[0]?.id;
+  if (inForceId === undefined || inForceId === latest.versionId) {
+    return 'The public schedule uses these rules.';
+  }
+  return (
+    `The public schedule uses version ${inForceId} today. ` +
+    `These rules (version ${latest.versionId}) start on ${latest.effectiveFrom}.`
+  );
+}
