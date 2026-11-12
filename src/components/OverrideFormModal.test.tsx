@@ -244,6 +244,7 @@ describe('OverrideFormModal — 5-minute mark', () => {
     const { container } = render(<OverrideFormModal onSave={vi.fn()} onClose={vi.fn()} />);
     expect(container.querySelector('input[type="time"]')).toHaveAttribute('step', '300');
     expect(screen.getByText(/5-minute mark/i)).toBeInTheDocument();
+    expect(screen.getByText(/can be moved further to keep the safety rules/i)).toBeInTheDocument();
   });
 });
 

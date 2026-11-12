@@ -148,7 +148,9 @@ export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModa
               aria-describedby="override-step-hint"
             />
             <p id="override-step-hint" className="text-xs text-gray-500 mb-1">
-              Iqama times are on a 5-minute mark. A time like 9:04 becomes 9:05.
+              Iqama times are on a 5-minute mark. The final time can be moved further to keep the
+              safety rules (minimum gap after Azan, Fajr before sunrise). The schedule and the
+              warning on this page show the real time.
             </p>
           </>
         ) : (
