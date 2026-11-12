@@ -21,6 +21,8 @@ interface OverrideRowProps {
   today: string;
   onEdit: (override: Override) => void;
   onDelete: (id: number) => void;
+  /** The guardrails move this override's iqama on at least one upcoming day. */
+  clamped?: boolean;
 }
 
 const PRAYER_LABELS: Record<string, string> = {
@@ -31,7 +33,7 @@ const PRAYER_LABELS: Record<string, string> = {
   isha: 'Isha',
 };
 
-export function OverrideRow({ override, today, onEdit, onDelete }: OverrideRowProps) {
+export function OverrideRow({ override, today, onEdit, onDelete, clamped }: OverrideRowProps) {
   const active = isActive(override, today);
 
   return (
@@ -59,6 +61,15 @@ export function OverrideRow({ override, today, onEdit, onDelete }: OverrideRowPr
           {override.overrideType}: {override.value} · {formatDate(override.startDate)} –{' '}
           {formatDate(override.endDate)}
         </p>
+        {clamped && (
+          <p
+            data-testid={`override-clamp-warning-${override.id}`}
+            className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1 mt-1"
+          >
+            ⚠ Safety limits change this time on some days (minimum gap after Azan, or Fajr before
+            sunrise).
+          </p>
+        )}
       </div>
       <div className="flex gap-2 ml-2">
         <button

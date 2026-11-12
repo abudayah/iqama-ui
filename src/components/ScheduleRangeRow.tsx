@@ -40,6 +40,14 @@ export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps)
     <div id={`schedule-range-row-${schedule.date}`} className="bg-white border-b border-gray-100">
       <div className="flex items-center px-4 py-2 bg-gray-50">
         <span className="text-sm font-medium text-gray-800 flex-1">{schedule.date}</span>
+        {schedule.iqama_conflict && (
+          <span
+            data-testid="day-conflict-badge"
+            className="text-[10px] bg-red-100 text-red-800 rounded-full px-1.5 mr-2"
+          >
+            Conflict
+          </span>
+        )}
         <span className="text-xs text-gray-500">{schedule.day_of_week}</span>
       </div>
       <div className="flex">
@@ -59,6 +67,14 @@ export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps)
                 {formatTime12Hr(entry.azan)}
               </span>
               <span className="text-xs font-semibold text-gray-900 mt-0.5">{entry.iqama}</span>
+              {entry.iqama_conflict && (
+                <span
+                  data-testid={`conflict-badge-${prayer}`}
+                  className="text-[10px] bg-red-100 text-red-800 rounded-full px-1.5 mt-0.5"
+                >
+                  Conflict
+                </span>
+              )}
               {override ? (
                 <span className="text-xs font-medium text-orange-500 mt-0.5">
                   {override.overrideType === 'FIXED' ? offsetLabel : `${override.value}m`}
@@ -99,6 +115,14 @@ export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps)
                 {formatTime12Hr(entry.azan)}
               </span>
               <span className="text-xs font-semibold text-gray-900 mt-0.5">{entry.iqama}</span>
+              {entry.iqama_conflict && (
+                <span
+                  data-testid={`conflict-badge-${prayer}`}
+                  className="text-[10px] bg-red-100 text-red-800 rounded-full px-1.5 mt-0.5"
+                >
+                  Conflict
+                </span>
+              )}
               {override ? (
                 <span className="text-xs font-medium text-orange-500 mt-0.5">
                   {override.overrideType === 'FIXED' ? offsetLabel : `${override.value}m`}

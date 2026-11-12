@@ -5,6 +5,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { OverrideFormModal } from './OverrideFormModal';
 import type { Override } from '../types/index';
+import { ApiError } from '../api/errors';
 
 const noop = () => Promise.resolve();
 
@@ -235,5 +236,34 @@ describe('OverrideFormModal — invalid inputs prevent submission', () => {
 
     expect(screen.getByText(/End date must be on or after start date/i)).toBeInTheDocument();
     expect(onSave).not.toHaveBeenCalled();
+  });
+});
+
+describe('OverrideFormModal — 5-minute mark', () => {
+  it('uses a 5-minute time step and shows a hint for FIXED overrides', () => {
+    const { container } = render(<OverrideFormModal onSave={vi.fn()} onClose={vi.fn()} />);
+    expect(container.querySelector('input[type="time"]')).toHaveAttribute('step', '300');
+    expect(screen.getByText(/5-minute mark/i)).toBeInTheDocument();
+    expect(screen.getByText(/can be moved further to keep the safety rules/i)).toBeInTheDocument();
+  });
+});
+
+describe('OverrideFormModal — overlap error', () => {
+  it('shows the server 409 message inline', async () => {
+    const user = userEvent.setup();
+    const onSave = vi
+      .fn()
+      .mockRejectedValue(
+        new ApiError(409, 'Overlaps override #3 for Fajr (2025-01-05 to 2025-01-12)'),
+      );
+    render(<OverrideFormModal onSave={onSave} onClose={vi.fn()} />);
+    const { startDateInput, endDateInput } = getDateInputs();
+    fireEvent.change(startDateInput, { target: { value: '2025-01-10' } });
+    fireEvent.change(endDateInput, { target: { value: '2025-01-20' } });
+    fireEvent.change(getTimeInput(), { target: { value: '05:45' } });
+    await user.click(screen.getByRole('button', { name: /Save/i }));
+    expect(await screen.findByTestId('override-overlap-error')).toHaveTextContent(
+      'Overlaps override #3 for Fajr',
+    );
   });
 });
