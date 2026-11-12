@@ -159,8 +159,13 @@ export interface IqamaPreviewResponse {
     daysClamped: number;
     daysClampedCurrent: number;
     conflictDays?: number;
+    /** Days newly moved by the safety rules because of this change (number, or per prayer). */
+    newlyMoved?: number | Partial<Record<PrayerName, number>>;
     firstChangedDates: string[];
     firstClampedDates: string[];
-    byPrayer: Record<PrayerName, { daysChanged: number; daysClamped: number }>;
+    byPrayer: Record<
+      PrayerName,
+      { daysChanged: number; daysClamped: number; daysClampedCurrent?: number }
+    >;
   };
 }

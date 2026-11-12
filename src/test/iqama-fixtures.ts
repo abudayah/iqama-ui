@@ -79,6 +79,8 @@ export const state = {
   putResponses: [] as { status: number; body: unknown }[],
   getCount: 0,
   lastPreview: undefined as IqamaPreviewResponse | undefined,
+  /** Optional change to each preview body before it is returned. */
+  previewMutate: undefined as ((body: IqamaPreviewResponse) => void) | undefined,
 };
 
 /** Fake but deterministic: same rules + date + revision give the same hash. */
@@ -145,6 +147,7 @@ export function setupIqamaServer() {
     state.putResponses = [];
     state.getCount = 0;
     state.lastPreview = undefined;
+    state.previewMutate = undefined;
     localStorage.setItem(CONFIG_KEYS.BASE_URL, BASE);
     localStorage.setItem(CONFIG_KEYS.API_KEY, 'k');
     server.use(
@@ -162,6 +165,7 @@ export function setupIqamaServer() {
         });
         await state.previewGate?.(b.effectiveFrom);
         const body = previewBody(b.effectiveFrom ?? '', b.settings, seq);
+        state.previewMutate?.(body);
         state.lastPreview = body;
         return HttpResponse.json(body);
       }),
