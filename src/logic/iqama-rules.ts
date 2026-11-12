@@ -130,20 +130,20 @@ type Summary = IqamaPreviewResponse['summary'];
 
 /**
  * Days that the safety rules move BECAUSE of this change (not days that were
- * already moved before). Uses the engine's `summary.newlyMoved` when present
- * (a total, or per prayer); otherwise falls back to proposed minus current.
+ * already moved before). Uses the engine's per-prayer `byPrayer[p].newlyMoved`
+ * for the changed prayers; else the total `summary.newlyMoved`; else, for an
+ * older engine, proposed minus current.
  *
- * shortcut: the fallback is per prayer only if the engine sends
- * byPrayer[p].daysClampedCurrent, else it compares the overall totals (days
- * with any move), which can hide a new move on one prayer behind a fixed one
- * on another. The engine's newlyMoved field removes the guess.
+ * shortcut: the older-engine fallback is per prayer only if byPrayer[p] has
+ * daysClampedCurrent, else it compares the overall totals (days with any move),
+ * which can hide a new move on one prayer behind a fixed one on another. Drop
+ * the fallback once every engine sends newlyMoved.
  */
 export function newlyMovedDays(summary: Summary, changed: PrayerName[]): number {
-  const nm = summary.newlyMoved;
-  if (typeof nm === 'number') return nm;
-  if (nm && typeof nm === 'object') {
-    return changed.reduce((n, p) => n + (nm[p] ?? 0), 0);
+  if (changed.every((p) => typeof summary.byPrayer[p]?.newlyMoved === 'number')) {
+    return changed.reduce((n, p) => n + summary.byPrayer[p].newlyMoved!, 0);
   }
+  if (typeof summary.newlyMoved === 'number') return summary.newlyMoved;
   const perPrayer = changed.every((p) => summary.byPrayer[p]?.daysClampedCurrent !== undefined);
   if (perPrayer) {
     return changed.reduce(

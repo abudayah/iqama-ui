@@ -334,8 +334,8 @@ export function RuleReviewDialog({
                       </div>
                     </div>
                     <p className="text-sm text-gray-700">
-                      Moved by safety rules: {s.daysClampedCurrent} already today, {newlyMoved} new
-                      from this change.
+                      Moved by safety rules: {s.movedNow ?? s.daysClampedCurrent} already today,{' '}
+                      {newlyMoved} new from this change.
                     </p>
                     <table className="w-full text-sm">
                       <thead>
@@ -359,6 +359,12 @@ export function RuleReviewDialog({
                       <p className="text-sm text-gray-700">
                         <span className="font-medium">First changed:</span>{' '}
                         {s.firstChangedDates.join(', ')}
+                      </p>
+                    )}
+                    {s.newlyMovedDates && s.newlyMovedDates.length > 0 && (
+                      <p className="text-sm text-amber-800">
+                        <span className="font-medium">First newly moved:</span>{' '}
+                        {s.newlyMovedDates.join(', ')}
                       </p>
                     )}
                     {s.firstClampedDates.length > 0 && (

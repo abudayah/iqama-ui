@@ -519,24 +519,38 @@ describe('simpler review dialog', () => {
     expect(within(section).queryAllByRole('listitem')).toHaveLength(0);
   });
 
+  const PRAYER_KEYS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const;
+  /** Older engine: no newlyMoved / movedNow figures anywhere. */
+  const stripNewFigures = (s: Summary) => {
+    delete s.newlyMoved;
+    delete s.newlyMovedDates;
+    delete s.movedNow;
+    for (const p of PRAYER_KEYS) {
+      delete s.byPrayer[p].newlyMoved;
+      delete s.byPrayer[p].movedNow;
+    }
+  };
+
   it('shows no warning for days that were already moved (the Asr 32 case)', async () => {
     setSummary((s) => {
       s.daysClamped = 32;
       s.daysClampedCurrent = 32;
+      s.movedNow = 32;
+      s.movedProposed = 32;
+      s.newlyMoved = 0;
       s.byPrayer.asr.daysClamped = 32;
-      s.byPrayer.asr.daysClampedCurrent = 32;
-      for (const p of ['fajr', 'dhuhr', 'maghrib', 'isha'] as const) {
-        s.byPrayer[p].daysClamped = 0;
-        s.byPrayer[p].daysClampedCurrent = 0;
-      }
+      s.byPrayer.asr.movedNow = 32;
+      s.byPrayer.asr.movedProposed = 32;
+      s.byPrayer.asr.newlyMoved = 0;
     });
     await reviewMaghribEdit();
     expect(screen.queryByTestId('newly-moved-warning')).toBeNull();
     expect(screen.queryByText(/moved by safety rules/)).toBeNull(); // Details is collapsed
   });
 
-  it('warns about days newly moved, from summary.newlyMoved', async () => {
+  it('warns about days newly moved, from byPrayer[changed prayer].newlyMoved', async () => {
     setSummary((s) => {
+      s.byPrayer.maghrib.newlyMoved = 7;
       s.newlyMoved = 7;
     });
     await reviewMaghribEdit();
@@ -545,9 +559,9 @@ describe('simpler review dialog', () => {
     );
   });
 
-  it('uses the singular for one day, and nothing for zero', async () => {
+  it('uses the singular for one day', async () => {
     setSummary((s) => {
-      s.newlyMoved = 1;
+      s.byPrayer.maghrib.newlyMoved = 1;
     });
     await reviewMaghribEdit();
     expect(screen.getByTestId('newly-moved-warning')).toHaveTextContent('1 day will be moved');
@@ -555,7 +569,8 @@ describe('simpler review dialog', () => {
 
   it('shows nothing when newlyMoved is 0 even if many days are moved today', async () => {
     setSummary((s) => {
-      s.newlyMoved = 0;
+      s.byPrayer.maghrib.newlyMoved = 0;
+      s.movedNow = 40;
       s.daysClamped = 40;
       s.daysClampedCurrent = 40;
     });
@@ -563,17 +578,28 @@ describe('simpler review dialog', () => {
     expect(screen.queryByTestId('newly-moved-warning')).toBeNull();
   });
 
-  it('counts only the changed prayers when newlyMoved is per prayer', async () => {
+  it('counts only the changed prayers, not other prayers that moved', async () => {
     setSummary((s) => {
-      s.newlyMoved = { maghrib: 3, fajr: 9 };
+      s.newlyMoved = 12;
+      s.byPrayer.maghrib.newlyMoved = 3;
+      s.byPrayer.fajr.newlyMoved = 9;
     });
     await reviewMaghribEdit();
     expect(screen.getByTestId('newly-moved-warning')).toHaveTextContent('3 days will be moved');
   });
 
-  it('falls back to proposed minus current, per prayer, when newlyMoved is missing', async () => {
+  it('uses the total summary.newlyMoved when the per-prayer figure is missing', async () => {
     setSummary((s) => {
-      delete s.newlyMoved;
+      delete s.byPrayer.maghrib.newlyMoved;
+      s.newlyMoved = 4;
+    });
+    await reviewMaghribEdit();
+    expect(screen.getByTestId('newly-moved-warning')).toHaveTextContent('4 days will be moved');
+  });
+
+  it('older engine: falls back to proposed minus current, per prayer', async () => {
+    setSummary((s) => {
+      stripNewFigures(s);
       s.byPrayer.maghrib.daysClamped = 7;
       s.byPrayer.maghrib.daysClampedCurrent = 2;
       for (const p of ['fajr', 'dhuhr', 'asr', 'isha'] as const)
@@ -583,9 +609,9 @@ describe('simpler review dialog', () => {
     expect(screen.getByTestId('newly-moved-warning')).toHaveTextContent('5 days will be moved');
   });
 
-  it('falls back to the overall totals when there is no per-prayer figure', async () => {
+  it('older engine: falls back to the overall totals when there is no per-prayer figure', async () => {
     setSummary((s) => {
-      delete s.newlyMoved;
+      stripNewFigures(s);
       s.daysClamped = 10;
       s.daysClampedCurrent = 4;
     });
@@ -593,9 +619,9 @@ describe('simpler review dialog', () => {
     expect(screen.getByTestId('newly-moved-warning')).toHaveTextContent('6 days will be moved');
   });
 
-  it('shows no warning when the fallback is zero or negative', async () => {
+  it('older engine: no warning when the fallback is zero or negative', async () => {
     setSummary((s) => {
-      delete s.newlyMoved;
+      stripNewFigures(s);
       s.daysClamped = 3;
       s.daysClampedCurrent = 5;
     });
@@ -605,7 +631,10 @@ describe('simpler review dialog', () => {
 
   it('keeps Details collapsed by default and toggles it', async () => {
     setSummary((s) => {
+      s.byPrayer.maghrib.newlyMoved = 6;
       s.newlyMoved = 6;
+      s.newlyMovedDates = ['2027-02-11', '2027-02-12'];
+      s.movedNow = 4;
       s.daysClamped = 10;
       s.daysClampedCurrent = 4;
     });
@@ -621,6 +650,7 @@ describe('simpler review dialog', () => {
     expect(details).toHaveTextContent('Moved by safety rules');
     expect(details).toHaveTextContent('4 already today, 6 new from this change');
     expect(details).toHaveTextContent('First changed:');
+    expect(details).toHaveTextContent('First newly moved: 2027-02-11, 2027-02-12');
     expect(details).toHaveTextContent('First moved by safety rules:');
     expect(details).not.toHaveTextContent(/adjusted/i);
     fireEvent.click(toggle);
