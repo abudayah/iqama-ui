@@ -3,7 +3,7 @@ import { render, screen, waitFor, fireEvent, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import { IqamaRulesPage } from './IqamaRulesPage';
 import { OverrideRow } from '../components/OverrideRow';
-import type { RuleSet } from '../types/iqama-rules';
+import type { IqamaPreviewResponse, RuleSet } from '../types/iqama-rules';
 import { SEED_RULES, makeConfig, state, setupIqamaServer, version } from '../test/iqama-fixtures';
 
 setupIqamaServer();
@@ -122,6 +122,10 @@ describe('edit sheet', () => {
     const strip = await screen.findByTestId('preview-strip');
     expect(within(strip).getAllByRole('listitem')).toHaveLength(7);
     expect(within(strip).getAllByTestId('clamp-badge')).toHaveLength(1);
+    expect(within(strip).getByTestId('clamp-badge')).toHaveAttribute(
+      'title',
+      'Moved by safety rules',
+    );
     expect(within(strip).getByText(/Adjusted/)).toBeInTheDocument();
   });
 
@@ -227,7 +231,8 @@ describe('edit sheet', () => {
 describe('review and save', () => {
   it('shows the year scan and saves with token, revision, hash and the trimmed reason', async () => {
     await reviewMaghribEdit();
-    const scan = screen.getByTestId('year-scan');
+    fireEvent.click(screen.getByRole('button', { name: /Details/ }));
+    const scan = screen.getByTestId('review-details');
     expect(scan).toHaveTextContent('120');
     expect(scan).toHaveTextContent('2026-11-14');
     const box = screen.getByLabelText(/Reason for change/);
@@ -302,12 +307,14 @@ describe('review and save', () => {
     fireEvent.change(await screen.findByLabelText('Effective from'), {
       target: { value: '2026-11-20' },
     });
-    const scan = await screen.findByTestId('year-scan');
-    expect(scan).toHaveTextContent('2026-11-20');
+    await screen.findByTestId('year-scan');
+    fireEvent.click(screen.getByRole('button', { name: /Details/ }));
+    const details = () => screen.getByTestId('review-details');
+    expect(details()).toHaveTextContent('First changed: 2026-11-20');
     release();
     await sleep(50);
-    expect(screen.getByTestId('year-scan')).toHaveTextContent('2026-11-20');
-    expect(screen.getByTestId('year-scan')).not.toHaveTextContent('2026-11-13');
+    expect(details()).toHaveTextContent('First changed: 2026-11-20');
+    expect(details()).not.toHaveTextContent('First changed: 2026-11-13');
     fireEvent.click(understand());
     fireEvent.click(saveButton());
     await waitFor(() => expect(state.putBodies).toHaveLength(1));
@@ -436,6 +443,218 @@ describe('review and save', () => {
     fireEvent.click(understand());
     fireEvent.click(saveButton());
     expect(await screen.findByText(text)).toBeInTheDocument();
+  });
+});
+
+describe('simpler review dialog', () => {
+  type Summary = IqamaPreviewResponse['summary'];
+  const setSummary = (patch: (s: Summary) => void) => {
+    state.previewMutate = (b) => patch(b.summary);
+  };
+
+  it('lists only the changed prayers, with the old and new rule and the date', async () => {
+    await reviewMaghribEdit();
+    expect(screen.getByTestId('review-subtitle')).toHaveTextContent('Maghrib · from Fri, Nov 13');
+    const section = screen.getByTestId('change-maghrib');
+    expect(section).toHaveTextContent(
+      'Azan + 5 min, rounded up to the next 5 → Azan + 10 min, rounded up to the next 5',
+    );
+    for (const p of ['fajr', 'dhuhr', 'asr', 'isha']) {
+      expect(screen.queryByTestId(`change-${p}`)).toBeNull();
+    }
+  });
+
+  it('lists every changed prayer when several changed', async () => {
+    render(<IqamaRulesPage />);
+    await editMinutes('maghrib', '10');
+    await editMinutes('fajr', '80');
+    await openReview();
+    expect(screen.getByTestId('review-subtitle')).toHaveTextContent('Fajr, Maghrib · from');
+    expect(screen.getByTestId('change-fajr')).toBeInTheDocument();
+    expect(screen.getByTestId('change-maghrib')).toBeInTheDocument();
+    expect(screen.queryByTestId('change-isha')).toBeNull();
+  });
+
+  it('shows three example days "Fri 13  06:05 → 06:20"', async () => {
+    await reviewMaghribEdit();
+    const items = within(screen.getByTestId('change-maghrib')).getAllByRole('listitem');
+    expect(items).toHaveLength(3);
+    expect(items[0]!.textContent).toMatch(/^Fri 13\s+06:05 → 06:20$/);
+  });
+
+  it('skips days where nothing changed', async () => {
+    state.previewMutate = (b) => {
+      for (const d of b.days.slice(0, 2))
+        d.prayers.maghrib.proposed.iqama = d.prayers.maghrib.current.iqama;
+    };
+    await reviewMaghribEdit();
+    const items = within(screen.getByTestId('change-maghrib')).getAllByRole('listitem');
+    expect(items.map((i) => i.textContent)).toEqual([
+      expect.stringMatching(/^Fri 15/),
+      expect.stringMatching(/^Fri 16/),
+      expect.stringMatching(/^Fri 17/),
+    ]);
+  });
+
+  it.each([
+    [365, 'Changes every day'],
+    [120, 'Changes on 120 days'],
+    [1, 'Changes on 1 day'],
+  ])('says how often it changes: %s days', async (n, text) => {
+    setSummary((s) => {
+      s.byPrayer.maghrib.daysChanged = n;
+    });
+    await reviewMaghribEdit();
+    expect(screen.getByTestId('change-maghrib')).toHaveTextContent(text);
+  });
+
+  it('says "No time changes" and shows no examples when nothing moves', async () => {
+    state.previewMutate = (b) => {
+      b.summary.byPrayer.maghrib.daysChanged = 0;
+      for (const d of b.days) d.prayers.maghrib.proposed.iqama = d.prayers.maghrib.current.iqama;
+    };
+    await reviewMaghribEdit();
+    const section = screen.getByTestId('change-maghrib');
+    expect(section).toHaveTextContent('No time changes');
+    expect(within(section).queryAllByRole('listitem')).toHaveLength(0);
+  });
+
+  const PRAYER_KEYS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const;
+  /** Older engine: no newlyMoved / movedNow figures anywhere. */
+  const stripNewFigures = (s: Summary) => {
+    delete s.newlyMoved;
+    delete s.newlyMovedDates;
+    delete s.movedNow;
+    for (const p of PRAYER_KEYS) {
+      delete s.byPrayer[p].newlyMoved;
+      delete s.byPrayer[p].movedNow;
+    }
+  };
+
+  it('shows no warning for days that were already moved (the Asr 32 case)', async () => {
+    setSummary((s) => {
+      s.daysClamped = 32;
+      s.daysClampedCurrent = 32;
+      s.movedNow = 32;
+      s.movedProposed = 32;
+      s.newlyMoved = 0;
+      s.byPrayer.asr.daysClamped = 32;
+      s.byPrayer.asr.movedNow = 32;
+      s.byPrayer.asr.movedProposed = 32;
+      s.byPrayer.asr.newlyMoved = 0;
+    });
+    await reviewMaghribEdit();
+    expect(screen.queryByTestId('newly-moved-warning')).toBeNull();
+    expect(screen.queryByText(/moved by safety rules/)).toBeNull(); // Details is collapsed
+  });
+
+  it('warns about days newly moved, from byPrayer[changed prayer].newlyMoved', async () => {
+    setSummary((s) => {
+      s.byPrayer.maghrib.newlyMoved = 7;
+      s.newlyMoved = 7;
+    });
+    await reviewMaghribEdit();
+    expect(screen.getByTestId('newly-moved-warning')).toHaveTextContent(
+      '⚠ 7 days will be moved by safety rules',
+    );
+  });
+
+  it('uses the singular for one day', async () => {
+    setSummary((s) => {
+      s.byPrayer.maghrib.newlyMoved = 1;
+    });
+    await reviewMaghribEdit();
+    expect(screen.getByTestId('newly-moved-warning')).toHaveTextContent('1 day will be moved');
+  });
+
+  it('shows nothing when newlyMoved is 0 even if many days are moved today', async () => {
+    setSummary((s) => {
+      s.byPrayer.maghrib.newlyMoved = 0;
+      s.movedNow = 40;
+      s.daysClamped = 40;
+      s.daysClampedCurrent = 40;
+    });
+    await reviewMaghribEdit();
+    expect(screen.queryByTestId('newly-moved-warning')).toBeNull();
+  });
+
+  it('counts only the changed prayers, not other prayers that moved', async () => {
+    setSummary((s) => {
+      s.newlyMoved = 12;
+      s.byPrayer.maghrib.newlyMoved = 3;
+      s.byPrayer.fajr.newlyMoved = 9;
+    });
+    await reviewMaghribEdit();
+    expect(screen.getByTestId('newly-moved-warning')).toHaveTextContent('3 days will be moved');
+  });
+
+  it('uses the total summary.newlyMoved when the per-prayer figure is missing', async () => {
+    setSummary((s) => {
+      delete s.byPrayer.maghrib.newlyMoved;
+      s.newlyMoved = 4;
+    });
+    await reviewMaghribEdit();
+    expect(screen.getByTestId('newly-moved-warning')).toHaveTextContent('4 days will be moved');
+  });
+
+  it('older engine: falls back to proposed minus current, per prayer', async () => {
+    setSummary((s) => {
+      stripNewFigures(s);
+      s.byPrayer.maghrib.daysClamped = 7;
+      s.byPrayer.maghrib.daysClampedCurrent = 2;
+      for (const p of ['fajr', 'dhuhr', 'asr', 'isha'] as const)
+        s.byPrayer[p].daysClampedCurrent = 0;
+    });
+    await reviewMaghribEdit();
+    expect(screen.getByTestId('newly-moved-warning')).toHaveTextContent('5 days will be moved');
+  });
+
+  it('older engine: falls back to the overall totals when there is no per-prayer figure', async () => {
+    setSummary((s) => {
+      stripNewFigures(s);
+      s.daysClamped = 10;
+      s.daysClampedCurrent = 4;
+    });
+    await reviewMaghribEdit();
+    expect(screen.getByTestId('newly-moved-warning')).toHaveTextContent('6 days will be moved');
+  });
+
+  it('older engine: no warning when the fallback is zero or negative', async () => {
+    setSummary((s) => {
+      stripNewFigures(s);
+      s.daysClamped = 3;
+      s.daysClampedCurrent = 5;
+    });
+    await reviewMaghribEdit();
+    expect(screen.queryByTestId('newly-moved-warning')).toBeNull();
+  });
+
+  it('keeps Details collapsed by default and toggles it', async () => {
+    setSummary((s) => {
+      s.byPrayer.maghrib.newlyMoved = 6;
+      s.newlyMoved = 6;
+      s.newlyMovedDates = ['2027-02-11', '2027-02-12'];
+      s.movedNow = 4;
+      s.daysClamped = 10;
+      s.daysClampedCurrent = 4;
+    });
+    await reviewMaghribEdit();
+    const toggle = screen.getByRole('button', { name: /Details/ });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByTestId('review-details')).toBeNull();
+    expect(screen.queryByText('First changed:')).toBeNull();
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    const details = screen.getByTestId('review-details');
+    expect(details).toHaveTextContent('days changed (of 365)');
+    expect(details).toHaveTextContent('Moved by safety rules');
+    expect(details).toHaveTextContent('4 already today, 6 new from this change');
+    expect(details).toHaveTextContent('First changed:');
+    expect(details).toHaveTextContent('First newly moved: 2027-02-11, 2027-02-12');
+    expect(details).toHaveTextContent('First moved by safety rules:');
+    expect(details).not.toHaveTextContent(/adjusted/i);
+    fireEvent.click(toggle);
+    expect(screen.queryByTestId('review-details')).toBeNull();
   });
 });
 

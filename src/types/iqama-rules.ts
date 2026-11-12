@@ -142,6 +142,18 @@ export interface PreviewDayPrayer {
   proposed: { iqama: string; clamped: boolean };
 }
 
+export interface PrayerMoved {
+  daysChanged: number;
+  daysClamped: number;
+  daysClampedCurrent?: number;
+  changedDays?: number;
+  movedNow?: number;
+  movedProposed?: number;
+  newlyMoved?: number;
+  newlyMovedDates?: string[];
+  noLongerMoved?: number;
+}
+
 export interface IqamaPreviewResponse {
   previewId: string;
   effectiveFrom: string;
@@ -159,8 +171,18 @@ export interface IqamaPreviewResponse {
     daysClamped: number;
     daysClampedCurrent: number;
     conflictDays?: number;
+    /** Moved-by-safety-rules figures (engine PR #12). All numbers; absent on an older engine. */
+    changedDays?: number;
+    movedNow?: number;
+    movedProposed?: number;
+    /** Days moved because of this change, not days that were already moved. */
+    newlyMoved?: number;
+    /** First 10 newly moved dates. */
+    newlyMovedDates?: string[];
+    noLongerMoved?: number;
     firstChangedDates: string[];
     firstClampedDates: string[];
-    byPrayer: Record<PrayerName, { daysChanged: number; daysClamped: number }>;
+    /** Per prayer: the same six figures as the total, plus the older daysChanged/daysClamped. */
+    byPrayer: Record<PrayerName, PrayerMoved>;
   };
 }

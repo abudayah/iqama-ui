@@ -41,6 +41,8 @@ export async function apiFetch<T>(
     } catch {
       /* ignore parse errors on error responses */
     }
+    // The server's text here is the raw exception name ("ThrottlerException: Too Many Requests").
+    if (response.status === 429) message = 'Too many requests. Wait a minute and try again.';
     throw new ApiError(response.status, message, code, errors);
   }
 

@@ -266,6 +266,7 @@ function SheetBody({
                       {p.proposed.clamped && (
                         <span
                           data-testid="clamp-badge"
+                          title="Moved by safety rules"
                           className="inline-block mt-1 text-[11px] bg-amber-100 text-amber-800 rounded-full px-2"
                         >
                           ⚠ Adjusted

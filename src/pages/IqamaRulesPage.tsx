@@ -67,10 +67,14 @@ export function IqamaRulesPage() {
   const minDate = config ? later(config.today, latest?.effectiveFrom ?? config.today) : '';
   const effectiveFrom =
     draft.effectiveFrom || (config ? later(config.defaultEffectiveFrom, minDate) : '');
-  const changed = useMemo(
-    () => (baseline ? changedPrayers(baseline, draft.prayers) : []),
-    [baseline, draft.prayers],
-  );
+  const changed = useMemo(() => {
+    if (!baseline) return [];
+    // Catalog order (Fajr … Isha), not the order the user edited in.
+    const order = catalog?.prayers.map((c) => c.name) ?? [];
+    return changedPrayers(baseline, draft.prayers).sort(
+      (a, b) => order.indexOf(a) - order.indexOf(b),
+    );
+  }, [baseline, draft.prayers, catalog]);
   const needsFriday = changed.filter(
     (p) => catalog?.prayers.find((c) => c.name === p)?.fridayStartRequired,
   );
@@ -357,13 +361,13 @@ export function IqamaRulesPage() {
         />
       )}
 
-      {reviewOpen && latest && (
+      {reviewOpen && latest && baseline && proposed && (
         <RuleReviewDialog
           minDate={minDate}
           effectiveFrom={effectiveFrom}
           onEffectiveFromChange={setEffectiveFrom}
           baseNote={`Building on version ${latest.versionId} (effective ${latest.effectiveFrom}).`}
-          changed={changed}
+          changes={changed.map((p) => ({ prayer: p, before: baseline![p], after: proposed![p] }))}
           needsFriday={needsFriday}
           preview={activePreview}
           loading={previewLoading}

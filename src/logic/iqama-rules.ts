@@ -1,5 +1,11 @@
 import type { PrayerName } from '../types/index';
-import type { PrayerRule, RuleBase, RuleSet, Weekday } from '../types/iqama-rules';
+import type {
+  IqamaPreviewResponse,
+  PrayerRule,
+  RuleBase,
+  RuleSet,
+  Weekday,
+} from '../types/iqama-rules';
 
 const PRAYER_LABELS: Record<string, string> = {
   fajr: 'Fajr',
@@ -108,4 +114,43 @@ export function savedMessage(mode: 'legacy' | 'shadow' | 'db', effectiveFrom: st
     case 'legacy':
       return 'Saved. The public schedule still uses the built-in rules.';
   }
+}
+
+/** "Fri, Nov 13" for a YYYY-MM-DD date. */
+export function formatDay(date: string): string {
+  return new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+type Summary = IqamaPreviewResponse['summary'];
+
+/**
+ * Days that the safety rules move BECAUSE of this change (not days that were
+ * already moved before). Uses the engine's per-prayer `byPrayer[p].newlyMoved`
+ * for the changed prayers; else the total `summary.newlyMoved`; else, for an
+ * older engine, proposed minus current.
+ *
+ * shortcut: the older-engine fallback is per prayer only if byPrayer[p] has
+ * daysClampedCurrent, else it compares the overall totals (days with any move),
+ * which can hide a new move on one prayer behind a fixed one on another. Drop
+ * the fallback once every engine sends newlyMoved.
+ */
+export function newlyMovedDays(summary: Summary, changed: PrayerName[]): number {
+  if (changed.every((p) => typeof summary.byPrayer[p]?.newlyMoved === 'number')) {
+    return changed.reduce((n, p) => n + summary.byPrayer[p].newlyMoved!, 0);
+  }
+  if (typeof summary.newlyMoved === 'number') return summary.newlyMoved;
+  const perPrayer = changed.every((p) => summary.byPrayer[p]?.daysClampedCurrent !== undefined);
+  if (perPrayer) {
+    return changed.reduce(
+      (n, p) =>
+        n + Math.max(0, summary.byPrayer[p].daysClamped - summary.byPrayer[p].daysClampedCurrent!),
+      0,
+    );
+  }
+  return Math.max(0, summary.daysClamped - summary.daysClampedCurrent);
 }

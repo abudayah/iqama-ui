@@ -68,6 +68,21 @@ describe('apiFetch', () => {
     });
   });
 
+  it('turns a 429 into a plain message instead of the raw exception name', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          makeResponse(429, JSON.stringify({ message: 'ThrottlerException: Too Many Requests' })),
+        ),
+    );
+    const err = await apiFetch('/x').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).status).toBe(429);
+    expect((err as ApiError).message).toBe('Too many requests. Wait a minute and try again.');
+  });
+
   // ── 4. HTTP 500 → ApiError ───────────────────────────────────────────────
   it('throws ApiError with status 500 on a 500 response', async () => {
     vi.stubGlobal(
