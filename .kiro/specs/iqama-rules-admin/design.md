@@ -80,7 +80,8 @@ A confirmation is only valid for the preview it was given on.
 - All inputs of a preview (RuleSet, `effectiveFrom`, loaded revision) form one `requestKey`. The preview is stored with the key it answered; the page only uses it while the key is current, so a change of rules or date removes it in the same render.
 - A late answer for an older request is ignored (`cancelled` flag in the effect).
 - The confirmation checkbox and the Fajr acknowledgement are stored as "given for `previewId` X"; a new preview has a new id, so both are unchecked again without any reset code.
-- If `preview.currentRevision !== loaded currentRevision`, Save is blocked and the dialog offers "Reload latest rules" (drops the draft and reloads).
+- If `preview.currentRevision !== loaded currentRevision` (or a 409 / `IQAMA_REVISION_STALE`), Save is blocked and the dialog offers "Reload latest rules".
+- **Reload keeps the draft.** It refetches `GET /`, closes the review (so the preview and both confirmations are gone), and re-applies the edited prayers on top of the new `latest` (`REBASE`). The draft remembers the saved rule each prayer was edited from (`bases`); if the new `latest` changed that prayer too, a notice names it ("… was changed by another save: your version is kept, review it") with "Use the saved version instead" (`DROP`). An edit equal to the new saved rule disappears. The chosen date is kept unless it is now earlier than the new latest's date; then it moves to the new default and the notice says so.
 - On any 422 the preview is dropped and a new one is requested.
 
 ## Forms and validation come from the catalog

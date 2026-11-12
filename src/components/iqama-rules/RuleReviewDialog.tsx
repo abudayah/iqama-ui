@@ -243,7 +243,7 @@ export function RuleReviewDialog({
               >
                 <p className="text-sm text-amber-900">
                   The rules changed on the engine since you opened this page. Reload to see the
-                  latest rules; your unsaved changes will be dropped.
+                  latest rules. Your edits are kept and applied on top of them.
                 </p>
                 <button
                   type="button"

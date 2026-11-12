@@ -11,10 +11,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useIqamaRules } from '../hooks/useIqamaRules';
-import { useIqamaRulesDraft } from '../hooks/useIqamaRulesDraft';
+import { overlappingPrayers, useIqamaRulesDraft } from '../hooks/useIqamaRulesDraft';
 import { previewIqamaRules, saveIqamaRules } from '../services/iqama-rules-service';
 import { ApiError } from '../api/errors';
-import { canonicalJson, changedPrayers, savedMessage } from '../logic/iqama-rules';
+import { canonicalJson, changedPrayers, prayerLabel, savedMessage } from '../logic/iqama-rules';
 import type { PrayerName } from '../types/index';
 import type { IqamaPreviewResponse, PrayerRule, RuleSet } from '../types/iqama-rules';
 import { RuleCard } from '../components/iqama-rules/RuleCard';
@@ -31,7 +31,7 @@ export function IqamaRulesPage() {
   // switch to Overrides; standalone (tests) the page keeps its own.
   const shared = useOutletContext<ReturnType<typeof useIqamaRulesDraft> | null>();
   const own = useIqamaRulesDraft();
-  const { draft, hasChanges, setRule, setEffectiveFrom, reset } = shared ?? own;
+  const { draft, hasChanges, setRule, setEffectiveFrom, reset, dropPrayer, rebase } = shared ?? own;
 
   const [sheetPrayer, setSheetPrayer] = useState<PrayerName | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -49,6 +49,12 @@ export function IqamaRulesPage() {
   const [saving, setSaving] = useState(false);
   const [scan, setScan] = useState(0);
   const keepSaveError = useRef(false);
+  // After "Reload latest rules": waiting for the new config so the edits can be re-applied.
+  const [reloading, setReloading] = useState(false);
+  const [notices, setNotices] = useState<{ overlaps: PrayerName[]; dateMoved: string | null }>({
+    overlaps: [],
+    dateMoved: null,
+  });
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const latest = config?.latest ?? null;
@@ -110,12 +116,35 @@ export function IqamaRulesPage() {
 
   const closeReview = () => setReviewOpen(false);
 
+  // Reload keeps the user's edits. Closing the review drops the preview and both
+  // confirmations; a fresh preview is needed when it is opened again.
   const reloadLatest = () => {
-    reset();
     setStaleFlag(false);
     setReviewOpen(false);
+    setPreviewState(null);
+    setReloading(true);
     refresh();
   };
+
+  // When the new config has arrived, re-apply the edits on top of the new newest version.
+  useEffect(() => {
+    if (!reloading || loading) return;
+    const rules = config?.latest?.rules;
+    if (error || !config || !rules) {
+      setReloading(false);
+      return;
+    }
+    const overlaps = overlappingPrayers(draft, rules);
+    const min = later(config.today, config.latest!.effectiveFrom);
+    let dateMoved: string | null = null;
+    if (draft.effectiveFrom && draft.effectiveFrom < min) {
+      dateMoved = later(config.defaultEffectiveFrom, min);
+      setEffectiveFrom('');
+    }
+    rebase(rules);
+    setNotices({ overlaps, dateMoved });
+    setReloading(false);
+  }, [reloading, loading, error, config, draft, rebase, setEffectiveFrom]);
 
   const handleConfirm = async (extra: {
     reason: string;
@@ -256,6 +285,45 @@ export function IqamaRulesPage() {
 
         {baseline && proposed && (
           <>
+            {(notices.overlaps.length > 0 || notices.dateMoved) && (
+              <div
+                data-testid="reload-notice"
+                role="status"
+                className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-2 text-sm text-amber-900"
+              >
+                {notices.overlaps.map((p) => (
+                  <div key={p} className="flex items-center justify-between gap-3">
+                    <span>
+                      {prayerLabel(p)} was changed by another save: your version is kept, review it.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        dropPrayer(p);
+                        setNotices((n) => ({ ...n, overlaps: n.overlaps.filter((x) => x !== p) }));
+                      }}
+                      aria-label={`Use the saved version instead for ${prayerLabel(p)}`}
+                      className="shrink-0 text-sm border border-amber-400 rounded-lg px-3 min-h-[44px] bg-white"
+                    >
+                      Use the saved version instead
+                    </button>
+                  </div>
+                ))}
+                {notices.dateMoved && (
+                  <p>
+                    The effective date moved to {notices.dateMoved}, because the newest version
+                    starts later than the date you chose.
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setNotices({ overlaps: [], dateMoved: null })}
+                  className="text-sm text-amber-800 underline min-h-[44px]"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
             <VersionsPanel config={config} />
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
               Iqama rules

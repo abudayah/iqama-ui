@@ -58,4 +58,5 @@ UI side of the iqama rule engine. Phase 3 (this UI) is complete. The engine phas
   - [x] 6.6 `useOverrideClamps` keyed on type and value, shared requests, hook tests
   - [x] 6.7 Contract tests against engine snapshots (catalog and seed rules)
   - [x] 6.8 Spec design.md rewritten for the full contract
+  - [x] 6.9 Reload keeps the draft: rebase on the new latest, overlap notice with drop button, date bump
   - _Requirements: 9_

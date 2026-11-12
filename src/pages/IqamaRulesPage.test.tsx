@@ -347,7 +347,8 @@ describe('review and save', () => {
     const before = state.getCount;
     fireEvent.click(screen.getByRole('button', { name: 'Reload latest rules' }));
     await waitFor(() => expect(state.getCount).toBeGreaterThan(before));
-    await waitFor(() => expect(screen.queryByText('Unsaved changes')).toBeNull());
+    // The edits survive the reload.
+    expect(await screen.findByText('Unsaved changes')).toBeInTheDocument();
   });
 
   it('treats 409 as stale: shows the server message and blocks another save', async () => {
@@ -435,6 +436,101 @@ describe('review and save', () => {
     fireEvent.click(understand());
     fireEvent.click(saveButton());
     expect(await screen.findByText(text)).toBeInTheDocument();
+  });
+});
+
+describe('reload keeps the draft', () => {
+  const offset = (minutes: number) => ({ base: { type: 'OFFSET' as const, minutes } });
+  /** The engine's newest version after another admin saved. */
+  const newerConfig = (patch: Partial<RuleSet>, effectiveFrom = '2026-11-20') => {
+    const latest = version(4, effectiveFrom, { ...SEED_RULES, ...patch }, 'Other admin');
+    return makeConfig({ currentRevision: 4, latest, upcoming: [latest] });
+  };
+
+  /** Edit Maghrib to 10, hit a stale 409 on save, then press "Reload latest rules". */
+  async function staleThenReload(next: ReturnType<typeof newerConfig>, date?: string) {
+    state.putResponses = [{ status: 409, body: { message: 'Rules changed since you opened' } }];
+    render(<IqamaRulesPage />);
+    await editMinutes('maghrib', '10');
+    await openReview();
+    if (date) {
+      fireEvent.change(screen.getByLabelText('Effective from'), { target: { value: date } });
+      await screen.findByTestId('year-scan');
+    }
+    fireEvent.click(understand());
+    fireEvent.click(saveButton());
+    await screen.findByRole('button', { name: 'Reload latest rules' });
+    state.config = next;
+    const before = state.getCount;
+    fireEvent.click(screen.getByRole('button', { name: 'Reload latest rules' }));
+    await waitFor(() => expect(state.getCount).toBeGreaterThan(before));
+    await screen.findByTestId('rule-card-maghrib');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  }
+
+  it('keeps the edit, closes the review, and needs a fresh preview and confirmation', async () => {
+    await staleThenReload(newerConfig({}));
+    expect(screen.getByTestId('rule-card-maghrib')).toHaveTextContent('Azan + 10 min');
+    expect(screen.getByTestId('rule-card-maghrib')).toHaveTextContent('Edited');
+    expect(screen.getByText('Unsaved changes')).toBeInTheDocument();
+    expect(screen.getByTestId('editing-on-top-of')).toHaveTextContent('version 4');
+    const scans = state.previewCalls.length;
+    await openReview();
+    expect(state.previewCalls.length).toBeGreaterThan(scans);
+    expect(understand()).not.toBeChecked();
+    expect(saveButton()).toBeDisabled();
+    fireEvent.click(understand());
+    fireEvent.click(saveButton());
+    await waitFor(() => expect(state.putBodies).toHaveLength(2));
+    expect(state.putBodies[1]).toMatchObject({ expectedRevision: 4 });
+    expect(state.putBodies[1]!['previewId']).not.toBe(state.putBodies[0]!['previewId']);
+  });
+
+  it('merges a save that touched another prayer, without a notice', async () => {
+    const dhuhr = { base: { type: 'FIXED_TIME' as const, time: '13:50' } };
+    await staleThenReload(newerConfig({ dhuhr }));
+    expect(screen.queryByTestId('reload-notice')).toBeNull();
+    expect(screen.getByTestId('rule-card-dhuhr')).toHaveTextContent('Fixed at 13:50');
+    await openReview();
+    const sent = state.previewCalls[state.previewCalls.length - 1]!.settings;
+    expect(sent.dhuhr).toEqual(dhuhr);
+    expect(sent.maghrib.base).toEqual({ type: 'OFFSET', minutes: 10 });
+  });
+
+  it('names a prayer that was also changed, keeps the edit, and can drop it', async () => {
+    await staleThenReload(newerConfig({ maghrib: { ...SEED_RULES.maghrib, ...offset(7) } }));
+    const notice = screen.getByTestId('reload-notice');
+    expect(notice).toHaveTextContent(
+      'Maghrib was changed by another save: your version is kept, review it.',
+    );
+    expect(screen.getByTestId('rule-card-maghrib')).toHaveTextContent('Azan + 10 min');
+    fireEvent.click(screen.getByRole('button', { name: /Use the saved version instead/ }));
+    expect(screen.queryByTestId('reload-notice')).toBeNull();
+    expect(screen.getByTestId('rule-card-maghrib')).toHaveTextContent('Azan + 7 min');
+    expect(screen.getByTestId('rule-card-maghrib')).not.toHaveTextContent('Edited');
+    expect(screen.queryByText('Unsaved changes')).toBeNull();
+  });
+
+  it('drops an edit that now equals the saved rule, quietly', async () => {
+    await staleThenReload(newerConfig({ maghrib: { ...SEED_RULES.maghrib, ...offset(10) } }));
+    expect(screen.queryByText('Unsaved changes')).toBeNull();
+    expect(screen.queryByTestId('reload-notice')).toBeNull();
+  });
+
+  it('moves the chosen date when the new newest version starts later, and says so', async () => {
+    await staleThenReload(newerConfig({}, '2026-12-04'), '2026-11-20');
+    expect(screen.getByTestId('reload-notice')).toHaveTextContent(
+      'The effective date moved to 2026-12-04',
+    );
+    await openReview();
+    expect(screen.getByLabelText('Effective from')).toHaveValue('2026-12-04');
+  });
+
+  it('keeps the chosen date when it is still allowed', async () => {
+    await staleThenReload(newerConfig({}, '2026-11-20'), '2026-11-27');
+    expect(screen.queryByTestId('reload-notice')).toBeNull();
+    await openReview();
+    expect(screen.getByLabelText('Effective from')).toHaveValue('2026-11-27');
   });
 });
 
