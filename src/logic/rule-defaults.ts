@@ -1,33 +1,52 @@
+/**
+ * Starting values for new form content. Only catalog-supplied defaults are
+ * used; where the catalog has none the field starts empty and must be entered.
+ */
 import type { CatalogField } from '../types/iqama-rules';
 
 type Obj = Record<string, unknown>;
 
-/** "month (1-12)" -> { key: 'month', min: 1, max: 12 } */
-export function parseOptionField(s: string) {
-  const m = /^(\w+)\s*\((\d+)-(\d+)\)$/.exec(s);
-  return m ? { key: m[1]!, min: Number(m[2]), max: Number(m[3]) } : { key: s, min: 0, max: 999 };
-}
-
-function defaultValue(f: CatalogField): unknown {
+export function emptyValue(f: CatalogField): unknown {
+  if (f.default !== undefined) return f.default;
   switch (f.kind) {
-    case 'int':
-      return Math.min(Math.max(10, f.min ?? 0), f.max ?? 10);
-    case 'time':
-      return '12:00';
+    case 'bool':
+      return false;
     case 'list':
-      return Array.from({ length: f.minItems ?? 1 }, () => defaultObject(f.item ?? []));
-    case 'oneOf': {
-      const o = f.options?.[0];
-      return o
-        ? Object.fromEntries([
-            ['kind', o.kind],
-            ...o.fields.map((s) => [parseOptionField(s).key, parseOptionField(s).min]),
-          ])
-        : {};
-    }
+      return Array.from({ length: f.minItems ?? 0 }, () => emptyObject(f.item ?? []));
+    case 'object':
+      if (f.variants && f.discriminator) {
+        // Picking the first variant only makes its fields visible; they stay empty.
+        const v = f.variants[0];
+        return v ? { [f.discriminator]: v.value, ...emptyObject(v.fields) } : {};
+      }
+      return emptyObject(f.fields ?? []);
+    default:
+      return '';
   }
 }
 
-export function defaultObject(fields: CatalogField[]): Obj {
-  return Object.fromEntries(fields.map((f) => [f.name, defaultValue(f)]));
+export function emptyObject(fields: CatalogField[]): Obj {
+  return Object.fromEntries(fields.map((f) => [f.name, emptyValue(f)]));
+}
+
+/** Fields of the variant selected in `value` (discriminated objects). */
+export function variantFields(f: CatalogField, value: Obj) {
+  return f.variants?.find((v) => v.value === value[f.discriminator ?? '']);
+}
+
+/**
+ * Drop empty optional values ('' / NaN / undefined) before a rule is sent.
+ * The validator has already rejected empty required values, so only optional
+ * keys can be removed here. Booleans, numbers and lists are kept as they are.
+ */
+export function pruneEmpty<T>(value: T): T {
+  if (Array.isArray(value)) return value.map((v) => pruneEmpty(v)) as T;
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Obj)
+        .filter(([, v]) => !(v === undefined || v === '' || (typeof v === 'number' && isNaN(v))))
+        .map(([k, v]) => [k, pruneEmpty(v)]),
+    ) as T;
+  }
+  return value;
 }

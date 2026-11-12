@@ -29,7 +29,7 @@ export const saveIqamaRules = (
   effectiveFrom: string,
   previewId: string,
   expectedRevision: number,
-  extra: { reason?: string; acknowledgeConflicts?: boolean } = {},
+  extra: { reason?: string; acknowledgeConflicts?: boolean; requestHash?: string } = {},
 ) =>
   apiFetch<IqamaRuleVersion>(`${BASE}/base`, {
     method: 'PUT',
@@ -42,5 +42,6 @@ export const saveIqamaRules = (
       expectedRevision,
       ...(extra.reason?.trim() ? { reason: extra.reason.trim() } : {}),
       ...(extra.acknowledgeConflicts ? { acknowledgeConflicts: true } : {}),
+      ...(extra.requestHash ? { requestHash: extra.requestHash } : {}),
     }),
   });

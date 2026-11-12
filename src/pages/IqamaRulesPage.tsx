@@ -3,21 +3,27 @@
  *
  * One card per prayer; tap opens a bottom sheet. Edits accumulate in a draft;
  * Review & save scans the next 365 days before anything is written.
+ *
+ * Every proposal is built from `config.latest` (the NEWEST saved version), never
+ * from today's effective rules, so a scheduled change to another prayer is
+ * never reverted by accident.
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useIqamaRules } from '../hooks/useIqamaRules';
 import { useIqamaRulesDraft } from '../hooks/useIqamaRulesDraft';
 import { previewIqamaRules, saveIqamaRules } from '../services/iqama-rules-service';
 import { ApiError } from '../api/errors';
-import { DEFAULT_RULE, changedPrayers } from '../logic/iqama-rules';
-import { PRAYER_NAMES } from '../types/iqama-rules';
+import { canonicalJson, changedPrayers, savedMessage } from '../logic/iqama-rules';
 import type { PrayerName } from '../types/index';
 import type { IqamaPreviewResponse, PrayerRule, RuleSet } from '../types/iqama-rules';
 import { RuleCard } from '../components/iqama-rules/RuleCard';
 import { RuleSheet } from '../components/iqama-rules/RuleSheet';
 import { GuardrailsNote } from '../components/iqama-rules/GuardrailsNote';
+import { VersionsPanel } from '../components/iqama-rules/VersionsPanel';
 import { RuleReviewDialog } from '../components/iqama-rules/RuleReviewDialog';
+
+const later = (a: string, b: string) => (a > b ? a : b);
 
 export function IqamaRulesPage() {
   const { config, catalog, loading, error, refresh } = useIqamaRules();
@@ -29,71 +35,124 @@ export function IqamaRulesPage() {
 
   const [sheetPrayer, setSheetPrayer] = useState<PrayerName | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
-  const [preview, setPreview] = useState<IqamaPreviewResponse | null>(null);
+  // A preview is stored with the key of the request it answered; it is only
+  // used while that key is still the current one.
+  const [previewState, setPreviewState] = useState<{
+    key: string;
+    data: IqamaPreviewResponse;
+  } | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
-  const [reviewError, setReviewError] = useState<string | null>(null);
-  const [stale, setStale] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{ path: string; message: string }[]>([]);
+  const [staleFlag, setStaleFlag] = useState(false);
   const [saving, setSaving] = useState(false);
   const [scan, setScan] = useState(0);
+  const keepSaveError = useRef(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Saved rules; a prayer with no stored rule (legacy mode) starts from a default.
-  const base: RuleSet = useMemo(
-    () =>
-      Object.fromEntries(
-        PRAYER_NAMES.map((p) => [p, config?.effective?.[p] ?? DEFAULT_RULE]),
-      ) as RuleSet,
-    [config],
+  const latest = config?.latest ?? null;
+  const baseline: RuleSet | null = latest?.rules ?? null;
+  const proposed: RuleSet | null = useMemo(
+    () => (baseline ? { ...baseline, ...draft.prayers } : null),
+    [baseline, draft.prayers],
   );
-  const proposed: RuleSet = useMemo(() => ({ ...base, ...draft.prayers }), [base, draft.prayers]);
-  const effectiveFrom = draft.effectiveFrom || config?.defaultEffectiveFrom || '';
-  const changed = useMemo(() => changedPrayers(base, draft.prayers), [base, draft.prayers]);
+  // The engine rejects a date before today or before the newest version.
+  const minDate = config ? later(config.today, latest?.effectiveFrom ?? config.today) : '';
+  const effectiveFrom =
+    draft.effectiveFrom || (config ? later(config.defaultEffectiveFrom, minDate) : '');
+  const changed = useMemo(
+    () => (baseline ? changedPrayers(baseline, draft.prayers) : []),
+    [baseline, draft.prayers],
+  );
   const needsFriday = changed.filter(
     (p) => catalog?.prayers.find((c) => c.name === p)?.fridayStartRequired,
   );
 
-  // Re-scan whenever the review is open and the date or rules change.
-  const proposedKey = JSON.stringify(proposed);
+  // One key for everything a preview depends on.
+  const requestKey =
+    proposed && effectiveFrom && config
+      ? canonicalJson([proposed, effectiveFrom, config.currentRevision])
+      : '';
+  const activePreview = previewState?.key === requestKey ? previewState.data : null;
+  const revisionMismatch =
+    !!activePreview && !!config && activePreview.currentRevision !== config.currentRevision;
+  const stale = staleFlag || revisionMismatch;
+
+  // Scan whenever the review is open and the rules, date or revision change.
+  // `cancelled` makes a late answer for an older request harmless.
   useEffect(() => {
-    if (!reviewOpen || !effectiveFrom) return;
+    if (!reviewOpen || !requestKey) return;
     let cancelled = false;
-    setPreview(null);
-    setReviewError(null);
+    const [rules, date] = JSON.parse(requestKey) as [RuleSet, string, number];
+    setPreviewState(null);
+    setPreviewError(null);
+    setFieldErrors([]);
+    if (!keepSaveError.current) setSaveError(null);
+    keepSaveError.current = false;
     setPreviewLoading(true);
-    previewIqamaRules(JSON.parse(proposedKey) as RuleSet, effectiveFrom)
-      .then((r) => !cancelled && setPreview(r))
-      .catch((e: Error) => !cancelled && setReviewError(e.message))
-      .finally(() => !cancelled && setPreviewLoading(false));
+    previewIqamaRules(rules, date)
+      .then((data) => {
+        if (!cancelled) setPreviewState({ key: requestKey, data });
+      })
+      .catch((e: Error) => {
+        if (cancelled) return;
+        setPreviewError(e.message);
+        if (e instanceof ApiError && e.errors) setFieldErrors(e.errors);
+      })
+      .finally(() => {
+        if (!cancelled) setPreviewLoading(false);
+      });
     return () => {
       cancelled = true;
     };
-  }, [reviewOpen, proposedKey, effectiveFrom, scan]);
+  }, [reviewOpen, requestKey, scan]);
 
-  const handleConfirm = async (extra: { reason: string; acknowledgeConflicts: boolean }) => {
-    if (!preview || !config) return;
+  const closeReview = () => setReviewOpen(false);
+
+  const reloadLatest = () => {
+    reset();
+    setStaleFlag(false);
+    setReviewOpen(false);
+    refresh();
+  };
+
+  const handleConfirm = async (extra: {
+    reason: string;
+    acknowledgeConflicts: boolean;
+    requestHash: string;
+  }) => {
+    if (!activePreview || !config || !proposed || stale) return;
     setSaving(true);
-    setReviewError(null);
+    setSaveError(null);
+    setFieldErrors([]);
     try {
       await saveIqamaRules(
         proposed,
         effectiveFrom,
-        preview.previewId,
+        activePreview.previewId,
         config.currentRevision,
         extra,
       );
       reset();
       setReviewOpen(false);
-      setSuccessMsg('Rules saved. The public schedule has been updated.');
-      setTimeout(() => setSuccessMsg(null), 4000);
+      setSuccessMsg(savedMessage(config.mode, effectiveFrom));
+      setTimeout(() => setSuccessMsg(null), 6000);
       refresh();
     } catch (e) {
-      if (e instanceof ApiError && e.status === 409) {
-        setStale(true); // someone else saved first: must reload before retrying
-        setReviewError(e.message);
-      } else if (e instanceof ApiError && e.status === 422) {
-        setScan((n) => n + 1); // preview token rejected: scan again for a fresh one
+      const api = e instanceof ApiError ? e : null;
+      if (api && (api.status === 409 || api.code === 'IQAMA_REVISION_STALE')) {
+        setStaleFlag(true); // someone else saved first
+        setSaveError(api.message);
+      } else if (api?.status === 422) {
+        // The preview token is no longer usable: drop it and scan again.
+        keepSaveError.current = true;
+        setPreviewState(null);
+        setSaveError(api.message);
+        setScan((n) => n + 1);
       } else {
-        setReviewError(e instanceof Error ? e.message : 'Failed to save');
+        setSaveError(e instanceof Error ? e.message : 'Failed to save');
+        if (api?.errors) setFieldErrors(api.errors);
       }
     } finally {
       setSaving(false);
@@ -123,6 +182,15 @@ export function IqamaRulesPage() {
   }
   if (!config || !catalog) return null;
 
+  const modeNote =
+    config.mode === 'legacy'
+      ? 'Rules mode is "legacy": saved rules are stored, but the public schedule still uses the built-in rules.'
+      : config.mode === 'shadow'
+        ? 'Rules mode is "shadow": the engine compares saved rules in the background; the public schedule is unchanged.'
+        : config.today < config.cutover
+          ? `The public schedule uses these rules from ${config.cutover}; earlier dates keep the built-in rules.`
+          : null;
+
   return (
     <div className="min-h-screen bg-gray-50">
       {successMsg && (
@@ -149,7 +217,7 @@ export function IqamaRulesPage() {
             </button>
             <button
               onClick={() => {
-                setStale(false);
+                setStaleFlag(false);
                 setReviewOpen(true);
               }}
               className="bg-white text-blue-600 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 min-h-[44px]"
@@ -161,60 +229,84 @@ export function IqamaRulesPage() {
       )}
 
       <div className="p-4 space-y-4">
-        {config.mode !== 'db' && (
+        {modeNote && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800">
-            {config.mode === 'legacy'
-              ? 'Rules mode is "legacy": saved rules are stored but the public schedule still uses the built-in times.'
-              : 'Rules mode is "shadow": saved rules are compared in the background but not shown publicly.'}
+            {modeNote}
           </div>
         )}
 
-        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Iqama rules</h3>
-        <div className="space-y-2">
-          {PRAYER_NAMES.map((p) => (
-            <RuleCard
-              key={p}
-              prayer={p}
-              rule={proposed[p]}
-              edited={p in draft.prayers}
-              onClick={() => setSheetPrayer(p)}
-            />
-          ))}
-        </div>
+        {!latest && (
+          <div
+            role="alert"
+            className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800"
+          >
+            No rules are saved on the engine yet, so there is nothing to edit. Seed the engine
+            first.
+          </div>
+        )}
+        {latest && !baseline && (
+          <div
+            role="alert"
+            className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700"
+          >
+            Version {latest.versionId} is stored but invalid ({latest.error}). Editing is off until
+            it is fixed on the engine.
+          </div>
+        )}
+
+        {baseline && proposed && (
+          <>
+            <VersionsPanel config={config} />
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Iqama rules
+            </h3>
+            <div className="space-y-2">
+              {catalog.prayers.map(({ name }) => (
+                <RuleCard
+                  key={name}
+                  prayer={name}
+                  rule={proposed[name]}
+                  edited={name in draft.prayers}
+                  onClick={() => setSheetPrayer(name)}
+                />
+              ))}
+            </div>
+          </>
+        )}
 
         <GuardrailsNote catalog={catalog} />
       </div>
 
-      <RuleSheet
-        prayer={sheetPrayer}
-        initialRule={sheetPrayer ? proposed[sheetPrayer] : DEFAULT_RULE}
-        catalog={catalog}
-        effectiveFrom={effectiveFrom}
-        buildSettings={(p: PrayerName, rule: PrayerRule) => ({ ...proposed, [p]: rule })}
-        onApply={(p, rule) => setRule(p, rule, base[p])}
-        onClose={() => setSheetPrayer(null)}
-      />
+      {proposed && (
+        <RuleSheet
+          prayer={sheetPrayer}
+          initialRule={sheetPrayer ? proposed[sheetPrayer] : proposed[catalog.prayers[0]!.name]}
+          catalog={catalog}
+          effectiveFrom={effectiveFrom}
+          buildSettings={(p: PrayerName, rule: PrayerRule) => ({ ...proposed, [p]: rule })}
+          onApply={(p, rule) => baseline && setRule(p, rule, baseline[p])}
+          onClose={() => setSheetPrayer(null)}
+        />
+      )}
 
-      {reviewOpen && (
+      {reviewOpen && latest && (
         <RuleReviewDialog
-          today={config.today}
+          minDate={minDate}
           effectiveFrom={effectiveFrom}
           onEffectiveFromChange={setEffectiveFrom}
+          baseNote={`Building on version ${latest.versionId} (effective ${latest.effectiveFrom}).`}
           changed={changed}
           needsFriday={needsFriday}
-          preview={preview}
+          preview={activePreview}
           loading={previewLoading}
-          error={reviewError}
+          error={previewError ?? saveError}
+          fieldErrors={fieldErrors}
+          stale={stale}
+          onReload={reloadLatest}
           saving={saving}
           onConfirm={(extra) => void handleConfirm(extra)}
           fajrMinBeforeSunrise={catalog.guardrails.fajrEndsBeforeSunriseMinutes}
-          onClose={() => {
-            setReviewOpen(false);
-            if (stale) {
-              reset();
-              refresh();
-            }
-          }}
+          onClose={closeReview}
         />
       )}
     </div>

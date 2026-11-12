@@ -27,13 +27,21 @@ export async function apiFetch<T>(
 
   if (!response.ok) {
     let message = `API error: ${response.status}`;
+    let code: string | undefined;
+    let errors: { path: string; message: string }[] | undefined;
     try {
-      const body = (await response.json()) as { message?: string };
+      const body = (await response.json()) as {
+        message?: string;
+        code?: string;
+        errors?: { path: string; message: string }[];
+      };
       if (body.message) message = body.message;
+      if (typeof body.code === 'string') code = body.code;
+      if (Array.isArray(body.errors)) errors = body.errors;
     } catch {
       /* ignore parse errors on error responses */
     }
-    throw new ApiError(response.status, message);
+    throw new ApiError(response.status, message, code, errors);
   }
 
   if (response.status === 204) {

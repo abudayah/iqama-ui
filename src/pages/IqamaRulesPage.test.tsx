@@ -1,303 +1,520 @@
-import { describe, it, expect, beforeAll, afterEach, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
-import { http, HttpResponse } from 'msw';
-import { setupServer } from 'msw/node';
+import userEvent from '@testing-library/user-event';
 import { IqamaRulesPage } from './IqamaRulesPage';
 import { OverrideRow } from '../components/OverrideRow';
-import { CONFIG_KEYS } from '../types/index';
-import type { PrayerRule } from '../types/iqama-rules';
+import type { RuleSet } from '../types/iqama-rules';
+import { SEED_RULES, makeConfig, state, setupIqamaServer, version } from '../test/iqama-fixtures';
 
-const BASE = 'https://api.example.com';
-const R = `${BASE}/api/v1/admin/iqama-rules`;
+setupIqamaServer();
 
-const rule: PrayerRule = {
-  base: { type: 'OFFSET', minutes: 5 },
-  rounding: { mode: 'CEIL', step: 5 },
-};
-const config = {
-  mode: 'db',
-  currentRevision: 3,
-  versions: [],
-  effective: { fajr: rule, dhuhr: rule, asr: rule, maghrib: rule, isha: rule },
-  today: '2026-11-11',
-  timezone: 'America/Vancouver',
-  defaultEffectiveFrom: '2026-11-13',
-};
-const catalog = {
-  prayers: ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].map((name) => ({
-    name,
-    weeklyLockAllowed: name !== 'maghrib',
-    fridayStartRequired: name !== 'maghrib',
-    sunriseLimitAllowed: name === 'fajr',
-  })),
-  baseTypes: [
-    {
-      type: 'OFFSET',
-      label: 'Minutes after Azan',
-      fields: [{ name: 'minutes', kind: 'int', min: -120, max: 120 }],
-    },
-    { type: 'FIXED_TIME', label: 'Fixed clock time', fields: [{ name: 'time', kind: 'time' }] },
-  ],
-  modifiers: {
-    limits: { minAfterAzan: { min: 0, max: 120 }, latestBeforeSunrise: { min: 0, max: 240 } },
-    rounding: { modes: ['CEIL', 'FLOOR', 'NEAREST'], steps: [1, 5, 10, 15, 30, 60] },
-    weekdayAdjust: {
-      weekdays: ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'],
-      min: -60,
-      max: 60,
-    },
-  },
-  guardrails: { minGapAfterAzanMinutes: 5, fajrEndsBeforeSunriseMinutes: 10, iqamaStepMinutes: 5 },
-};
-const prayerDay = { azan: '06:00', current: { iqama: '06:05', clamped: false } };
-const previewBody = {
-  previewId: 'tok-1',
-  currentRevision: 3,
-  effectiveFrom: '2026-11-13',
-  warnings: [],
-  days: Array.from({ length: 14 }, (_, i) => ({
-    date: `2026-11-${13 + i}`,
-    day_of_week: 'Friday',
-    prayers: Object.fromEntries(
-      ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].map((p) => [
-        p,
-        { ...prayerDay, proposed: { iqama: '06:20', clamped: i === 1 } },
-      ]),
-    ),
-  })),
-  summary: {
-    from: '2026-11-13',
-    to: '2027-11-12',
-    totalDays: 365,
-    daysChanged: 120,
-    daysClamped: 7,
-    daysClampedCurrent: 0,
-    firstChangedDates: ['2026-11-13'],
-    firstClampedDates: ['2026-11-14'],
-    byPrayer: Object.fromEntries(
-      ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].map((p) => [
-        p,
-        { daysChanged: 120, daysClamped: 7 },
-      ]),
-    ),
-  },
-};
+const minutesInput = () => screen.getByLabelText(/^Minutes after Azan/);
+const saveButton = () => screen.getByRole('button', { name: 'Save rules' });
+const understand = () => screen.getByLabelText(/I understand this changes/);
+const last = <T,>(a: T[]) => a[a.length - 1]!;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-let previewConflicts: unknown[] | undefined;
-let previewDates: (string | undefined)[] = [];
-let putBody: Record<string, unknown> | null = null;
-let putStatus = 200;
-const server = setupServer();
-beforeAll(() => server.listen());
-afterAll(() => server.close());
-afterEach(() => {
-  server.resetHandlers();
-  localStorage.clear();
-});
-beforeEach(() => {
-  previewDates = [];
-  previewConflicts = undefined;
-  putBody = null;
-  putStatus = 200;
-  localStorage.setItem(CONFIG_KEYS.BASE_URL, BASE);
-  localStorage.setItem(CONFIG_KEYS.API_KEY, 'k');
-  server.use(
-    http.get(R, () => HttpResponse.json(config)),
-    http.get(`${R}/catalog`, () => HttpResponse.json(catalog)),
-    http.post(`${R}/preview`, async ({ request }) => {
-      const b = (await request.json()) as { effectiveFrom?: string };
-      previewDates.push(b.effectiveFrom);
-      return HttpResponse.json({
-        ...previewBody,
-        effectiveFrom: b.effectiveFrom,
-        ...(previewConflicts ? { conflicts: previewConflicts } : {}),
-      });
-    }),
-    http.put(`${R}/base`, async ({ request }) => {
-      putBody = (await request.json()) as Record<string, unknown>;
-      return putStatus === 200
-        ? HttpResponse.json({ id: 4 })
-        : HttpResponse.json(
-            { message: 'Rules changed since you opened this page' },
-            { status: putStatus },
-          );
-    }),
-  );
-});
-
-async function editPrayerMinutes(prayer: string, minutes: string) {
+/** Open a prayer's sheet, set its minutes, add it to the draft. */
+async function editMinutes(prayer: string, minutes: string) {
   fireEvent.click(await screen.findByTestId(`rule-card-${prayer}`));
-  const input = await screen.findByLabelText(/minutes/i, { selector: '#base-minutes' });
-  fireEvent.change(input, { target: { value: minutes } });
+  fireEvent.change(await screen.findByLabelText(/^Minutes after Azan/), {
+    target: { value: minutes },
+  });
   fireEvent.click(screen.getByRole('button', { name: 'Add to changes' }));
 }
 
-describe('IqamaRulesPage', () => {
-  it('renders one card per prayer with a plain-English sentence', async () => {
+async function openReview() {
+  fireEvent.click(await screen.findByRole('button', { name: /review & save/i }));
+  await screen.findByTestId('year-scan');
+}
+
+/** Page with a Maghrib edit, review open and the first scan done. */
+async function reviewMaghribEdit() {
+  render(<IqamaRulesPage />);
+  await editMinutes('maghrib', '10');
+  await openReview();
+}
+
+describe('cards and baseline', () => {
+  it('renders one card per catalog prayer with a plain-English sentence', async () => {
     render(<IqamaRulesPage />);
-    const card = await screen.findByTestId('rule-card-fajr');
-    expect(card).toHaveTextContent('Azan + 5 min, rounded up to the next 5');
+    expect(await screen.findByTestId('rule-card-maghrib')).toHaveTextContent(
+      'Azan + 5 min, rounded up to the next 5',
+    );
     expect(screen.getAllByTestId(/^rule-card-/)).toHaveLength(5);
     expect(screen.queryByText('Unsaved changes')).toBeNull();
   });
 
-  it('lists the fixed guardrails from the catalog, read-only', async () => {
+  it('shows which version is being edited, what is scheduled, and the history with reasons', async () => {
     render(<IqamaRulesPage />);
-    const note = await screen.findByTestId('guardrails-note');
-    expect(note).toHaveTextContent('Always applied');
-    expect(note).toHaveTextContent('at least 5 min after Azan');
-    expect(note).toHaveTextContent('Fajr iqama is at least 10 min before sunrise');
-    expect(note).toHaveTextContent('Fajr, Dhuhr, Asr, Isha must start on a Friday');
-    expect(note).toHaveTextContent('Maghrib can start any day');
-    expect(within(note).getAllByRole('listitem')).toHaveLength(5);
-    expect(note).toHaveTextContent('Every iqama is on a 5-minute mark (e.g. 9:04 becomes 9:05)');
-    expect(note.querySelector('ol')).toHaveClass('list-decimal');
-    expect(within(note).queryAllByRole('button')).toHaveLength(0);
-    expect(within(note).queryAllByRole('textbox')).toHaveLength(0);
+    expect(await screen.findByTestId('editing-on-top-of')).toHaveTextContent(
+      'Editing on top of version 3 (effective 2026-11-13)',
+    );
+    expect(within(screen.getByTestId('upcoming-versions')).getByText(/Version 3/)).toBeVisible();
+    const panel = screen.getByTestId('versions-panel');
+    expect(panel).toHaveTextContent('Initial import');
+    expect(panel).not.toHaveTextContent(/admin/i); // no "who": the password is shared
   });
 
-  it('hides the 5-minute item when the catalog has no step (older engine)', async () => {
-    const { iqamaStepMinutes: _s, ...guardrails } = catalog.guardrails;
-    void _s;
-    server.use(http.get(`${R}/catalog`, () => HttpResponse.json({ ...catalog, guardrails })));
-    render(<IqamaRulesPage />);
-    const note = await screen.findByTestId('guardrails-note');
-    expect(within(note).getAllByRole('listitem')).toHaveLength(4);
-    expect(note).not.toHaveTextContent('minute mark');
-  });
-
-  it('only offers rounding steps that are multiples of the iqama step', async () => {
-    render(<IqamaRulesPage />);
-    fireEvent.click(await screen.findByTestId('rule-card-maghrib'));
-    const select = await screen.findByLabelText('Rounding step');
-    const options = within(select)
-      .getAllByRole('option')
-      .map((o) => o.textContent);
-    expect(options).toEqual(['to 5 min', 'to 10 min', 'to 15 min', 'to 30 min', 'to 60 min']);
-  });
-
-  it('shows a 7-day strip with clamp badges from /preview', async () => {
-    render(<IqamaRulesPage />);
-    fireEvent.click(await screen.findByTestId('rule-card-isha'));
-    const strip = await screen.findByTestId('preview-strip');
-    expect(within(strip).getAllByRole('listitem')).toHaveLength(7);
-    expect(within(strip).getAllByTestId('clamp-badge')).toHaveLength(1);
-    expect(previewDates[0]).toBe('2026-11-13');
-  });
-
-  it('review shows the year scan and saves with token and revision', async () => {
-    render(<IqamaRulesPage />);
-    await editPrayerMinutes('isha', '15');
-    expect(await screen.findByText('Unsaved changes')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /review & save/i }));
-    const scan = await screen.findByTestId('year-scan');
-    expect(scan).toHaveTextContent('120');
-    expect(scan).toHaveTextContent('2026-11-14');
-    fireEvent.click(screen.getByLabelText(/I understand/));
-    fireEvent.click(screen.getByRole('button', { name: 'Save rules' }));
-    await waitFor(() => expect(putBody).not.toBeNull());
-    expect(putBody).toMatchObject({
-      previewId: 'tok-1',
-      expectedRevision: 3,
-      effectiveFrom: '2026-11-13',
+  it('builds the proposal from the newest version, so a scheduled change is not reverted', async () => {
+    // Asr is already changed in version 4 (scheduled); version 3 is in force today.
+    const v4Rules: RuleSet = { ...SEED_RULES, asr: { base: { type: 'OFFSET', minutes: 20 } } };
+    const v3 = version(3, '2026-11-13', SEED_RULES, 'Initial import');
+    const v4 = version(4, '2027-01-01', v4Rules, 'Winter asr');
+    state.config = makeConfig({
+      currentRevision: 4,
+      effective: v3,
+      latest: v4,
+      upcoming: [v4],
     });
-    expect(JSON.parse(putBody!.settings as string).isha.base.minutes).toBe(15);
-    expect(await screen.findByText(/Rules saved/)).toBeInTheDocument();
-  });
-
-  it('blocks a non-Friday date for a locked prayer but allows Maghrib', async () => {
     render(<IqamaRulesPage />);
-    await editPrayerMinutes('fajr', '15');
-    fireEvent.click(screen.getByRole('button', { name: /review & save/i }));
-    fireEvent.change(await screen.findByLabelText('Effective from'), {
-      target: { value: '2026-11-14' },
+    expect(await screen.findByTestId('rule-card-asr')).toHaveTextContent('Azan + 20 min');
+    expect(screen.getByTestId('editing-on-top-of')).toHaveTextContent(
+      'version 4 (effective 2027-01-01)',
+    );
+    expect(screen.getByTestId('upcoming-versions')).toHaveTextContent('Winter asr');
+
+    await editMinutes('maghrib', '10');
+    await openReview();
+    // The preview and the save carry version 4's Asr, not version 3's.
+    expect(last(state.previewCalls).settings.asr).toEqual(v4Rules.asr);
+    expect(last(state.previewCalls).settings.maghrib.base).toEqual({
+      type: 'OFFSET',
+      minutes: 10,
     });
-    expect(await screen.findByRole('alert')).toHaveTextContent('Fajr can only change on a Friday');
-    fireEvent.click(screen.getByLabelText(/I understand/));
-    expect(screen.getByRole('button', { name: 'Save rules' })).toBeDisabled();
+    // The date cannot be earlier than the newest version.
+    expect(last(state.previewCalls).effectiveFrom).toBe('2027-01-01');
+    expect(screen.getByLabelText('Effective from')).toHaveAttribute('min', '2027-01-01');
+
+    fireEvent.click(understand());
+    fireEvent.click(saveButton());
+    await waitFor(() => expect(state.putBodies).toHaveLength(1));
+    const saved = JSON.parse(state.putBodies[0]!['settings'] as string) as RuleSet;
+    expect(saved.asr).toEqual(v4Rules.asr);
+    expect(state.putBodies[0]).toMatchObject({ expectedRevision: 4, effectiveFrom: '2027-01-01' });
   });
 
-  it('allows any day when only Maghrib changed', async () => {
+  it('shows a clear message when there is nothing saved yet', async () => {
+    state.config = makeConfig({ latest: null, effective: null, upcoming: [], versions: [] });
     render(<IqamaRulesPage />);
-    await editPrayerMinutes('maghrib', '3');
-    fireEvent.click(screen.getByRole('button', { name: /review & save/i }));
-    fireEvent.change(await screen.findByLabelText('Effective from'), {
-      target: { value: '2026-11-14' },
+    expect(await screen.findByRole('alert')).toHaveTextContent('No rules are saved');
+    expect(screen.queryByTestId('rule-card-fajr')).toBeNull();
+  });
+
+  it('refuses to edit when the newest version is stored invalid', async () => {
+    state.config = makeConfig({
+      latest: {
+        ...version(3, '2026-11-13'),
+        rules: null,
+        error: 'fajr.base.minutes: out of range',
+      },
     });
-    await screen.findByTestId('year-scan');
-    fireEvent.click(screen.getByLabelText(/I understand/));
-    expect(screen.queryByText(/can only change on a Friday/)).toBeNull();
-    expect(screen.getByRole('button', { name: 'Save rules' })).toBeEnabled();
-  });
-
-  it('shows the server message on a stale-revision 409', async () => {
-    putStatus = 409;
     render(<IqamaRulesPage />);
-    await editPrayerMinutes('isha', '15');
-    fireEvent.click(screen.getByRole('button', { name: /review & save/i }));
-    await screen.findByTestId('year-scan');
-    fireEvent.click(screen.getByLabelText(/I understand/));
-    fireEvent.click(screen.getByRole('button', { name: 'Save rules' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Rules changed since you opened');
+    expect(await screen.findByRole('alert')).toHaveTextContent('stored but invalid');
+    expect(screen.queryByTestId('rule-card-fajr')).toBeNull();
   });
 });
 
-describe('IqamaRulesPage — reason and Fajr conflicts', () => {
-  async function openReview() {
+describe('edit sheet', () => {
+  it('shows a 7-day strip with Adjusted badges from /preview', async () => {
     render(<IqamaRulesPage />);
-    await editPrayerMinutes('isha', '15');
-    fireEvent.click(screen.getByRole('button', { name: /review & save/i }));
-    await screen.findByTestId('year-scan');
-  }
+    fireEvent.click(await screen.findByTestId('rule-card-maghrib'));
+    const strip = await screen.findByTestId('preview-strip');
+    expect(within(strip).getAllByRole('listitem')).toHaveLength(7);
+    expect(within(strip).getAllByTestId('clamp-badge')).toHaveLength(1);
+    expect(within(strip).getByText(/Adjusted/)).toBeInTheDocument();
+  });
 
-  it('sends the trimmed reason, capped at 500 characters', async () => {
-    await openReview();
+  it('shows an error beside a cleared required field and blocks preview and Add', async () => {
+    render(<IqamaRulesPage />);
+    fireEvent.click(await screen.findByTestId('rule-card-maghrib'));
+    await screen.findByTestId('preview-strip');
+    const calls = state.previewCalls.length;
+    fireEvent.change(minutesInput(), { target: { value: '' } });
+    expect(await screen.findByText('Required')).toBeInTheDocument();
+    expect(minutesInput()).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByRole('button', { name: 'Add to changes' })).toBeDisabled();
+    await sleep(600);
+    expect(state.previewCalls.length).toBe(calls);
+  });
+
+  it('does not truncate decimals and enforces the catalog range', async () => {
+    render(<IqamaRulesPage />);
+    fireEvent.click(await screen.findByTestId('rule-card-maghrib'));
+    fireEvent.change(minutesInput(), { target: { value: '5.5' } });
+    expect(await screen.findByText('Enter a whole number')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add to changes' })).toBeDisabled();
+    fireEvent.change(minutesInput(), { target: { value: '200' } });
+    expect(await screen.findByText('Must be 120 or less')).toBeInTheDocument();
+  });
+
+  it('removes a cleared optional field instead of sending NaN or 0', async () => {
+    render(<IqamaRulesPage />);
+    fireEvent.click(await screen.findByTestId('rule-card-fajr'));
+    fireEvent.change(await screen.findByLabelText(/^At least this many minutes after Azan/), {
+      target: { value: '' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Add to changes' }));
+    const card = await screen.findByTestId('rule-card-fajr');
+    expect(card).not.toHaveTextContent('min after Azan');
+    expect(card).toHaveTextContent('Edited');
+    expect(card).toHaveTextContent('at least 60 min before sunrise'); // the other limit stays
+  });
+
+  it('blocks an invalid Seasonal rule (empty time) from preview and save', async () => {
+    render(<IqamaRulesPage />);
+    fireEvent.click(await screen.findByTestId('rule-card-asr'));
+    await screen.findByTestId('preview-strip');
+    const calls = state.previewCalls.length;
+    fireEvent.change(screen.getAllByLabelText('Iqama time')[0]!, { target: { value: '' } });
+    expect(await screen.findAllByText('Required')).not.toHaveLength(0);
+    expect(screen.getByRole('button', { name: 'Add to changes' })).toBeDisabled();
+    await sleep(600);
+    expect(state.previewCalls.length).toBe(calls);
+  });
+
+  it('blocks an invalid Scaled-gap rule (empty Azan time) from preview and save', async () => {
+    render(<IqamaRulesPage />);
+    fireEvent.click(await screen.findByTestId('rule-card-isha'));
+    await screen.findByTestId('preview-strip');
+    const calls = state.previewCalls.length;
+    fireEvent.change(screen.getAllByLabelText('When Azan is at')[0]!, { target: { value: '' } });
+    expect(await screen.findAllByText('Required')).not.toHaveLength(0);
+    expect(screen.getByRole('button', { name: 'Add to changes' })).toBeDisabled();
+    await sleep(600);
+    expect(state.previewCalls.length).toBe(calls);
+  });
+
+  it('invents no defaults: a new rule type starts empty and must be filled in', async () => {
+    render(<IqamaRulesPage />);
+    fireEvent.click(await screen.findByTestId('rule-card-maghrib'));
+    fireEvent.change(screen.getByLabelText('Rule type'), { target: { value: 'FIXED_TIME' } });
+    expect(screen.getByLabelText('Time')).toHaveValue('');
+    expect(screen.getByText('Required')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add to changes' })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Time'), { target: { value: '20:15' } });
+    expect(screen.getByRole('button', { name: 'Add to changes' })).toBeEnabled();
+  });
+
+  it('uses only catalog defaults for a modifier (rounding step 5, direction empty)', async () => {
+    render(<IqamaRulesPage />);
+    fireEvent.click(await screen.findByTestId('rule-card-dhuhr'));
+    fireEvent.click(screen.getByLabelText('Rounding'));
+    expect(screen.getByLabelText('To a multiple of (minutes)')).toHaveValue('5');
+    expect(screen.getByLabelText('Direction')).toHaveValue('');
+    expect(screen.getByRole('button', { name: 'Add to changes' })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Direction'), { target: { value: 'CEIL' } });
+    expect(screen.getByRole('button', { name: 'Add to changes' })).toBeEnabled();
+  });
+
+  it('asks for at least one value when an optional group is switched on empty', async () => {
+    render(<IqamaRulesPage />);
+    fireEvent.click(await screen.findByTestId('rule-card-maghrib'));
+    fireEvent.click(screen.getByLabelText('Weekday adjustment'));
+    expect(await screen.findByText('Set at least one value, or turn it off')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add to changes' })).toBeDisabled();
+  });
+
+  it('only offers the Fajr sunrise limit to Fajr', async () => {
+    render(<IqamaRulesPage />);
+    fireEvent.click(await screen.findByTestId('rule-card-maghrib'));
+    fireEvent.click(screen.getByLabelText('Limits'));
+    expect(screen.getByLabelText(/^At least this many minutes after Azan/)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/before sunrise/)).toBeNull();
+  });
+});
+
+describe('review and save', () => {
+  it('shows the year scan and saves with token, revision, hash and the trimmed reason', async () => {
+    await reviewMaghribEdit();
+    const scan = screen.getByTestId('year-scan');
+    expect(scan).toHaveTextContent('120');
+    expect(scan).toHaveTextContent('2026-11-14');
     const box = screen.getByLabelText(/Reason for change/);
     expect(box).toHaveAttribute('maxlength', '500');
     fireEvent.change(box, { target: { value: '  Summer schedule  ' } });
-    fireEvent.click(screen.getByLabelText(/I understand this changes/));
-    fireEvent.click(screen.getByRole('button', { name: 'Save rules' }));
-    await waitFor(() => expect(putBody).not.toBeNull());
-    expect(putBody).toMatchObject({ reason: 'Summer schedule' });
-    expect(putBody).not.toHaveProperty('acknowledgeConflicts');
+    fireEvent.click(understand());
+    fireEvent.click(saveButton());
+    await waitFor(() => expect(state.putBodies).toHaveLength(1));
+    expect(state.putBodies[0]).toMatchObject({
+      previewId: 'tok-1',
+      expectedRevision: 3,
+      effectiveFrom: '2026-11-13',
+      reason: 'Summer schedule',
+      requestHash: state.lastPreview!.requestHash,
+    });
+    expect(state.putBodies[0]).not.toHaveProperty('acknowledgeConflicts');
+    expect(JSON.parse(state.putBodies[0]!['settings'] as string).maghrib.base.minutes).toBe(10);
   });
 
-  it('omits reason when empty', async () => {
+  it('omits an empty reason', async () => {
+    await reviewMaghribEdit();
+    fireEvent.click(understand());
+    fireEvent.click(saveButton());
+    await waitFor(() => expect(state.putBodies).toHaveLength(1));
+    expect(state.putBodies[0]).not.toHaveProperty('reason');
+  });
+
+  it('blocks a non-Friday date for a Friday-start prayer', async () => {
+    render(<IqamaRulesPage />);
+    await editMinutes('fajr', '80');
     await openReview();
-    fireEvent.click(screen.getByLabelText(/I understand this changes/));
-    fireEvent.click(screen.getByRole('button', { name: 'Save rules' }));
-    await waitFor(() => expect(putBody).not.toBeNull());
-    expect(putBody).not.toHaveProperty('reason');
+    fireEvent.change(screen.getByLabelText('Effective from'), { target: { value: '2026-11-14' } });
+    expect(await screen.findByText(/Fajr can only change on a Friday/)).toBeInTheDocument();
+    await screen.findByTestId('year-scan');
+    fireEvent.click(understand());
+    expect(saveButton()).toBeDisabled();
   });
 
-  it('lists conflicts and blocks Save until acknowledged, then sends acknowledgeConflicts', async () => {
-    previewConflicts = [
+  it('allows any day when only Maghrib changed', async () => {
+    await reviewMaghribEdit();
+    fireEvent.change(screen.getByLabelText('Effective from'), { target: { value: '2026-11-14' } });
+    await waitFor(() => expect(last(state.previewCalls).effectiveFrom).toBe('2026-11-14'));
+    await screen.findByTestId('year-scan');
+    fireEvent.click(understand());
+    await waitFor(() => expect(saveButton()).toBeEnabled());
+    expect(screen.queryByText(/can only change on a Friday/)).toBeNull();
+  });
+
+  it('forgets the confirmation when the date changes after it was given', async () => {
+    await reviewMaghribEdit();
+    fireEvent.click(understand());
+    expect(saveButton()).toBeEnabled();
+    fireEvent.change(screen.getByLabelText('Effective from'), { target: { value: '2026-11-20' } });
+    // Immediately: the old preview is gone, so nothing can be saved or confirmed.
+    expect(saveButton()).toBeDisabled();
+    expect(understand()).not.toBeChecked();
+    await waitFor(() => expect(last(state.previewCalls).effectiveFrom).toBe('2026-11-20'));
+    await screen.findByTestId('year-scan');
+    expect(understand()).not.toBeChecked();
+    expect(saveButton()).toBeDisabled();
+  });
+
+  it('ignores a late answer for an older request', async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((r) => (release = r));
+    state.previewGate = (d) => (d === '2026-11-13' ? gate : undefined);
+    render(<IqamaRulesPage />);
+    await editMinutes('maghrib', '10');
+    fireEvent.click(await screen.findByRole('button', { name: /review & save/i }));
+    await waitFor(() => expect(state.previewCalls).toHaveLength(1)); // first review scan, held by the gate
+    // Change the date while the first review scan is still waiting.
+    fireEvent.change(await screen.findByLabelText('Effective from'), {
+      target: { value: '2026-11-20' },
+    });
+    const scan = await screen.findByTestId('year-scan');
+    expect(scan).toHaveTextContent('2026-11-20');
+    release();
+    await sleep(50);
+    expect(screen.getByTestId('year-scan')).toHaveTextContent('2026-11-20');
+    expect(screen.getByTestId('year-scan')).not.toHaveTextContent('2026-11-13');
+    fireEvent.click(understand());
+    fireEvent.click(saveButton());
+    await waitFor(() => expect(state.putBodies).toHaveLength(1));
+    expect(state.putBodies[0]).toMatchObject({ effectiveFrom: '2026-11-20' });
+    // The late answer (tok-1) was ignored; the save uses the preview for the current date.
+    expect(state.putBodies[0]!['previewId']).toBe('tok-2');
+  });
+
+  it('on 422 drops the preview, shows the reason, scans again and needs a new confirmation', async () => {
+    state.putResponses = [
+      {
+        status: 422,
+        body: { code: 'IQAMA_PREVIEW_INVALID', message: 'The preview expired. Preview again.' },
+      },
+    ];
+    await reviewMaghribEdit();
+    fireEvent.click(understand());
+    fireEvent.click(saveButton());
+    expect(await screen.findByText(/The preview expired/)).toBeInTheDocument();
+    await waitFor(() => expect(state.previewCalls.length).toBeGreaterThanOrEqual(2));
+    await screen.findByTestId('year-scan');
+    expect(understand()).not.toBeChecked();
+    expect(saveButton()).toBeDisabled();
+    fireEvent.click(understand());
+    fireEvent.click(saveButton());
+    await waitFor(() => expect(state.putBodies).toHaveLength(2));
+    expect(state.putBodies[1]!['previewId']).not.toBe(state.putBodies[0]!['previewId']);
+    expect(await screen.findByText(/Saved and published/)).toBeInTheDocument();
+  });
+
+  it('blocks publishing when the preview was made for another revision', async () => {
+    state.previewRevision = 9;
+    await reviewMaghribEdit();
+    fireEvent.click(understand());
+    expect(await screen.findByText(/rules changed on the engine/i)).toBeInTheDocument();
+    expect(saveButton()).toBeDisabled();
+    const before = state.getCount;
+    fireEvent.click(screen.getByRole('button', { name: 'Reload latest rules' }));
+    await waitFor(() => expect(state.getCount).toBeGreaterThan(before));
+    await waitFor(() => expect(screen.queryByText('Unsaved changes')).toBeNull());
+  });
+
+  it('treats 409 as stale: shows the server message and blocks another save', async () => {
+    state.putResponses = [
+      { status: 409, body: { message: 'Rules changed since you opened this page' } },
+    ];
+    await reviewMaghribEdit();
+    fireEvent.click(understand());
+    fireEvent.click(saveButton());
+    expect(await screen.findByText(/Rules changed since you opened this page/)).toBeInTheDocument();
+    expect(saveButton()).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Reload latest rules' })).toBeInTheDocument();
+  });
+
+  it('shows field errors from a 400 response', async () => {
+    state.putResponses = [
+      {
+        status: 400,
+        body: {
+          message: 'Invalid rules',
+          errors: [{ path: 'fajr.effectiveFrom', message: 'Must be a Friday' }],
+        },
+      },
+    ];
+    await reviewMaghribEdit();
+    fireEvent.click(understand());
+    fireEvent.click(saveButton());
+    expect(await screen.findByText(/fajr.effectiveFrom: Must be a Friday/)).toBeInTheDocument();
+  });
+
+  it('lists Fajr conflicts, needs an acknowledgement, and sends acknowledgeConflicts', async () => {
+    state.previewConflicts = [
       {
         date: '2027-06-20',
         prayer: 'fajr',
         azan: '03:40',
         sunrise: '05:05',
         iqama: '04:30',
-        broken: true,
+        brokenLimit: 'sunrise-60',
+        wonBy: 'min-gap',
       },
     ];
-    await openReview();
-    const list = screen.getByTestId('fajr-conflicts');
-    expect(list).toHaveTextContent('2027-06-20');
-    expect(list).toHaveTextContent('sunrise 05:05');
-    fireEvent.click(screen.getByLabelText(/I understand this changes/));
-    const save = screen.getByRole('button', { name: 'Save rules' });
-    expect(save).toBeDisabled();
-    fireEvent.click(screen.getByLabelText(/Fajr will be less than 10 min before sunrise/));
-    expect(save).toBeEnabled();
-    fireEvent.click(save);
-    await waitFor(() => expect(putBody).not.toBeNull());
-    expect(putBody).toMatchObject({ acknowledgeConflicts: true });
+    await reviewMaghribEdit();
+    const box = screen.getByTestId('fajr-conflicts');
+    expect(box).toHaveTextContent('2027-06-20');
+    expect(box).toHaveTextContent('sunrise 05:05');
+    fireEvent.click(understand());
+    expect(saveButton()).toBeDisabled();
+    fireEvent.click(screen.getByLabelText(/Fajr will be less than 60 min before sunrise/));
+    expect(saveButton()).toBeEnabled();
+    fireEvent.click(saveButton());
+    await waitFor(() => expect(state.putBodies).toHaveLength(1));
+    expect(state.putBodies[0]).toMatchObject({ acknowledgeConflicts: true });
+  });
+
+  it('forgets the Fajr acknowledgement when a new preview arrives', async () => {
+    state.previewConflicts = [
+      { date: '2027-06-20', prayer: 'fajr', azan: '03:40', sunrise: '05:05', iqama: '04:30' },
+    ];
+    await reviewMaghribEdit();
+    const ack = () => screen.getByLabelText(/Fajr will be less than/);
+    fireEvent.click(ack());
+    fireEvent.click(understand());
+    expect(saveButton()).toBeEnabled();
+    fireEvent.change(screen.getByLabelText('Effective from'), { target: { value: '2026-11-20' } });
+    await waitFor(() => expect(last(state.previewCalls).effectiveFrom).toBe('2026-11-20'));
+    await screen.findByTestId('year-scan');
+    expect(ack()).not.toBeChecked();
+    expect(understand()).not.toBeChecked();
+    expect(saveButton()).toBeDisabled();
   });
 
   it('shows no conflict box when the preview has none', async () => {
-    await openReview();
+    await reviewMaghribEdit();
     expect(screen.queryByTestId('fajr-conflicts')).toBeNull();
+  });
+
+  it.each([
+    ['db', /Saved and published.*from 2026-11-13/],
+    ['shadow', /Saved\. The engine is still comparing in the background/],
+    ['legacy', /Saved\. The public schedule still uses the built-in rules/],
+  ] as const)('says what the save did in %s mode', async (mode, text) => {
+    state.config = makeConfig({ mode });
+    await reviewMaghribEdit();
+    fireEvent.click(understand());
+    fireEvent.click(saveButton());
+    expect(await screen.findByText(text)).toBeInTheDocument();
+  });
+});
+
+describe('Always applied', () => {
+  it('lists the fixed rules from the catalog, read-only', async () => {
+    render(<IqamaRulesPage />);
+    const note = await screen.findByTestId('guardrails-note');
+    expect(note).toHaveTextContent('Always applied');
+    expect(note).toHaveTextContent(
+      'never earlier than 3 min after Azan (all prayers, overrides too)',
+    );
+    expect(note).toHaveTextContent('Fajr iqama is normally at least 60 min before sunrise');
+    expect(note).toHaveTextContent('the minimum wins, the day is flagged as a conflict');
+    expect(note).toHaveTextContent('acknowledge it before saving');
+    expect(note).toHaveTextContent('Every iqama lands on a 5-minute mark (e.g. 9:04 becomes 9:05)');
+    expect(note).toHaveTextContent('Fajr, Dhuhr, Asr, Isha must start on a Friday');
+    expect(note).toHaveTextContent('Maghrib can start any day');
+    expect(note).not.toHaveTextContent(/moved later/);
+    expect(within(note).getAllByRole('listitem')).toHaveLength(5);
+    expect(note.querySelector('ol')).toHaveClass('list-decimal');
+    expect(within(note).queryAllByRole('button')).toHaveLength(0);
+    expect(within(note).queryAllByRole('textbox')).toHaveLength(0);
+  });
+});
+
+describe('dialog accessibility', () => {
+  it('rule sheet: focus moves in, is trapped, background is inert, Escape closes and returns focus', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<IqamaRulesPage />);
+    const card = await screen.findByTestId('rule-card-maghrib');
+    card.focus();
+    await user.click(card);
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveAccessibleName(/Maghrib/);
+    expect(dialog).toContainElement(document.activeElement as HTMLElement);
+    expect(container).toHaveAttribute('inert');
+
+    // Tab from the last control wraps to the first; Shift+Tab goes back.
+    const add = screen.getByRole('button', { name: 'Add to changes' });
+    add.focus();
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus();
+    await user.tab({ shift: true });
+    expect(add).toHaveFocus();
+
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(container).not.toHaveAttribute('inert');
+    expect(card).toHaveFocus();
+  });
+
+  it('review dialog: focus moves in, Escape closes and focus returns to the trigger', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<IqamaRulesPage />);
+    await editMinutes('maghrib', '10');
+    const trigger = await screen.findByRole('button', { name: /review & save/i });
+    await user.click(trigger);
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog).toHaveAccessibleName('Review changes');
+    expect(dialog).toContainElement(document.activeElement as HTMLElement);
+    expect(container).toHaveAttribute('inert');
+    await user.keyboard('{Escape}');
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(trigger).toHaveFocus();
+  });
+});
+
+describe('mode notices', () => {
+  it.each([
+    ['legacy', /"legacy".*built-in rules/],
+    ['shadow', /"shadow".*public schedule is unchanged/],
+  ] as const)('explains %s mode', async (mode, text) => {
+    state.config = makeConfig({ mode });
+    render(<IqamaRulesPage />);
+    expect(await screen.findByText(text)).toBeInTheDocument();
+  });
+
+  it('says when the rules start to apply (db mode before the cutover)', async () => {
+    render(<IqamaRulesPage />);
+    expect(await screen.findByText(/uses these rules from 2026-11-13/)).toBeInTheDocument();
   });
 });
 

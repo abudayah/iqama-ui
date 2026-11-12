@@ -1,13 +1,17 @@
 import type { PrayerName } from '../types/index';
 import type { PrayerRule, RuleBase, RuleSet, Weekday } from '../types/iqama-rules';
 
-export const PRAYER_LABELS: Record<PrayerName, string> = {
+const PRAYER_LABELS: Record<string, string> = {
   fajr: 'Fajr',
   dhuhr: 'Dhuhr',
   asr: 'Asr',
   maghrib: 'Maghrib',
   isha: 'Isha',
 };
+
+/** Display name for a prayer; falls back to a capitalised key for unknown ones. */
+export const prayerLabel = (name: string): string =>
+  PRAYER_LABELS[name] ?? name.charAt(0).toUpperCase() + name.slice(1);
 
 const WEEKDAY_LABELS: Record<Weekday, string> = {
   SUN: 'Sun',
@@ -78,11 +82,30 @@ export function upcomingFridays(from: string, count: number): string[] {
   });
 }
 
-export const sameRule = (a: PrayerRule, b: PrayerRule) => JSON.stringify(a) === JSON.stringify(b);
+/** JSON with sorted keys, so equal data always gives equal text. */
+export function canonicalJson(value: unknown): string {
+  return JSON.stringify(value, (_k, v: unknown) =>
+    v && typeof v === 'object' && !Array.isArray(v)
+      ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b)))
+      : v,
+  );
+}
 
-export const DEFAULT_RULE: PrayerRule = { base: { type: 'OFFSET', minutes: 10 } };
+export const sameRule = (a: PrayerRule, b: PrayerRule) => canonicalJson(a) === canonicalJson(b);
 
 /** Prayers whose rule differs between `base` and `draft`. */
 export function changedPrayers(base: RuleSet, draft: Partial<RuleSet>): PrayerName[] {
   return (Object.keys(draft) as PrayerName[]).filter((p) => !sameRule(draft[p]!, base[p]));
+}
+
+/** Success text that says what the save did, by engine mode. */
+export function savedMessage(mode: 'legacy' | 'shadow' | 'db', effectiveFrom: string): string {
+  switch (mode) {
+    case 'db':
+      return `Saved and published. The public schedule uses these rules from ${effectiveFrom}.`;
+    case 'shadow':
+      return 'Saved. The engine is still comparing in the background; the public schedule is unchanged.';
+    case 'legacy':
+      return 'Saved. The public schedule still uses the built-in rules.';
+  }
 }

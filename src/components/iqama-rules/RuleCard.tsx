@@ -1,6 +1,6 @@
 import type { PrayerName } from '../../types/index';
 import type { PrayerRule } from '../../types/iqama-rules';
-import { describeRule, PRAYER_LABELS } from '../../logic/iqama-rules';
+import { describeRule, prayerLabel } from '../../logic/iqama-rules';
 
 interface Props {
   prayer: PrayerName;
@@ -19,7 +19,7 @@ export function RuleCard({ prayer, rule, edited, onClick }: Props) {
     >
       <span className="min-w-0">
         <span className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-gray-900">{PRAYER_LABELS[prayer]}</span>
+          <span className="text-sm font-semibold text-gray-900">{prayerLabel(prayer)}</span>
           {edited && (
             <span className="text-xs bg-blue-100 text-blue-700 rounded-full px-2 py-0.5">
               Edited

@@ -1,9 +1,12 @@
-/** Types for the /api/v1/admin/iqama-rules contract (mirrors the backend). */
+/**
+ * Types for the /api/v1/admin/iqama-rules contract (mirrors the engine).
+ * Source of truth: iqama-engine `.kiro/steering/iqama-rules-system.md`, section
+ * "UI contract (exact shapes)".
+ */
 import type { PrayerName } from './index';
 
 export type Weekday = 'SUN' | 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT';
 export const WEEKDAYS: readonly Weekday[] = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-export const PRAYER_NAMES: readonly PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
 export type SegmentStart =
   | { kind: 'DATE'; month: number; day: number }
@@ -30,37 +33,75 @@ export interface PrayerRule {
 }
 export type RuleSet = Record<PrayerName, PrayerRule>;
 
+// ── GET / ────────────────────────────────────────────────────────────────────
+
+/** One stored version, as described by GET / (`effective`, `latest`, `upcoming[]`). */
+export interface IqamaVersion {
+  versionId: number;
+  effectiveFrom: string;
+  createdAt: string;
+  reason: string | null;
+  /** Null only if the stored JSON fails validation (then `error` is set). */
+  rules: RuleSet | null;
+  error: string | null;
+}
+
+/** A row of `versions[]` (history; `settings` is a JSON string). */
 export interface IqamaRuleVersion {
   id: number;
   effectiveFrom: string;
-  settings: string; // JSON RuleSet
+  settings: string;
   createdBy: string;
   createdAt: string;
-  /** Why the change was made (absent on older engines). */
   reason?: string | null;
 }
 
 export interface IqamaRulesConfig {
   mode: 'legacy' | 'shadow' | 'db';
+  cutover: string;
   currentRevision: number;
-  versions: IqamaRuleVersion[];
-  effective: RuleSet | null;
   today: string;
   timezone: string;
   defaultEffectiveFrom: string;
+  /** In force today; null before the cutover or when there is no version. */
+  effective: IqamaVersion | null;
+  /** The newest version: the baseline every new version is built on. */
+  latest: IqamaVersion | null;
+  /** Versions with effectiveFrom after today, oldest first. */
+  upcoming: IqamaVersion[];
+  versions: IqamaRuleVersion[];
 }
 
-// ── Catalog ──────────────────────────────────────────────────────────────────
+// ── GET /catalog ─────────────────────────────────────────────────────────────
+
+export type FieldKind = 'int' | 'time' | 'enum' | 'list' | 'object' | 'bool';
 
 export interface CatalogField {
   name: string;
-  kind: 'int' | 'time' | 'list' | 'oneOf';
+  label: string;
+  kind: FieldKind;
+  required: boolean;
+  /** Only these prayers may use the field. */
+  prayers?: PrayerName[];
+  /** Present only where a default is safe. */
+  default?: unknown;
+  note?: string;
+  // int
   min?: number;
   max?: number;
+  integer?: boolean;
+  // time
+  format?: string;
+  // enum
+  options?: { value: string | number; label: string }[];
+  // list: `item` holds the fields of one item
   minItems?: number;
-  note?: string;
+  maxItems?: number;
   item?: CatalogField[];
-  options?: { kind: string; fields: string[] }[];
+  // object: plain `fields`, or a discriminated union
+  fields?: CatalogField[];
+  discriminator?: string;
+  variants?: { value: string; label: string; fields: CatalogField[] }[];
 }
 
 export interface IqamaCatalog {
@@ -70,30 +111,20 @@ export interface IqamaCatalog {
     fridayStartRequired: boolean;
     sunriseLimitAllowed: boolean;
   }[];
-  baseTypes: { type: RuleBase['type']; label: string; fields: CatalogField[] }[];
-  modifiers: {
-    limits: {
-      minAfterAzan: { min: number; max: number };
-      latestBeforeSunrise: { min: number; max: number };
-    };
-    rounding: { modes: RoundingMode[]; steps: number[] };
-    weekdayAdjust: { weekdays: Weekday[]; min: number; max: number };
-  };
+  baseTypes: { type: RuleBase['type']; label: string; note?: string; fields: CatalogField[] }[];
+  /** Optional parts of a prayer rule, in pipeline order. */
+  modifiers: CatalogField[];
+  pipeline?: string[];
   guardrails: {
     minGapAfterAzanMinutes: number;
     fajrEndsBeforeSunriseMinutes: number;
-    /** Every iqama lands on a multiple of this (absent on older engines). */
+    /** Every iqama lands on a multiple of this. */
     iqamaStepMinutes?: number;
+    fajrSunriseConflictPolicy?: string;
   };
 }
 
-// ── Preview ──────────────────────────────────────────────────────────────────
-
-export interface PreviewDayPrayer {
-  azan: string;
-  current: { iqama: string; clamped: boolean };
-  proposed: { iqama: string; clamped: boolean };
-}
+// ── POST /preview ────────────────────────────────────────────────────────────
 
 export interface IqamaConflict {
   date: string;
@@ -101,15 +132,23 @@ export interface IqamaConflict {
   azan: string;
   sunrise: string;
   iqama: string;
-  broken?: boolean;
+  brokenLimit?: string;
+  wonBy?: string;
+}
+
+export interface PreviewDayPrayer {
+  azan: string;
+  current: { iqama: string; clamped: boolean };
+  proposed: { iqama: string; clamped: boolean };
 }
 
 export interface IqamaPreviewResponse {
   previewId: string;
-  currentRevision: number;
   effectiveFrom: string;
+  currentRevision: number;
+  /** SHA-256 of the canonical RuleSet and effectiveFrom. */
+  requestHash: string;
   warnings: { path?: string; message: string }[];
-  /** Days where Fajr clashes with the sunrise guardrail (absent on older engines). */
   conflicts?: IqamaConflict[];
   days: { date: string; day_of_week: string; prayers: Record<PrayerName, PreviewDayPrayer> }[];
   summary: {
@@ -119,6 +158,7 @@ export interface IqamaPreviewResponse {
     daysChanged: number;
     daysClamped: number;
     daysClampedCurrent: number;
+    conflictDays?: number;
     firstChangedDates: string[];
     firstClampedDates: string[];
     byPrayer: Record<PrayerName, { daysChanged: number; daysClamped: number }>;

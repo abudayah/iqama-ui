@@ -1,22 +1,28 @@
 /**
- * Bottom sheet to edit one prayer's rule. Forms come from the catalog; a live
- * 7-day azan → iqama strip comes from POST /preview.
+ * Bottom sheet to edit one prayer's rule. Every control comes from the engine
+ * catalog; a live 7-day Azan → Iqama strip comes from POST /preview.
+ * Invalid input never reaches the API: preview and "Add to changes" stay off
+ * until the catalog validator is happy.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { PrayerName } from '../../types/index';
 import type {
   IqamaCatalog,
   IqamaPreviewResponse,
   PrayerRule,
   RuleSet,
-  RuleBase,
 } from '../../types/iqama-rules';
-import { PRAYER_LABELS, describeRule } from '../../logic/iqama-rules';
+import { prayerLabel, describeRule } from '../../logic/iqama-rules';
+import { emptyObject, emptyValue, pruneEmpty } from '../../logic/rule-defaults';
+import { modifierAllowedFor, validateRule } from '../../logic/rule-validator';
 import { previewIqamaRules } from '../../services/iqama-rules-service';
+import { ApiError } from '../../api/errors';
+import { useModalA11y } from '../../hooks/useModalA11y';
 import { RuleFields } from './RuleFields';
-import { defaultObject } from '../../logic/rule-defaults';
+import { inputCls } from './styles';
 
-type Patch = { [K in keyof PrayerRule]?: PrayerRule[K] | undefined };
+type Draft = Record<string, unknown>;
 
 interface Props {
   prayer: PrayerName | null;
@@ -27,13 +33,6 @@ interface Props {
   onApply: (prayer: PrayerName, rule: PrayerRule) => void;
   onClose: () => void;
 }
-
-// NaN is how a cleared number input is held in state; it must not reach the API.
-const hasNaN = (v: unknown): boolean =>
-  JSON.stringify(v, (_k, x) => (x !== x ? '__NaN__' : x)).includes('__NaN__');
-
-const inputCls =
-  'border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[44px] w-full focus:outline-none focus:ring-2 focus:ring-blue-500';
 
 function Toggle({
   label,
@@ -57,37 +56,12 @@ function Toggle({
   );
 }
 
-/** Optional integer input: empty removes the key. */
-function OptionalInt({
-  label,
-  min,
-  max,
-  value,
-  onChange,
-}: {
-  label: string;
-  min: number;
-  max: number;
-  value: number | undefined;
-  onChange: (v: number | undefined) => void;
-}) {
-  return (
-    <label className="block text-sm text-gray-700">
-      {label} ({min} to {max})
-      <input
-        type="number"
-        inputMode="numeric"
-        min={min}
-        max={max}
-        value={value ?? ''}
-        onChange={(e) => onChange(e.target.value === '' ? undefined : parseInt(e.target.value, 10))}
-        className={`${inputCls} mt-1`}
-      />
-    </label>
-  );
+export function RuleSheet(props: Props) {
+  if (!props.prayer) return null;
+  return <SheetBody {...props} prayer={props.prayer} />;
 }
 
-export function RuleSheet({
+function SheetBody({
   prayer,
   initialRule,
   catalog,
@@ -95,28 +69,27 @@ export function RuleSheet({
   buildSettings,
   onApply,
   onClose,
-}: Props) {
-  const [rule, setRule] = useState<PrayerRule>(initialRule);
+}: Props & { prayer: PrayerName }) {
+  const [rule, setRule] = useState<Draft>(initialRule as unknown as Draft);
   const [preview, setPreview] = useState<IqamaPreviewResponse | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const dialogRef = useModalA11y(onClose);
 
-  useEffect(() => setRule(initialRule), [initialRule, prayer]);
+  const errors = useMemo(() => validateRule(rule, prayer, catalog), [rule, prayer, catalog]);
+  const valid = Object.keys(errors).length === 0;
+  const cleaned = useMemo(() => pruneEmpty(rule) as unknown as PrayerRule, [rule]);
+  const cleanedKey = JSON.stringify(cleaned);
 
   useEffect(() => {
-    if (!prayer) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [prayer, onClose]);
-
-  const invalid = hasNaN(rule);
-  const ruleKey = JSON.stringify(rule);
-  useEffect(() => {
-    if (!prayer || invalid) return;
-    let cancelled = false;
+    if (!valid) {
+      setPreview(null);
+      setPreviewError(null);
+      return;
+    }
+    let cancelled = false; // a late answer for an older rule must not replace a newer one
     const t = setTimeout(() => {
       previewIqamaRules(
-        buildSettings(prayer, JSON.parse(ruleKey) as PrayerRule),
+        buildSettings(prayer, JSON.parse(cleanedKey) as PrayerRule),
         effectiveFrom || undefined,
       )
         .then((r) => {
@@ -127,54 +100,51 @@ export function RuleSheet({
         .catch((e: Error) => {
           if (cancelled) return;
           setPreview(null);
-          setPreviewError(e.message);
+          setPreviewError(
+            e instanceof ApiError && e.errors?.length
+              ? e.errors.map((x) => `${x.path}: ${x.message}`).join('; ')
+              : e.message,
+          );
         });
     }, 400);
     return () => {
       cancelled = true;
       clearTimeout(t);
     };
-    // buildSettings changes identity every render; ruleKey captures the rule.
+    // buildSettings changes identity every render; cleanedKey captures the rule.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prayer, ruleKey, effectiveFrom, invalid]);
+  }, [prayer, cleanedKey, effectiveFrom, valid]);
 
-  if (!prayer) return null;
-  const pc = catalog.prayers.find((p) => p.name === prayer);
-  const baseType =
-    catalog.baseTypes.find((b) => b.type === rule.base.type) ?? catalog.baseTypes[0]!;
-  const { limits, rounding, weekdayAdjust } = catalog.modifiers;
-  const patch = (p: Patch) => {
-    const next: Patch = { ...rule, ...p };
-    for (const k of Object.keys(next) as (keyof PrayerRule)[]) {
-      if (next[k] === undefined) delete next[k];
-    }
-    setRule(next as PrayerRule);
-  };
-  const setLimit = (k: 'minAfterAzan' | 'latestBeforeSunrise', v: number | undefined) => {
-    const next = { ...rule.limits };
-    if (v === undefined) delete next[k];
-    else next[k] = v;
-    patch({ limits: next });
-  };
-  const baseValues: Record<string, unknown> = { ...rule.base };
-  delete baseValues.type;
-  const stepMin = catalog.guardrails.iqamaStepMinutes ?? 1;
-  const allowedSteps = rounding.steps.filter((s) => s % stepMin === 0);
+  const baseType = catalog.baseTypes.find((b) => b.type === (rule['base'] as Draft)?.['type']);
+  const baseValues: Draft = { ...(rule['base'] as Draft) };
+  delete baseValues['type'];
+  const modifiers = catalog.modifiers.filter((m) => modifierAllowedFor(m, prayer));
   const strip = preview?.days.slice(0, 7) ?? [];
 
-  return (
-    <>
+  const toggleModifier = (name: string, on: boolean) =>
+    setRule((r) => {
+      const next = { ...r };
+      const m = catalog.modifiers.find((x) => x.name === name)!;
+      if (!on) delete next[name];
+      else next[name] = m.kind === 'bool' ? true : emptyValue(m);
+      return next;
+    });
+
+  return createPortal(
+    <div data-modal-root>
       <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} aria-hidden="true" />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="rule-sheet-title"
-        className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl sm:left-1/2 sm:-translate-x-1/2 sm:max-w-lg overflow-y-auto max-h-[90vh]"
+        tabIndex={-1}
+        className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl sm:left-1/2 sm:-translate-x-1/2 sm:max-w-lg overflow-y-auto max-h-[90vh] outline-none"
       >
         <div className="p-5 space-y-5">
           <div className="flex items-center justify-between">
             <h2 id="rule-sheet-title" className="text-base font-semibold text-gray-900">
-              {PRAYER_LABELS[prayer]} · Iqama rule
+              {prayerLabel(prayer)} · Iqama rule
             </h2>
             <button
               onClick={onClose}
@@ -186,156 +156,82 @@ export function RuleSheet({
           </div>
 
           <p className="text-sm text-gray-600" data-testid="rule-sentence">
-            {invalid ? 'Fill in every field' : describeRule(rule)}
+            {valid ? describeRule(cleaned) : 'Fill in the fields marked in red'}
           </p>
 
-          <label className="block text-sm font-medium text-gray-700">
-            Rule type
+          <div>
+            <label className="block text-sm font-medium text-gray-700" htmlFor="rule-type">
+              Rule type
+            </label>
             <select
-              value={rule.base.type}
+              id="rule-type"
+              value={baseType?.type ?? ''}
               onChange={(e) => {
-                const bt = catalog.baseTypes.find((b) => b.type === e.target.value)!;
-                patch({ base: { type: bt.type, ...defaultObject(bt.fields) } as RuleBase });
+                const bt = catalog.baseTypes.find((b) => b.type === e.target.value);
+                setRule((r) => ({
+                  ...r,
+                  base: bt ? { type: bt.type, ...emptyObject(bt.fields) } : {},
+                }));
               }}
               className={`${inputCls} mt-1 bg-white`}
             >
+              {!baseType && <option value="">Choose…</option>}
               {catalog.baseTypes.map((b) => (
                 <option key={b.type} value={b.type}>
                   {b.label}
                 </option>
               ))}
             </select>
-          </label>
+            {baseType?.note && <p className="text-xs text-gray-500 mt-1">{baseType.note}</p>}
+          </div>
 
-          <RuleFields
-            idPrefix="base"
-            fields={baseType.fields}
-            value={baseValues}
-            onChange={(v) => patch({ base: { type: rule.base.type, ...v } as RuleBase })}
-          />
+          {baseType && (
+            <RuleFields
+              idPrefix="rule"
+              path="base"
+              prayer={prayer}
+              errors={errors}
+              fields={baseType.fields}
+              value={baseValues}
+              onChange={(v) => setRule((r) => ({ ...r, base: { type: baseType.type, ...v } }))}
+            />
+          )}
 
           <div className="space-y-1 border-t border-gray-100 pt-3">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
               Modifiers
             </h3>
-
-            <Toggle
-              label="Limits"
-              checked={!!rule.limits}
-              onChange={(on) =>
-                patch({
-                  limits: on ? { minAfterAzan: Math.max(limits.minAfterAzan.min, 5) } : undefined,
-                })
-              }
-            />
-            {rule.limits && (
-              <div className="pl-8 space-y-2">
-                <OptionalInt
-                  label="At least this many minutes after Azan"
-                  {...limits.minAfterAzan}
-                  value={rule.limits.minAfterAzan}
-                  onChange={(v) => setLimit('minAfterAzan', v)}
-                />
-                {pc?.sunriseLimitAllowed && (
-                  <OptionalInt
-                    label="At least this many minutes before sunrise"
-                    {...limits.latestBeforeSunrise}
-                    value={rule.limits.latestBeforeSunrise}
-                    onChange={(v) => setLimit('latestBeforeSunrise', v)}
+            {modifiers.map((m) => {
+              const on = m.kind === 'bool' ? rule[m.name] === true : rule[m.name] !== undefined;
+              return (
+                <div key={m.name}>
+                  <Toggle
+                    label={m.label}
+                    checked={on}
+                    onChange={(v) => toggleModifier(m.name, v)}
                   />
-                )}
-              </div>
-            )}
-
-            <Toggle
-              label="Rounding"
-              checked={!!rule.rounding}
-              onChange={(on) =>
-                patch({
-                  rounding: on ? { mode: 'CEIL', step: allowedSteps[0] ?? stepMin } : undefined,
-                })
-              }
-            />
-            {rule.rounding && (
-              <div className="pl-8 grid grid-cols-2 gap-2">
-                <select
-                  aria-label="Rounding mode"
-                  value={rule.rounding.mode}
-                  onChange={(e) =>
-                    patch({
-                      rounding: {
-                        ...rule.rounding!,
-                        mode: e.target.value as 'CEIL' | 'FLOOR' | 'NEAREST',
-                      },
-                    })
-                  }
-                  className={`${inputCls} bg-white`}
-                >
-                  {rounding.modes.map((m) => (
-                    <option key={m} value={m}>
-                      {m === 'CEIL' ? 'Round up' : m === 'FLOOR' ? 'Round down' : 'Nearest'}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  aria-label="Rounding step"
-                  value={rule.rounding.step}
-                  onChange={(e) =>
-                    patch({ rounding: { ...rule.rounding!, step: parseInt(e.target.value, 10) } })
-                  }
-                  className={`${inputCls} bg-white`}
-                >
-                  {!allowedSteps.includes(rule.rounding.step) && (
-                    <option value={rule.rounding.step} disabled>
-                      to {rule.rounding.step} min (not allowed)
-                    </option>
+                  {on && m.kind === 'object' && (
+                    <div className="pl-8 space-y-2">
+                      {m.note && <p className="text-xs text-gray-500">{m.note}</p>}
+                      {errors[m.name] && (
+                        <p role="alert" className="text-xs text-red-600">
+                          {errors[m.name]}
+                        </p>
+                      )}
+                      <RuleFields
+                        idPrefix="rule"
+                        path={m.name}
+                        prayer={prayer}
+                        errors={errors}
+                        fields={m.fields ?? []}
+                        value={rule[m.name] as Draft}
+                        onChange={(v) => setRule((r) => ({ ...r, [m.name]: v }))}
+                      />
+                    </div>
                   )}
-                  {allowedSteps.map((s) => (
-                    <option key={s} value={s}>
-                      to {s} min
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            <Toggle
-              label="Weekday adjust"
-              checked={!!rule.weekdayAdjust}
-              onChange={(on) => patch({ weekdayAdjust: on ? { FRI: 0 } : undefined })}
-            />
-            {rule.weekdayAdjust && (
-              <div className="pl-8 grid grid-cols-4 gap-2">
-                {weekdayAdjust.weekdays.map((d) => (
-                  <label key={d} className="text-xs text-gray-600">
-                    {d}
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      aria-label={`${d} adjust minutes`}
-                      min={weekdayAdjust.min}
-                      max={weekdayAdjust.max}
-                      value={rule.weekdayAdjust![d] ?? ''}
-                      onChange={(e) => {
-                        const next = { ...rule.weekdayAdjust };
-                        if (e.target.value === '') delete next[d];
-                        else next[d] = parseInt(e.target.value, 10);
-                        patch({ weekdayAdjust: next });
-                      }}
-                      className={inputCls}
-                    />
-                  </label>
-                ))}
-              </div>
-            )}
-
-            {pc?.weeklyLockAllowed && (
-              <Toggle
-                label="Hold for the week (Friday to Thursday)"
-                checked={!!rule.weeklyLock}
-                onChange={(on) => patch({ weeklyLock: on ? true : undefined })}
-              />
-            )}
+                </div>
+              );
+            })}
           </div>
 
           <div className="border-t border-gray-100 pt-3">
@@ -351,7 +247,7 @@ export function RuleSheet({
               </p>
             )}
             {!previewError && strip.length === 0 && (
-              <p className="text-sm text-gray-400">{invalid ? '—' : 'Loading preview…'}</p>
+              <p className="text-sm text-gray-400">{valid ? 'Loading preview…' : '—'}</p>
             )}
             {strip.length > 0 && (
               <ul className="flex gap-2 overflow-x-auto pb-1" data-testid="preview-strip">
@@ -380,11 +276,6 @@ export function RuleSheet({
                 })}
               </ul>
             )}
-            <p className="text-xs text-gray-500 mt-2">
-              Safety limits always apply: iqama is at least{' '}
-              {catalog.guardrails.minGapAfterAzanMinutes} min after Azan, and Fajr iqama is at least{' '}
-              {catalog.guardrails.fajrEndsBeforeSunriseMinutes} min before sunrise.
-            </p>
           </div>
 
           <div className="flex gap-3 pt-2">
@@ -396,10 +287,10 @@ export function RuleSheet({
             </button>
             <button
               onClick={() => {
-                onApply(prayer, rule);
+                onApply(prayer, cleaned);
                 onClose();
               }}
-              disabled={invalid}
+              disabled={!valid}
               className="flex-1 py-2 text-sm rounded-lg bg-blue-600 text-white font-medium disabled:opacity-40 min-h-[44px]"
             >
               Add to changes
@@ -407,6 +298,7 @@ export function RuleSheet({
           </div>
         </div>
       </div>
-    </>
+    </div>,
+    document.body,
   );
 }
