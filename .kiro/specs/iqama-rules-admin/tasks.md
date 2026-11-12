@@ -48,3 +48,14 @@ UI side of the iqama rule engine. Phase 3 (this UI) is complete. The engine phas
   - [x] 5.4 Inline 409 overlap message in the override form
   - [x] 5.5 "Conflict" badge in Weekly View
   - _Requirements: 8_
+
+- [x] 6. Phase 6: external review of PR #3
+  - [x] 6.1 Baseline from `latest`; versions panel (editing on top of, in force, upcoming, history)
+  - [x] 6.2 Confirmation and Fajr acknowledgement bound to one preview; request key; revision check; late answers ignored; 422 / 409 / 400 handling
+  - [x] 6.3 Catalog-driven recursive validator, structured fields, no invented defaults
+  - [x] 6.4 Mode-aware success text; guardrail copy; override hint
+  - [x] 6.5 Dialog focus trap, return, inert background (`useModalA11y`)
+  - [x] 6.6 `useOverrideClamps` keyed on type and value, shared requests, hook tests
+  - [x] 6.7 Contract tests against engine snapshots (catalog and seed rules)
+  - [x] 6.8 Spec design.md rewritten for the full contract
+  - _Requirements: 9_

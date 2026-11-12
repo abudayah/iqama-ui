@@ -77,9 +77,10 @@ npm run build
 `/admin/iqama` (the "Rules" view of the single "Iqama" nav tab; "Overrides" at `/admin` is the default view, and a dot on "Rules" shows unsaved changes) manages the engine's iqama rules. It needs an engine with `IQAMA_RULES=db`; otherwise it shows a notice.
 
 - **Cards:** one per prayer, with a plain-English sentence such as "Azan + 5 min, rounded up to the next 5".
-- **Edit sheet:** tap a card to pick a rule type, fill its fields, and toggle modifiers. Forms are built from the engine catalog. A live 7-day strip shows Azan → Iqama, with an "Adjusted" badge on days a fixed rule moved later.
+- **Edit sheet:** tap a card to pick a rule type, fill its fields, and toggle modifiers. Forms and validation are built from the engine catalog (no invented defaults). A live 7-day strip shows Azan → Iqama, with an "Adjusted" badge on days a fixed rule moved the time.
+- **Versions:** every change is built on the newest saved version. The page shows which version that is, what is in force today, scheduled versions, and a short history with reasons.
 - **Review & save:** shows the effective date (default: next Friday) and a 365-day scan (days changed, days adjusted, first dates). Fajr, Dhuhr, Asr and Isha changes must start on a Friday; Maghrib can start any day.
-- **Always applied:** a read-only numbered list at the bottom of the page: iqama at least 3 min after Azan, Fajr at least 60 min before sunrise, Friday starts, Maghrib any day. Values come from the catalog.
+- **Always applied:** a read-only numbered list at the bottom of the page: iqama at least 3 min after Azan, Fajr at least 60 min before sunrise, Friday starts, Maghrib any day. Values come from the catalog; when Fajr cannot meet both its sunrise buffer and the minimum gap, the gap wins and you must acknowledge the conflict before saving.
 - **Overrides tab:** an override shows a warning when a fixed rule would move its time on some day in the next 31 days.
 
 Spec: `.kiro/specs/iqama-rules-admin/`.
