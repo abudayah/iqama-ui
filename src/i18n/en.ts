@@ -20,10 +20,28 @@ export interface I18nKeys {
     back: string;
     dismiss: string;
     details: string;
+    save: string;
   };
   lang: {
     switchToEnglish: string;
     switchToArabic: string;
+  };
+  gate: {
+    loginTitle: string;
+    loginSubtitle: string;
+    password: string;
+    passwordPlaceholder: string;
+    signIn: string;
+    configureTitle: string;
+    configureSubtitle: string;
+    baseUrl: string;
+    invalidUrl: string;
+  };
+  simulator: {
+    activeAria: string;
+    active: string;
+    exit: string;
+    exitAria: string;
   };
   prayers: {
     fajr: string;
@@ -71,6 +89,285 @@ export interface I18nKeys {
     refresh: string;
     refreshAria: string;
     newOverride: string;
+    emptyTitle: string;
+    emptyHint: string;
+    deleteConfirm: string;
+    active: string;
+    inactive: string;
+    clampWarning: string;
+    edit: string;
+    delete: string;
+    editAria: string;
+    deleteAria: string;
+  };
+  overrideForm: {
+    newTitle: string;
+    editTitle: string;
+    prayer: string;
+    type: string;
+    fixed: string;
+    offset: string;
+    timeLabel: string;
+    offsetLabel: string;
+    stepHint: string;
+    startDate: string;
+    endDate: string;
+    save: string;
+    offsetAria: string;
+    minShort: string;
+    errors: {
+      time: string;
+      startRequired: string;
+      endRequired: string;
+      endBeforeStart: string;
+      saveFailed: string;
+    };
+  };
+  schedule: {
+    week: string;
+    selectWeek: string;
+    current: string;
+    conflict: string;
+    customizedAzan: string;
+    noData: string;
+  };
+  ramadan: {
+    moonSighting: string;
+    currentHijriMonth: string;
+    monthLength: string;
+    astronomical: string;
+    astronomicalSub: string;
+    days29: string;
+    days29Sub: string;
+    days30: string;
+    days30Sub: string;
+    resetPrompt: string;
+    savedSuccess: string;
+    saveFailed: string;
+    eidPrayerTimes: string;
+    editTimes: string;
+    noPrayerTimes: string;
+    prayerTimesAfterOverride: string;
+    qiyamTitle: string;
+    qiyamStartTime: string;
+    qiyamStartAria: string;
+    qiyamActiveNights: string;
+    qiyamNote: string;
+    qiyamSaved: string;
+    saveQiyam: string;
+    eidFitrName: string;
+    eidAdhaName: string;
+    eidFitrWillFall: string;
+    eidAdhaWillFall: string;
+    monthWillBeDays_one: string;
+    monthWillBeDays_other: string;
+  };
+  eidCard: {
+    preliminary: string;
+  };
+  eidModal: {
+    fitrTitle: string;
+    adhaTitle: string;
+    fitrMessage: string;
+    adhaMessage: string;
+    first: string;
+    second: string;
+    firstAria: string;
+    secondAria: string;
+    submitFailed: string;
+    confirm: string;
+  };
+  adhanConfig: {
+    overview: string;
+    periods: string;
+    loadingAria: string;
+    unsavedChanges: string;
+    discard: string;
+    reviewAndSave: string;
+    configVersion: string;
+    lastUpdated: string;
+    prayerOffsets: string;
+    noConfiguration: string;
+    generalSettings: string;
+    edit: string;
+    timezone: string;
+    location: string;
+    method: string;
+    madhab: string;
+    highLatitude: string;
+    readOnly: string;
+    recommended: string;
+    savedToast: string;
+    previewFailed: string;
+    saveFailed: string;
+    editOffsetAria: string;
+    customized: string;
+    draft: string;
+  };
+  adhanPeriods: {
+    title: string;
+    add: string;
+    emptyTitle: string;
+    emptyHint: string;
+    edit: string;
+    delete: string;
+    editAria: string;
+    deleteAria: string;
+    deleteConfirm: string;
+    statusActive: string;
+    statusUpcoming: string;
+    statusPast: string;
+    noChanges: string;
+    methodSummary: string;
+    highLatSummary: string;
+    deleteFailed: string;
+  };
+  adhanPeriodForm: {
+    editTitle: string;
+    newTitle: string;
+    name: string;
+    namePlaceholder: string;
+    startDate: string;
+    endDate: string;
+    offsets: string;
+    min: string;
+    saveChanges: string;
+    create: string;
+    failed: string;
+  };
+  adhanGeneral: {
+    title: string;
+    close: string;
+    calculationMethod: string;
+    fajrAngle: string;
+    ishaAngle: string;
+    anglesRange: string;
+    madhab: string;
+    highLatitude: string;
+    recommended: string;
+    recommendedForLocation: string;
+    advanced: string;
+    rounding: string;
+    cancel: string;
+    addToChanges: string;
+  };
+  adhanPrayerDrawer: {
+    title: string;
+    close: string;
+    azanOffset: string;
+    noOffset: string;
+    later: string;
+    earlier: string;
+    min: string;
+    valueAria: string;
+    sliderAria: string;
+    decrease: string;
+    increase: string;
+    reset: string;
+    largeWarning: string;
+    cancel: string;
+    addToChanges: string;
+    ruleDhuhr: string;
+    ruleAsr: string;
+  };
+  adhanReview: {
+    title: string;
+    proposed: string;
+    setting: string;
+    before: string;
+    after: string;
+    loadingPreview: string;
+    noChanges: string;
+    warnings: string;
+    understand: string;
+    understandAria: string;
+    cancel: string;
+    apply: string;
+    calculationMethod: string;
+    madhab: string;
+    highLatitude: string;
+    rounding: string;
+    prayerOffset: string;
+    shafaq: string;
+  };
+  methods: {
+    NorthAmerica: string;
+    MuslimWorldLeague: string;
+    Egyptian: string;
+    Karachi: string;
+    UmmAlQura: string;
+    Dubai: string;
+    MoonsightingCommittee: string;
+    Kuwait: string;
+    Qatar: string;
+    Singapore: string;
+    Tehran: string;
+    Turkey: string;
+    Other: string;
+  };
+  highLat: {
+    MiddleOfTheNight: string;
+    SeventhOfTheNight: string;
+    TwilightAngle: string;
+  };
+  madhabLabels: {
+    shafi: string;
+    hanafi: string;
+  };
+  roundingLabels: {
+    Nearest: string;
+    Up: string;
+    None: string;
+  };
+  shafaqLabels: {
+    General: string;
+    Ahmer: string;
+    Abyad: string;
+  };
+  ruleEditor: {
+    choose: string;
+    remove: string;
+    add: string;
+    removeAria: string;
+    itemAria: string;
+    range: string;
+    sheetTitle: string;
+    ruleType: string;
+    modifiers: string;
+    next7Days: string;
+    loadingPreview: string;
+    adjusted: string;
+    movedBySafety: string;
+    fillRed: string;
+    iqamaRule: string;
+    close: string;
+    cancel: string;
+    addToChanges: string;
+  };
+  ruleDescribe: {
+    min: string;
+    atAzan: string;
+    azan: string;
+    fixed: string;
+    scaled: string;
+    seasonal_one: string;
+    seasonal_other: string;
+    roundUp: string;
+    roundDown: string;
+    roundNearest: string;
+    minAfterAzan: string;
+    minBeforeSunrise: string;
+    weeklyLock: string;
+  };
+  events: {
+    newYear: string;
+    ashura: string;
+    isra: string;
+    ramadan: string;
+    eidFitr: string;
+    hajj: string;
+    arafah: string;
+    eidAdha: string;
   };
   hero: {
     azanIn: string;
@@ -212,10 +509,28 @@ const en: I18nKeys = {
     back: 'Back',
     dismiss: 'Dismiss',
     details: 'Details',
+    save: 'Save',
   },
   lang: {
     switchToEnglish: 'Switch to English',
     switchToArabic: 'التبديل إلى العربية',
+  },
+  gate: {
+    loginTitle: 'Admin Login',
+    loginSubtitle: 'Enter your password to access the admin panel.',
+    password: 'Password',
+    passwordPlaceholder: 'Enter password',
+    signIn: 'Sign In',
+    configureTitle: 'Configure API',
+    configureSubtitle: 'Enter the backend API base URL to get started.',
+    baseUrl: 'API Base URL',
+    invalidUrl: 'Invalid URL',
+  },
+  simulator: {
+    activeAria: 'Simulator mode active',
+    active: 'Simulator active — {{date}} at {{time}}',
+    exit: 'Exit',
+    exitAria: 'Exit simulator',
   },
   prayers: {
     fajr: 'Fajr',
@@ -263,6 +578,294 @@ const en: I18nKeys = {
     refresh: 'Refresh',
     refreshAria: 'Refresh overrides',
     newOverride: '+ New Override',
+    emptyTitle: 'No overrides yet.',
+    emptyHint: 'Create your first override to adjust iqama times.',
+    deleteConfirm: 'Are you sure you want to delete this override?',
+    active: 'Active',
+    inactive: 'Inactive',
+    clampWarning:
+      '⚠ Safety limits change this time on some days (minimum gap after Azan, or Fajr before sunrise).',
+    edit: 'Edit',
+    delete: 'Delete',
+    editAria: 'Edit override for {{prayer}}',
+    deleteAria: 'Delete override for {{prayer}}',
+  },
+  overrideForm: {
+    newTitle: 'New Override',
+    editTitle: 'Edit Override',
+    prayer: 'Prayer',
+    type: 'Type',
+    fixed: 'Fixed',
+    offset: 'Offset',
+    timeLabel: 'Time (HH:mm)',
+    offsetLabel: 'Offset (minutes)',
+    stepHint:
+      'Iqama times are on a 5-minute mark. The final time can be moved further to keep the safety rules (minimum gap after Azan, Fajr before sunrise). The schedule and the warning on this page show the real time.',
+    startDate: 'Start Date',
+    endDate: 'End Date',
+    save: 'Save',
+    offsetAria: 'Offset in minutes',
+    minShort: 'min',
+    errors: {
+      time: 'Enter a valid time (HH:mm, e.g. 05:45)',
+      startRequired: 'Start date is required',
+      endRequired: 'End date is required',
+      endBeforeStart: 'End date must be on or after start date',
+      saveFailed: 'Save failed',
+    },
+  },
+  schedule: {
+    week: 'Week',
+    selectWeek: 'Select week',
+    current: 'current',
+    conflict: 'Conflict',
+    customizedAzan: 'Customized Azan time',
+    noData: 'No schedule data available.',
+  },
+  ramadan: {
+    moonSighting: 'Moon Sighting',
+    currentHijriMonth: 'Current Hijri month',
+    monthLength: 'Month length',
+    astronomical: 'Astronomical',
+    astronomicalSub: 'default',
+    days29: '29 Days',
+    days29Sub: 'moon sighted',
+    days30: '30 Days',
+    days30Sub: 'complete',
+    resetPrompt: 'Reset to astronomical calendar?',
+    savedSuccess: 'Moon sighting saved successfully.',
+    saveFailed: 'Failed to save. Please try again.',
+    eidPrayerTimes: 'Eid Prayer Times',
+    editTimes: 'Edit times',
+    noPrayerTimes: 'No prayer times saved yet',
+    prayerTimesAfterOverride:
+      'Prayer times will be set once the moon-sighting override is submitted',
+    qiyamTitle: 'Qiyam al-Layl',
+    qiyamStartTime: 'Qiyam Start Time',
+    qiyamStartAria: 'Qiyam start time',
+    qiyamActiveNights: 'Active nights: 20th–29th Ramadan',
+    qiyamNote:
+      "Shown in the app as 'Qiyam' with start time only. Applies to all 10 nights — adjust each year when Ramadan begins.",
+    qiyamSaved: 'Qiyam time saved successfully.',
+    saveQiyam: 'Save Qiyam time',
+    eidFitrName: 'Eid al-Fitr',
+    eidAdhaName: 'Eid al-Adha',
+    eidFitrWillFall: 'Eid al-Fitr will fall on {{date}}',
+    eidAdhaWillFall: 'Eid al-Adha will fall on {{date}}',
+    monthWillBeDays_one: 'Month will be {{count}} day',
+    monthWillBeDays_other: 'Month will be {{count}} days',
+  },
+  eidCard: {
+    preliminary: 'Preliminary times — subject to moon-sighting confirmation',
+  },
+  eidModal: {
+    fitrTitle: 'Confirm Eid al-Fitr Prayers',
+    adhaTitle: 'Confirm Eid al-Adha Prayers',
+    fitrMessage:
+      'Based on your selection, the 1st of Shawwal will be on {{date}}. Please confirm the prayer timings.',
+    adhaMessage:
+      'Based on your selection, Eid al-Adha (10th of Dhul-Hijjah) will be on {{date}}. Please confirm the prayer timings.',
+    first: '1st Prayer',
+    second: '2nd Prayer',
+    firstAria: '1st Prayer time',
+    secondAria: '2nd Prayer time',
+    submitFailed: 'Submission failed. Please try again.',
+    confirm: 'Confirm',
+  },
+  adhanConfig: {
+    overview: 'Overview',
+    periods: 'Periods',
+    loadingAria: 'Loading Adhan configuration',
+    unsavedChanges: 'Unsaved changes',
+    discard: 'Discard',
+    reviewAndSave: 'Review & save',
+    configVersion: 'Config v{{version}}',
+    lastUpdated: 'Last updated {{date}}',
+    prayerOffsets: 'Prayer Azan offsets',
+    noConfiguration: 'No configuration found. Please run the seed migration.',
+    generalSettings: 'General settings',
+    edit: 'Edit',
+    timezone: 'Timezone',
+    location: 'Location',
+    method: 'Method',
+    madhab: 'Madhab',
+    highLatitude: 'High latitude',
+    readOnly: '(read-only)',
+    recommended: '(recommended)',
+    savedToast: 'Settings saved. The public schedule has been updated.',
+    previewFailed: 'Preview failed',
+    saveFailed: 'Failed to save',
+    editOffsetAria: 'Edit {{prayer}} Azan offset',
+    customized: '✦ Customized',
+    draft: '● Draft',
+  },
+  adhanPeriods: {
+    title: 'Periods',
+    add: '+ Add period',
+    emptyTitle: 'No periods yet.',
+    emptyHint:
+      'Periods let you apply different settings for a date range, like Ramadan or summer months.',
+    edit: 'Edit',
+    delete: 'Delete',
+    editAria: 'Edit period {{label}}',
+    deleteAria: 'Delete period {{label}}',
+    deleteConfirm: 'Delete period "{{label}}"? This cannot be undone.',
+    statusActive: 'Active',
+    statusUpcoming: 'Upcoming',
+    statusPast: 'Past',
+    noChanges: 'No changes',
+    methodSummary: 'Method: {{method}}',
+    highLatSummary: 'High lat: {{method}}',
+    deleteFailed: 'Failed to delete period',
+  },
+  adhanPeriodForm: {
+    editTitle: 'Edit period',
+    newTitle: 'New period',
+    name: 'Period name',
+    namePlaceholder: 'e.g. Ramadan 1447',
+    startDate: 'Start date',
+    endDate: 'End date',
+    offsets: 'Prayer offsets (minutes)',
+    min: 'min',
+    saveChanges: 'Save changes',
+    create: 'Create period',
+    failed: 'Failed to save period',
+  },
+  adhanGeneral: {
+    title: 'General settings',
+    close: 'Close drawer',
+    calculationMethod: 'Calculation method',
+    fajrAngle: 'Fajr angle (°)',
+    ishaAngle: 'Isha angle (°)',
+    anglesRange: 'Angles must be between 1° and 30°',
+    madhab: 'Madhab (Asr timing)',
+    highLatitude: 'High latitude rule',
+    recommended: '(recommended)',
+    recommendedForLocation: '✓ Recommended for this location',
+    advanced: 'Advanced settings',
+    rounding: 'Rounding',
+    cancel: 'Cancel',
+    addToChanges: 'Add to changes',
+  },
+  adhanPrayerDrawer: {
+    title: '{{prayer}} · Azan offset',
+    close: 'Close drawer',
+    azanOffset: 'Azan offset',
+    noOffset: 'No offset',
+    later: '+{{n}} min later',
+    earlier: '{{n}} min earlier',
+    min: 'min',
+    valueAria: 'Offset value: {{label}}',
+    sliderAria: 'Offset slider, {{label}}',
+    decrease: 'Decrease offset by 1 minute',
+    increase: 'Increase offset by 1 minute',
+    reset: 'Reset to 0',
+    largeWarning: '⚠️ Offset above 10 min is large. Please confirm this is intentional.',
+    cancel: 'Cancel',
+    addToChanges: 'Add to changes',
+    ruleDhuhr:
+      'Iqama is fixed at 12:45 / 13:45 (DST-aware) and is not affected by the Azan offset.',
+    ruleAsr:
+      'Iqama follows a Friday-anchored seasonal fixed schedule (each season starts on the first Friday of its month) and is not directly affected by the Azan offset.',
+  },
+  adhanReview: {
+    title: 'Review changes',
+    proposed: 'Proposed:',
+    setting: 'Setting',
+    before: 'Before',
+    after: 'After',
+    loadingPreview: 'Loading preview…',
+    noChanges: 'No changes detected.',
+    warnings: 'Warnings',
+    understand: 'I understand this will change the prayer times shown to the community.',
+    understandAria: 'I understand this changes times shown to the community',
+    cancel: 'Cancel',
+    apply: 'Apply to public schedule',
+    calculationMethod: 'Calculation method',
+    madhab: 'Madhab',
+    highLatitude: 'High latitude rule',
+    rounding: 'Rounding',
+    prayerOffset: '{{prayer}} offset',
+    shafaq: 'Shafaq: {{value}}',
+  },
+  methods: {
+    NorthAmerica: 'ISNA (North America)',
+    MuslimWorldLeague: 'Muslim World League',
+    Egyptian: 'Egyptian General Survey',
+    Karachi: 'Karachi (Pakistan)',
+    UmmAlQura: 'Umm al-Qura (Makkah)',
+    Dubai: 'Dubai',
+    MoonsightingCommittee: 'Moonsighting Committee',
+    Kuwait: 'Kuwait',
+    Qatar: 'Qatar',
+    Singapore: 'Singapore (MUIS)',
+    Tehran: 'Tehran',
+    Turkey: 'Turkey (Diyanet)',
+    Other: 'Custom',
+  },
+  highLat: {
+    MiddleOfTheNight: 'Middle of the night',
+    SeventhOfTheNight: 'Seventh of the night',
+    TwilightAngle: 'Twilight angle',
+  },
+  madhabLabels: {
+    shafi: "Shafi'i (earlier Asr)",
+    hanafi: 'Hanafi (later Asr)',
+  },
+  roundingLabels: {
+    Nearest: 'Round to nearest minute',
+    Up: 'Always round up',
+    None: 'No rounding',
+  },
+  shafaqLabels: {
+    General: 'General',
+    Ahmer: 'Ahmer (red twilight)',
+    Abyad: 'Abyad (white twilight)',
+  },
+  ruleEditor: {
+    choose: 'Choose…',
+    remove: 'Remove',
+    add: '+ Add',
+    removeAria: 'Remove {{label}} {{index}}',
+    itemAria: '{{label}} {{index}}',
+    range: '{{min}} to {{max}}',
+    sheetTitle: '{{prayer}} · Iqama rule',
+    ruleType: 'Rule type',
+    modifiers: 'Modifiers',
+    next7Days: 'Next 7 days (Azan → Iqama)',
+    loadingPreview: 'Loading preview…',
+    adjusted: '⚠ Adjusted',
+    movedBySafety: 'Moved by safety rules',
+    fillRed: 'Fill in the fields marked in red',
+    iqamaRule: 'Iqama rule',
+    close: 'Close',
+    cancel: 'Cancel',
+    addToChanges: 'Add to changes',
+  },
+  ruleDescribe: {
+    min: 'min',
+    atAzan: 'At Azan',
+    azan: 'Azan {{offset}}',
+    fixed: 'Fixed at {{time}}',
+    scaled: 'Gap after Azan scales from {{min}} to {{max}} min',
+    seasonal_one: 'Seasonal fixed times ({{count}} period)',
+    seasonal_other: 'Seasonal fixed times ({{count}} periods)',
+    roundUp: 'rounded up to the next {{step}}',
+    roundDown: 'rounded down to the previous {{step}}',
+    roundNearest: 'rounded to the nearest {{step}}',
+    minAfterAzan: 'at least {{n}} min after Azan',
+    minBeforeSunrise: 'at least {{n}} min before sunrise',
+    weeklyLock: 'held Friday to Thursday',
+  },
+  events: {
+    newYear: '🗓️ Hijri New Year',
+    ashura: '🤲 Day of Ashura',
+    isra: "🕌 Isra' and Mi'raj",
+    ramadan: '🌙 Ramadan Mubarak',
+    eidFitr: '🌙 Eid al-Fitr Mubarak',
+    hajj: '🕋 Hajj Season',
+    arafah: '🤲 Day of Arafah',
+    eidAdha: '🐑 Eid al-Adha Mubarak',
   },
   hero: {
     azanIn: 'AZAN IN',

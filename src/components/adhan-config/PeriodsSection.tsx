@@ -6,6 +6,8 @@
  */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import type { AdhanConfigPeriod, PartialAdhanSettings } from '../../types';
 import { previewPeriod, deletePeriod } from '../../services/adhan-config-service';
 import { PeriodFormModal } from './PeriodFormModal';
@@ -22,21 +24,29 @@ function periodStatus(p: AdhanConfigPeriod): 'active' | 'upcoming' | 'past' {
   return 'active';
 }
 
-function summarizeSettings(settings: string): string {
+function summarizeSettings(settings: string, t: TFunction): string {
   try {
     const s = JSON.parse(settings) as PartialAdhanSettings;
     const parts: string[] = [];
-    if (s.general?.method) parts.push(`Method: ${s.general.method}`);
-    if (s.general?.highLatitudeRule) parts.push(`High lat: ${s.general.highLatitudeRule}`);
+    if (s.general?.method) {
+      parts.push(t('adhanPeriods.methodSummary', { method: t(`methods.${s.general.method}`) }));
+    }
+    if (s.general?.highLatitudeRule) {
+      parts.push(
+        t('adhanPeriods.highLatSummary', {
+          method: t(`highLat.${s.general.highLatitudeRule}`),
+        }),
+      );
+    }
     if (s.prayers) {
       for (const [p, ps] of Object.entries(s.prayers)) {
         if (ps?.offsetMinutes !== undefined && ps.offsetMinutes !== 0) {
           const sign = ps.offsetMinutes > 0 ? '+' : '';
-          parts.push(`${p.charAt(0).toUpperCase() + p.slice(1)} ${sign}${ps.offsetMinutes}m`);
+          parts.push(`${t(`prayers.${p as keyof typeof s.prayers}`)} ${sign}${ps.offsetMinutes}m`);
         }
       }
     }
-    return parts.length ? parts.join(' · ') : 'No changes';
+    return parts.length ? parts.join(' · ') : t('adhanPeriods.noChanges');
   } catch {
     return '—';
   }
@@ -49,12 +59,13 @@ const STATUS_PILL: Record<ReturnType<typeof periodStatus>, string> = {
 };
 
 export function PeriodsSection({ periods, onRefresh }: Props) {
+  const { t } = useTranslation();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<AdhanConfigPeriod | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const handleDelete = async (period: AdhanConfigPeriod) => {
-    if (!confirm(`Delete period "${period.label}"? This cannot be undone.`)) return;
+    if (!confirm(t('adhanPeriods.deleteConfirm', { label: period.label }))) return;
     setDeletingId(period.id);
     try {
       // We need a preview token even for delete
@@ -66,7 +77,7 @@ export function PeriodsSection({ periods, onRefresh }: Props) {
       await deletePeriod(period.id, previewId);
       onRefresh();
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : 'Failed to delete period');
+      alert(e instanceof Error ? e.message : t('adhanPeriods.deleteFailed'));
     } finally {
       setDeletingId(null);
     }
@@ -83,24 +94,23 @@ export function PeriodsSection({ periods, onRefresh }: Props) {
   };
 
   return (
-    <section aria-label="Seasonal periods">
+    <section aria-label={t('adhanPeriods.title')}>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Periods</h3>
+        <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+          {t('adhanPeriods.title')}
+        </h3>
         <button
           onClick={openCreate}
           className="text-sm text-blue-600 hover:text-blue-700 font-medium px-3 py-2 min-h-[44px]"
         >
-          + Add period
+          {t('adhanPeriods.add')}
         </button>
       </div>
 
       {periods.length === 0 ? (
         <div className="text-center py-8 text-gray-400 border border-dashed border-gray-200 rounded-xl">
-          <p className="text-sm">No periods yet.</p>
-          <p className="text-xs mt-1">
-            Periods let you apply different settings for a date range, like Ramadan or summer
-            months.
-          </p>
+          <p className="text-sm">{t('adhanPeriods.emptyTitle')}</p>
+          <p className="text-xs mt-1">{t('adhanPeriods.emptyHint')}</p>
         </div>
       ) : (
         <ul className="space-y-2">
@@ -115,13 +125,16 @@ export function PeriodsSection({ periods, onRefresh }: Props) {
                   className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${STATUS_PILL[status]}`}
                 >
                   {status === 'active' ? '●' : status === 'upcoming' ? '○' : '–'}{' '}
-                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                  {t(`adhanPeriods.status${status.charAt(0).toUpperCase()}${status.slice(1)}`)}
                 </span>
 
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">{p.label}</p>
                   <p className="text-xs text-gray-500">
-                    {p.startDate} – {p.endDate} · {summarizeSettings(p.settings)}
+                    <bdi dir="ltr">
+                      {p.startDate} – {p.endDate}
+                    </bdi>{' '}
+                    · {summarizeSettings(p.settings, t)}
                   </p>
                 </div>
 
@@ -129,17 +142,17 @@ export function PeriodsSection({ periods, onRefresh }: Props) {
                   <button
                     onClick={() => openEdit(p)}
                     className="text-xs text-blue-600 hover:text-blue-700 px-2 py-1.5 min-h-[44px]"
-                    aria-label={`Edit period ${p.label}`}
+                    aria-label={t('adhanPeriods.editAria', { label: p.label })}
                   >
-                    Edit
+                    {t('adhanPeriods.edit')}
                   </button>
                   <button
                     onClick={() => handleDelete(p)}
                     disabled={deletingId === p.id}
                     className="text-xs text-red-500 hover:text-red-700 px-2 py-1.5 min-h-[44px] disabled:opacity-50"
-                    aria-label={`Delete period ${p.label}`}
+                    aria-label={t('adhanPeriods.deleteAria', { label: p.label })}
                   >
-                    {deletingId === p.id ? '…' : 'Delete'}
+                    {deletingId === p.id ? '…' : t('adhanPeriods.delete')}
                   </button>
                 </div>
               </li>

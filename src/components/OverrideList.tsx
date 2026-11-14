@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Override, OverridePayload } from '../types/index';
 import { OverrideRow } from './OverrideRow';
 import { OverrideFormModal } from './OverrideFormModal';
@@ -12,11 +13,12 @@ interface OverrideListProps {
 }
 
 export function OverrideList({ overrides, today, onUpdate, onRemove }: OverrideListProps) {
+  const { t } = useTranslation();
   const [editingOverride, setEditingOverride] = useState<Override | null>(null);
   const clamped = useOverrideClamps(overrides, today);
 
   const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this override?')) {
+    if (window.confirm(t('overrides.deleteConfirm'))) {
       await onRemove(id);
     }
   };
@@ -24,8 +26,8 @@ export function OverrideList({ overrides, today, onUpdate, onRemove }: OverrideL
   if (overrides.length === 0) {
     return (
       <div className="text-center py-12 text-gray-500">
-        <p className="text-sm">No overrides yet.</p>
-        <p className="text-xs mt-1">Create your first override to adjust iqama times.</p>
+        <p className="text-sm">{t('overrides.emptyTitle')}</p>
+        <p className="text-xs mt-1">{t('overrides.emptyHint')}</p>
       </div>
     );
   }

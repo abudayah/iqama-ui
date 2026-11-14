@@ -1,16 +1,14 @@
+import { useTranslation } from 'react-i18next';
 import type { EidPrayerRecord } from '../types';
 
 interface EidCardProps {
   record: EidPrayerRecord;
 }
 
-function formatEidTypeName(type: EidPrayerRecord['type']): string {
-  return type === 'EID_AL_FITR' ? 'Eid al-Fitr' : 'Eid al-Adha';
-}
-
 /**
  * Parses a YYYY-MM-DD string and formats it as a human-readable date
  * (e.g., "Friday, June 27, 2025") without timezone shift.
+ * Dates stay in English by design.
  */
 function formatGregorianDate(dateStr: string): string {
   const [yearStr, monthStr, dayStr] = dateStr.split('-');
@@ -27,7 +25,9 @@ function formatGregorianDate(dateStr: string): string {
 }
 
 export function EidCard({ record }: EidCardProps) {
-  const typeName = formatEidTypeName(record.type);
+  const { t } = useTranslation();
+  const typeName =
+    record.type === 'EID_AL_FITR' ? t('ramadan.eidFitrName') : t('ramadan.eidAdhaName');
   const formattedDate = formatGregorianDate(record.date);
   const isAstronomical = record.source === 'astronomical';
 
@@ -49,7 +49,9 @@ export function EidCard({ record }: EidCardProps) {
         </div>
 
         {/* Date */}
-        <p className="text-sm text-gray-500 mb-4 ml-9">{formattedDate}</p>
+        <p className="text-sm text-gray-500 mb-4 ms-9">
+          <bdi dir="ltr">{formattedDate}</bdi>
+        </p>
 
         {/* Prayer times */}
         <div className="space-y-2 mb-4">
@@ -59,7 +61,9 @@ export function EidCard({ record }: EidCardProps) {
               className="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-2"
             >
               <span className="text-sm font-medium text-gray-700">{entry.label}</span>
-              <span className="text-sm font-semibold text-emerald-700">{entry.time}</span>
+              <span className="text-sm font-semibold text-emerald-700">
+                <bdi dir="ltr">{entry.time}</bdi>
+              </span>
             </div>
           ))}
         </div>
@@ -74,9 +78,7 @@ export function EidCard({ record }: EidCardProps) {
             <span className="text-amber-500 mt-0.5" aria-hidden="true">
               ⚠️
             </span>
-            <p className="text-xs text-amber-800">
-              Preliminary times — subject to moon-sighting confirmation
-            </p>
+            <p className="text-xs text-amber-800">{t('eidCard.preliminary')}</p>
           </div>
         )}
       </div>

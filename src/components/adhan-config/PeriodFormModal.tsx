@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { AdhanConfigPeriod, PartialAdhanSettings, PrayerKey } from '../../types';
 import { previewPeriod, createPeriod, updatePeriod } from '../../services/adhan-config-service';
 
@@ -18,6 +19,7 @@ interface Props {
 const PRAYERS: PrayerKey[] = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
 export function PeriodFormModal({ isOpen, onClose, onSaved, existing }: Props) {
+  const { t } = useTranslation();
   const [label, setLabel] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -77,7 +79,7 @@ export function PeriodFormModal({ isOpen, onClose, onSaved, existing }: Props) {
       onSaved();
       onClose();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to save period');
+      setError(e instanceof Error ? e.message : t('adhanPeriodForm.failed'));
     } finally {
       setSaving(false);
     }
@@ -92,17 +94,19 @@ export function PeriodFormModal({ isOpen, onClose, onSaved, existing }: Props) {
     >
       <div className="bg-white rounded-t-2xl sm:rounded-xl shadow-2xl w-full sm:max-w-md mx-0 sm:mx-4 p-6 space-y-4">
         <h2 id="period-form-title" className="text-lg font-semibold text-gray-900">
-          {existing ? 'Edit period' : 'New period'}
+          {existing ? t('adhanPeriodForm.editTitle') : t('adhanPeriodForm.newTitle')}
         </h2>
 
         {/* Label */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Period name</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('adhanPeriodForm.name')}
+          </label>
           <input
             type="text"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
-            placeholder="e.g. Ramadan 1447"
+            placeholder={t('adhanPeriodForm.namePlaceholder')}
             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -110,7 +114,9 @@ export function PeriodFormModal({ isOpen, onClose, onSaved, existing }: Props) {
         {/* Date range */}
         <div className="flex gap-3">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Start date</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('adhanPeriodForm.startDate')}
+            </label>
             <input
               type="date"
               value={startDate}
@@ -119,7 +125,9 @@ export function PeriodFormModal({ isOpen, onClose, onSaved, existing }: Props) {
             />
           </div>
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">End date</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {t('adhanPeriodForm.endDate')}
+            </label>
             <input
               type="date"
               value={endDate}
@@ -131,11 +139,11 @@ export function PeriodFormModal({ isOpen, onClose, onSaved, existing }: Props) {
 
         {/* Prayer offsets */}
         <div>
-          <p className="text-sm font-medium text-gray-700 mb-2">Prayer offsets (minutes)</p>
+          <p className="text-sm font-medium text-gray-700 mb-2">{t('adhanPeriodForm.offsets')}</p>
           <div className="space-y-2">
             {PRAYERS.map((p) => (
               <div key={p} className="flex items-center gap-3">
-                <span className="w-16 text-sm text-gray-600 capitalize">{p}</span>
+                <span className="w-16 text-sm text-gray-600">{t(`prayers.${p}`)}</span>
                 <input
                   type="number"
                   min={-60}
@@ -147,7 +155,7 @@ export function PeriodFormModal({ isOpen, onClose, onSaved, existing }: Props) {
                   }}
                   className="w-20 border border-gray-300 rounded-lg px-2 py-1 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <span className="text-xs text-gray-400">min</span>
+                <span className="text-xs text-gray-400">{t('adhanPeriodForm.min')}</span>
               </div>
             ))}
           </div>
@@ -164,14 +172,18 @@ export function PeriodFormModal({ isOpen, onClose, onSaved, existing }: Props) {
             onClick={onClose}
             className="flex-1 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 min-h-[44px]"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={handleSave}
             disabled={saving || !label || !startDate || !endDate}
             className="flex-1 py-2 text-sm rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-40 min-h-[44px]"
           >
-            {saving ? 'Saving…' : existing ? 'Save changes' : 'Create period'}
+            {saving
+              ? t('common.saving')
+              : existing
+                ? t('adhanPeriodForm.saveChanges')
+                : t('adhanPeriodForm.create')}
           </button>
         </div>
       </div>

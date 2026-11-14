@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export interface WeekOption {
   /** YYYY-MM-DD of the Friday that starts the week */
@@ -83,6 +84,7 @@ interface WeekSelectProps {
 }
 
 export function WeekSelect({ start, onWeekChange }: WeekSelectProps) {
+  const { t } = useTranslation();
   const currentYear = new Date().getFullYear();
   // Show current year + next year so the full upcoming calendar is available
   const weeks = useMemo(() => generateWeeks(currentYear, currentYear + 1), [currentYear]);
@@ -100,7 +102,7 @@ export function WeekSelect({ start, onWeekChange }: WeekSelectProps) {
 
   const selected = weeks.find((w) => w.start === start);
   const defaultIdx = currentWeekIndex(weeks);
-  const displayLabel = selected?.label ?? weeks[defaultIdx]?.label ?? 'Select week';
+  const displayLabel = selected?.label ?? weeks[defaultIdx]?.label ?? t('schedule.selectWeek');
 
   function choose(week: WeekOption) {
     onWeekChange(week.start, week.end);
@@ -120,13 +122,15 @@ export function WeekSelect({ start, onWeekChange }: WeekSelectProps) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between border border-gray-300 rounded px-3 py-2 text-sm min-h-[44px] bg-white text-left focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full flex items-center justify-between border border-gray-300 rounded px-3 py-2 text-sm min-h-[44px] bg-white text-start focus:outline-none focus:ring-2 focus:ring-blue-500"
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <span className="truncate text-gray-800">{displayLabel}</span>
+        <span className="truncate text-gray-800">
+          <bdi dir="ltr">{displayLabel}</bdi>
+        </span>
         <svg
-          className={`ml-2 h-4 w-4 text-gray-400 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`ms-2 h-4 w-4 text-gray-400 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -159,9 +163,13 @@ export function WeekSelect({ start, onWeekChange }: WeekSelectProps) {
                   className={`px-3 py-2 text-sm cursor-pointer flex items-center justify-between gap-2
                     ${isSelected ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-800 hover:bg-gray-50'}`}
                 >
-                  <span>{week.label}</span>
+                  <span>
+                    <bdi dir="ltr">{week.label}</bdi>
+                  </span>
                   {isCurrent && !isSelected && (
-                    <span className="text-xs text-gray-400 flex-shrink-0">current</span>
+                    <span className="text-xs text-gray-400 flex-shrink-0">
+                      {t('schedule.current')}
+                    </span>
                   )}
                   {isSelected && (
                     <svg

@@ -6,6 +6,8 @@ import type {
   RuleSet,
   Weekday,
 } from '../types/iqama-rules';
+import i18n from '../i18n';
+import { joinList } from '../i18n/list';
 
 const PRAYER_LABELS: Record<string, string> = {
   fajr: 'Fajr',
@@ -19,6 +21,7 @@ const PRAYER_LABELS: Record<string, string> = {
 export const prayerLabel = (name: string): string =>
   PRAYER_LABELS[name] ?? name.charAt(0).toUpperCase() + name.slice(1);
 
+/** Weekday names stay in English by design (they label fixed dates). */
 const WEEKDAY_LABELS: Record<Weekday, string> = {
   SUN: 'Sun',
   MON: 'Mon',
@@ -29,20 +32,25 @@ const WEEKDAY_LABELS: Record<Weekday, string> = {
   SAT: 'Sat',
 };
 
-const signed = (n: number) => `${n < 0 ? '−' : '+'} ${Math.abs(n)} min`;
+const signed = (n: number) => `${n < 0 ? '−' : '+'} ${Math.abs(n)} ${i18n.t('ruleDescribe.min')}`;
 
 function describeBase(base: RuleBase): string {
   switch (base.type) {
     case 'OFFSET':
-      return base.minutes === 0 ? 'At Azan' : `Azan ${signed(base.minutes)}`;
+      return base.minutes === 0
+        ? i18n.t('ruleDescribe.atAzan')
+        : i18n.t('ruleDescribe.azan', { offset: signed(base.minutes) });
     case 'FIXED_TIME':
-      return `Fixed at ${base.time}`;
+      return i18n.t('ruleDescribe.fixed', { time: base.time });
     case 'SCALED_GAP': {
       const gaps = base.points.map((p) => p.gapMinutes);
-      return `Gap after Azan scales from ${Math.min(...gaps)} to ${Math.max(...gaps)} min`;
+      return i18n.t('ruleDescribe.scaled', {
+        min: Math.min(...gaps),
+        max: Math.max(...gaps),
+      });
     }
     case 'SEASONAL':
-      return `Seasonal fixed times (${base.segments.length} periods)`;
+      return i18n.t('ruleDescribe.seasonal', { count: base.segments.length });
   }
 }
 
@@ -54,23 +62,23 @@ export function describeRule(rule: PrayerRule): string {
     const s = rounding.step;
     parts.push(
       rounding.mode === 'CEIL'
-        ? `rounded up to the next ${s}`
+        ? i18n.t('ruleDescribe.roundUp', { step: s })
         : rounding.mode === 'FLOOR'
-          ? `rounded down to the previous ${s}`
-          : `rounded to the nearest ${s}`,
+          ? i18n.t('ruleDescribe.roundDown', { step: s })
+          : i18n.t('ruleDescribe.roundNearest', { step: s }),
     );
   }
   if (limits?.minAfterAzan !== undefined)
-    parts.push(`at least ${limits.minAfterAzan} min after Azan`);
+    parts.push(i18n.t('ruleDescribe.minAfterAzan', { n: limits.minAfterAzan }));
   if (limits?.latestBeforeSunrise !== undefined)
-    parts.push(`at least ${limits.latestBeforeSunrise} min before sunrise`);
+    parts.push(i18n.t('ruleDescribe.minBeforeSunrise', { n: limits.latestBeforeSunrise }));
   const adj = Object.entries(weekdayAdjust ?? {}).filter(([, v]) => v);
   if (adj.length)
     parts.push(
-      adj.map(([d, v]) => `${WEEKDAY_LABELS[d as Weekday]} ${signed(v as number)}`).join(', '),
+      joinList(adj.map(([d, v]) => `${WEEKDAY_LABELS[d as Weekday]} ${signed(v as number)}`)),
     );
-  if (weeklyLock) parts.push('held Friday to Thursday');
-  return parts.join(', ');
+  if (weeklyLock) parts.push(i18n.t('ruleDescribe.weeklyLock'));
+  return joinList(parts);
 }
 
 export function isFriday(date: string): boolean {

@@ -1,10 +1,12 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSightingStatus } from '../hooks/useSightingStatus';
 import { useEidPrayers } from '../hooks/useEidPrayers';
 import { useQiyamConfig } from '../hooks/useQiyamConfig';
 import { EidPrayerModal } from '../components/EidPrayerModal';
 import { submitOverride, deleteOverride } from '../services/hijri-calendar-service';
 import { calculateEidDate } from '../logic/calculate-eid-date';
+import i18n from '../i18n';
 import type { EidType, EidPrayerRecord, SubmitOverridePayload } from '../types/index';
 
 // ── Constants ──────────────────────────────────────────────────────────────
@@ -24,11 +26,6 @@ const HIJRI_MONTHS = [
   'Dhul Hijjah',
 ] as const;
 
-const EID_TYPE_LABELS: Record<EidType, string> = {
-  EID_AL_FITR: 'Eid al-Fitr',
-  EID_AL_ADHA: 'Eid al-Adha',
-};
-
 const EID_TYPES: EidType[] = ['EID_AL_FITR', 'EID_AL_ADHA'];
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -43,6 +40,8 @@ type MonthLength = 'astronomical' | 29 | 30;
  * - Month 9 (Ramadan): "Eid al-Fitr will fall on <date>"
  * - Month 11 (Dhul Qi'dah): "Eid al-Adha will fall on <date>"
  * - All other months: "Month will be <length> days"
+ *
+ * Dates stay in English by design; only the surrounding sentence is translated.
  */
 export function computeConsequenceText(
   hijriMonth: number,
@@ -57,7 +56,7 @@ export function computeConsequenceText(
       month: 'long',
       day: 'numeric',
     });
-    return `Eid al-Fitr will fall on ${formatted}`;
+    return i18n.t('ramadan.eidFitrWillFall', { date: formatted });
   }
   if (hijriMonth === 11) {
     const eidDate = calculateEidDate(referenceDate, length === 29, 'ADHA');
@@ -67,14 +66,16 @@ export function computeConsequenceText(
       month: 'long',
       day: 'numeric',
     });
-    return `Eid al-Adha will fall on ${formatted}`;
+    return i18n.t('ramadan.eidAdhaWillFall', { date: formatted });
   }
-  return `Month will be ${length} days`;
+  return i18n.t('ramadan.monthWillBeDays', { count: length });
 }
 
 // ── Component ──────────────────────────────────────────────────────────────
 
 export function RamadanEidPage() {
+  const { t } = useTranslation();
+
   // ── Hooks ──
   const {
     status,
@@ -162,7 +163,7 @@ export function RamadanEidPage() {
         setSightingSuccess(true);
         refetchStatus();
       } catch (err) {
-        setSightingError(err instanceof Error ? err.message : 'Failed to save. Please try again.');
+        setSightingError(err instanceof Error ? err.message : t('ramadan.saveFailed'));
       } finally {
         setSightingSaving(false);
       }
@@ -196,11 +197,11 @@ export function RamadanEidPage() {
       setSightingSuccess(true);
       refetchStatus();
     } catch (err) {
-      setSightingError(err instanceof Error ? err.message : 'Failed to save. Please try again.');
+      setSightingError(err instanceof Error ? err.message : t('ramadan.saveFailed'));
     } finally {
       setSightingSaving(false);
     }
-  }, [status, pendingChoice, refetchStatus]);
+  }, [status, pendingChoice, refetchStatus, t]);
 
   // ── Eid Prayer Times handlers ──
 
@@ -231,13 +232,13 @@ export function RamadanEidPage() {
   // ── Render ──
 
   return (
-    <div id="ramadan-eid-page" className="p-4 space-y-8" dir="ltr">
+    <div id="ramadan-eid-page" className="p-4 space-y-8">
       {/* ══════════════════════════════════════════════════════════════════
           Section 1: Moon Sighting — SightingCard (always visible)
       ══════════════════════════════════════════════════════════════════ */}
       <section aria-labelledby="moon-sighting-heading">
         <h2 id="moon-sighting-heading" className="text-base font-semibold text-gray-800 mb-3">
-          Moon Sighting
+          {t('ramadan.moonSighting')}
         </h2>
 
         {/* SightingCard is always rendered regardless of loading/error state */}
@@ -269,21 +270,39 @@ export function RamadanEidPage() {
             <>
               {/* Date */}
               <div>
-                <p className="text-sm text-gray-500">Current Hijri month</p>
+                <p className="text-sm text-gray-500">{t('ramadan.currentHijriMonth')}</p>
                 <p className="text-base font-semibold text-gray-800" data-testid="hijri-date">
-                  {hijriDateDisplay}
+                  <bdi dir="ltr">{hijriDateDisplay}</bdi>
                 </p>
               </div>
 
               {/* 3-tile selector */}
               {!confirmationOpen && (
                 <div>
-                  <p className="text-xs text-gray-500 mb-2 font-medium">Month length</p>
-                  <div className="grid grid-cols-3 gap-2" role="group" aria-label="Month length">
+                  <p className="text-xs text-gray-500 mb-2 font-medium">
+                    {t('ramadan.monthLength')}
+                  </p>
+                  <div
+                    className="grid grid-cols-3 gap-2"
+                    role="group"
+                    aria-label={t('ramadan.monthLength')}
+                  >
                     {[
-                      { value: 'astronomical' as const, label: 'Astronomical', sub: 'default' },
-                      { value: 29 as const, label: '29 Days', sub: 'moon sighted' },
-                      { value: 30 as const, label: '30 Days', sub: 'complete' },
+                      {
+                        value: 'astronomical' as const,
+                        label: t('ramadan.astronomical'),
+                        sub: t('ramadan.astronomicalSub'),
+                      },
+                      {
+                        value: 29 as const,
+                        label: t('ramadan.days29'),
+                        sub: t('ramadan.days29Sub'),
+                      },
+                      {
+                        value: 30 as const,
+                        label: t('ramadan.days30'),
+                        sub: t('ramadan.days30Sub'),
+                      },
                     ].map(({ value, label, sub }) => {
                       const isActive = currentMonthLength === value;
                       const isPending = pendingChoice === value;
@@ -332,14 +351,14 @@ export function RamadanEidPage() {
                       disabled={sightingSaving}
                       className="flex-1 text-sm text-gray-600 border border-gray-300 rounded-lg px-3 py-2 hover:bg-white disabled:opacity-50 min-h-[44px]"
                     >
-                      Cancel
+                      {t('common.cancel')}
                     </button>
                     <button
                       onClick={() => void handleConfirm()}
                       disabled={sightingSaving}
                       className="flex-1 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg px-3 py-2 disabled:opacity-50 min-h-[44px]"
                     >
-                      {sightingSaving ? 'Saving…' : 'Confirm'}
+                      {sightingSaving ? t('common.saving') : t('eidModal.confirm')}
                     </button>
                   </div>
                 </div>
@@ -348,23 +367,21 @@ export function RamadanEidPage() {
               {/* Astronomical revert confirmation */}
               {confirmationOpen && pendingChoice === 'astronomical' && (
                 <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-3">
-                  <p className="text-sm text-gray-700 font-medium">
-                    Reset to astronomical calendar?
-                  </p>
+                  <p className="text-sm text-gray-700 font-medium">{t('ramadan.resetPrompt')}</p>
                   <div className="flex gap-2">
                     <button
                       onClick={handleCancelConfirmation}
                       disabled={sightingSaving}
                       className="flex-1 text-sm text-gray-600 border border-gray-300 rounded-lg px-3 py-2 hover:bg-white disabled:opacity-50 min-h-[44px]"
                     >
-                      Cancel
+                      {t('common.cancel')}
                     </button>
                     <button
                       onClick={() => void handleConfirm()}
                       disabled={sightingSaving}
                       className="flex-1 text-sm font-medium text-white bg-gray-700 hover:bg-gray-800 rounded-lg px-3 py-2 disabled:opacity-50 min-h-[44px]"
                     >
-                      {sightingSaving ? 'Saving…' : 'Confirm'}
+                      {sightingSaving ? t('common.saving') : t('eidModal.confirm')}
                     </button>
                   </div>
                 </div>
@@ -377,7 +394,7 @@ export function RamadanEidPage() {
                   role="status"
                   data-testid="sighting-success"
                 >
-                  Moon sighting saved successfully.
+                  {t('ramadan.savedSuccess')}
                 </div>
               )}
 
@@ -401,7 +418,7 @@ export function RamadanEidPage() {
       ══════════════════════════════════════════════════════════════════ */}
       <section aria-labelledby="eid-prayer-times-heading">
         <h2 id="eid-prayer-times-heading" className="text-base font-semibold text-gray-800 mb-3">
-          Eid Prayer Times
+          {t('ramadan.eidPrayerTimes')}
         </h2>
 
         {recordsLoading && (
@@ -437,31 +454,36 @@ export function RamadanEidPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-gray-800 mb-1">
-                        {EID_TYPE_LABELS[eidType]}
+                        {eidType === 'EID_AL_FITR'
+                          ? t('ramadan.eidFitrName')
+                          : t('ramadan.eidAdhaName')}
                       </p>
 
                       {hasOverrideRecord && record ? (
                         <div className="space-y-1">
                           <p className="text-xs text-gray-500">
-                            {new Date(record.date + 'T12:00:00').toLocaleDateString('en-US', {
-                              weekday: 'long',
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                            })}
+                            <bdi dir="ltr">
+                              {new Date(record.date + 'T12:00:00').toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                              })}
+                            </bdi>
                           </p>
                           {record.prayers.map((prayer) => (
                             <p key={prayer.label} className="text-xs text-gray-700">
-                              <span className="font-medium">{prayer.label}:</span> {prayer.time}
+                              <span className="font-medium">{prayer.label}:</span>{' '}
+                              <bdi dir="ltr">{prayer.time}</bdi>
                             </p>
                           ))}
                         </div>
                       ) : isAstronomical ? (
                         <p className="text-xs text-gray-400 italic">
-                          Prayer times will be set once the moon-sighting override is submitted
+                          {t('ramadan.prayerTimesAfterOverride')}
                         </p>
                       ) : (
-                        <p className="text-xs text-gray-400 italic">No prayer times saved yet</p>
+                        <p className="text-xs text-gray-400 italic">{t('ramadan.noPrayerTimes')}</p>
                       )}
                     </div>
 
@@ -470,7 +492,7 @@ export function RamadanEidPage() {
                       className="shrink-0 text-sm text-blue-600 border border-blue-200 rounded-lg px-3 py-1.5 hover:bg-blue-50 active:bg-blue-100 min-h-[44px]"
                       data-testid={`edit-eid-button-${eidType}`}
                     >
-                      Edit times
+                      {t('ramadan.editTimes')}
                     </button>
                   </div>
                 </div>
@@ -485,7 +507,7 @@ export function RamadanEidPage() {
       ══════════════════════════════════════════════════════════════════ */}
       <section aria-labelledby="qiyam-heading">
         <h2 id="qiyam-heading" className="text-base font-semibold text-gray-800 mb-3">
-          Qiyam al-Layl
+          {t('ramadan.qiyamTitle')}
         </h2>
 
         <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-4">
@@ -507,7 +529,7 @@ export function RamadanEidPage() {
                   htmlFor="qiyam-time-input"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Qiyam Start Time
+                  {t('ramadan.qiyamStartTime')}
                 </label>
                 <input
                   id="qiyam-time-input"
@@ -517,16 +539,13 @@ export function RamadanEidPage() {
                   onChange={(e) => setQiyamTime(e.target.value)}
                   className="border border-gray-300 rounded px-3 py-2 text-sm min-h-[44px]"
                   data-testid="qiyam-time-input"
-                  aria-label="Qiyam start time"
+                  aria-label={t('ramadan.qiyamStartAria')}
                 />
               </div>
 
-              <p className="text-xs text-gray-500 font-medium">Active nights: 20th–29th Ramadan</p>
+              <p className="text-xs text-gray-500 font-medium">{t('ramadan.qiyamActiveNights')}</p>
 
-              <p className="text-xs text-gray-400">
-                Shown in the app as &apos;Qiyam&apos; with start time only. Applies to all 10 nights
-                — adjust each year when Ramadan begins.
-              </p>
+              <p className="text-xs text-gray-400">{t('ramadan.qiyamNote')}</p>
 
               {qiyamSaveSuccess && (
                 <div
@@ -534,7 +553,7 @@ export function RamadanEidPage() {
                   role="status"
                   data-testid="qiyam-save-success"
                 >
-                  Qiyam time saved successfully.
+                  {t('ramadan.qiyamSaved')}
                 </div>
               )}
 
@@ -554,7 +573,7 @@ export function RamadanEidPage() {
                 className="w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-lg py-3 text-sm font-medium transition-colors disabled:opacity-50 min-h-[44px]"
                 data-testid="save-qiyam-button"
               >
-                {qiyamSaving ? 'Saving...' : 'Save Qiyam time'}
+                {qiyamSaving ? t('common.saving') : t('ramadan.saveQiyam')}
               </button>
             </>
           )}

@@ -6,6 +6,7 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import type { PrayerName } from '../../types/index';
 import type {
   IqamaCatalog,
@@ -13,7 +14,7 @@ import type {
   PrayerRule,
   RuleSet,
 } from '../../types/iqama-rules';
-import { prayerLabel, describeRule } from '../../logic/iqama-rules';
+import { describeRule } from '../../logic/iqama-rules';
 import { emptyObject, emptyValue, pruneEmpty } from '../../logic/rule-defaults';
 import { modifierAllowedFor, validateRule } from '../../logic/rule-validator';
 import { previewIqamaRules } from '../../services/iqama-rules-service';
@@ -70,6 +71,7 @@ function SheetBody({
   onApply,
   onClose,
 }: Props & { prayer: PrayerName }) {
+  const { t } = useTranslation();
   const [rule, setRule] = useState<Draft>(initialRule as unknown as Draft);
   const [preview, setPreview] = useState<IqamaPreviewResponse | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -144,24 +146,24 @@ function SheetBody({
         <div className="p-5 space-y-5">
           <div className="flex items-center justify-between">
             <h2 id="rule-sheet-title" className="text-base font-semibold text-gray-900">
-              {prayerLabel(prayer)} · Iqama rule
+              {t('ruleEditor.sheetTitle', { prayer: t(`prayers.${prayer}`) })}
             </h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 min-h-[44px] min-w-[44px]"
-              aria-label="Close"
+              aria-label={t('ruleEditor.close')}
             >
               ✕
             </button>
           </div>
 
           <p className="text-sm text-gray-600" data-testid="rule-sentence">
-            {valid ? describeRule(cleaned) : 'Fill in the fields marked in red'}
+            {valid ? describeRule(cleaned) : t('ruleEditor.fillRed')}
           </p>
 
           <div>
             <label className="block text-sm font-medium text-gray-700" htmlFor="rule-type">
-              Rule type
+              {t('ruleEditor.ruleType')}
             </label>
             <select
               id="rule-type"
@@ -175,7 +177,7 @@ function SheetBody({
               }}
               className={`${inputCls} mt-1 bg-white`}
             >
-              {!baseType && <option value="">Choose…</option>}
+              {!baseType && <option value="">{t('ruleEditor.choose')}</option>}
               {catalog.baseTypes.map((b) => (
                 <option key={b.type} value={b.type}>
                   {b.label}
@@ -199,7 +201,7 @@ function SheetBody({
 
           <div className="space-y-1 border-t border-gray-100 pt-3">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Modifiers
+              {t('ruleEditor.modifiers')}
             </h3>
             {modifiers.map((m) => {
               const on = m.kind === 'bool' ? rule[m.name] === true : rule[m.name] !== undefined;
@@ -236,7 +238,7 @@ function SheetBody({
 
           <div className="border-t border-gray-100 pt-3">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-              Next 7 days (Azan → Iqama)
+              {t('ruleEditor.next7Days')}
             </h3>
             {previewError && (
               <p
@@ -247,7 +249,9 @@ function SheetBody({
               </p>
             )}
             {!previewError && strip.length === 0 && (
-              <p className="text-sm text-gray-400">{valid ? 'Loading preview…' : '—'}</p>
+              <p className="text-sm text-gray-400">
+                {valid ? t('ruleEditor.loadingPreview') : '—'}
+              </p>
             )}
             {strip.length > 0 && (
               <ul className="flex gap-2 overflow-x-auto pb-1" data-testid="preview-strip">
@@ -259,17 +263,23 @@ function SheetBody({
                       className="min-w-[88px] shrink-0 border border-gray-200 rounded-lg p-2 text-center"
                     >
                       <div className="text-xs text-gray-500">
-                        {d.day_of_week.slice(0, 3)} {d.date.slice(5)}
+                        <bdi dir="ltr">
+                          {d.day_of_week.slice(0, 3)} {d.date.slice(5)}
+                        </bdi>
                       </div>
-                      <div className="text-xs text-gray-400">{p.azan} →</div>
-                      <div className="text-sm font-semibold text-gray-900">{p.proposed.iqama}</div>
+                      <div className="text-xs text-gray-400">
+                        <bdi dir="ltr">{p.azan} →</bdi>
+                      </div>
+                      <div className="text-sm font-semibold text-gray-900">
+                        <bdi dir="ltr">{p.proposed.iqama}</bdi>
+                      </div>
                       {p.proposed.clamped && (
                         <span
                           data-testid="clamp-badge"
-                          title="Moved by safety rules"
+                          title={t('ruleEditor.movedBySafety')}
                           className="inline-block mt-1 text-[11px] bg-amber-100 text-amber-800 rounded-full px-2"
                         >
-                          ⚠ Adjusted
+                          {t('ruleEditor.adjusted')}
                         </span>
                       )}
                     </li>
@@ -284,7 +294,7 @@ function SheetBody({
               onClick={onClose}
               className="flex-1 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 min-h-[44px]"
             >
-              Cancel
+              {t('ruleEditor.cancel')}
             </button>
             <button
               onClick={() => {
@@ -294,7 +304,7 @@ function SheetBody({
               disabled={!valid}
               className="flex-1 py-2 text-sm rounded-lg bg-blue-600 text-white font-medium disabled:opacity-40 min-h-[44px]"
             >
-              Add to changes
+              {t('ruleEditor.addToChanges')}
             </button>
           </div>
         </div>

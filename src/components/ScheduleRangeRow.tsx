@@ -8,14 +8,6 @@ interface ScheduleRangeRowProps {
   overrides: Override[];
 }
 
-const PRAYER_LABELS: Record<string, string> = {
-  fajr: 'Fajr',
-  dhuhr: 'Dhuhr',
-  asr: 'Asr',
-  maghrib: 'Maghrib',
-  isha: 'Isha',
-};
-
 // Prayers rendered before the sunrise column
 const PRAYERS_BEFORE_SUNRISE: PrayerName[] = ['fajr'];
 // Prayers rendered after the sunrise column
@@ -29,8 +21,8 @@ function diffMinutes(a: string, b: string): number {
 }
 
 export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps) {
-  // Subscribe to language changes so the 12-hour times re-format on toggle.
-  useTranslation();
+  // Subscribe to language changes so labels and 12-hour times re-format on toggle.
+  const { t } = useTranslation();
   const activeOverrides = overrides.filter((o) => isActive(o, schedule.date));
 
   return (
@@ -42,12 +34,14 @@ export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps)
         {schedule.iqama_conflict && (
           <span
             data-testid="day-conflict-badge"
-            className="text-[10px] bg-red-100 text-red-800 rounded-full px-1.5 mr-2"
+            className="text-[10px] bg-red-100 text-red-800 rounded-full px-1.5 me-2"
           >
-            Conflict
+            {t('schedule.conflict')}
           </span>
         )}
-        <span className="text-xs text-gray-500">{schedule.day_of_week}</span>
+        <span className="text-xs text-gray-500">
+          <bdi dir="ltr">{schedule.day_of_week}</bdi>
+        </span>
       </div>
       <div className="flex">
         {PRAYERS_BEFORE_SUNRISE.map((prayer) => {
@@ -58,10 +52,10 @@ export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps)
 
           return (
             <div key={prayer} className="flex-1 flex flex-col items-center py-3 px-1">
-              <span className="text-xs text-gray-400">{PRAYER_LABELS[prayer]}</span>
+              <span className="text-xs text-gray-400">{t(`prayers.${prayer}`)}</span>
               <span
                 className={`text-xs mt-0.5 ${entry.azan_customized ? 'font-medium text-orange-500' : 'text-gray-500'}`}
-                title={entry.azan_customized ? 'Customized Azan time' : undefined}
+                title={entry.azan_customized ? t('schedule.customizedAzan') : undefined}
               >
                 <bdi dir="ltr">{formatTime12(entry.azan)}</bdi>
               </span>
@@ -73,7 +67,7 @@ export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps)
                   data-testid={`conflict-badge-${prayer}`}
                   className="text-[10px] bg-red-100 text-red-800 rounded-full px-1.5 mt-0.5"
                 >
-                  Conflict
+                  {t('schedule.conflict')}
                 </span>
               )}
               {override ? (
@@ -93,7 +87,7 @@ export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps)
 
         {/* Sunrise column — shows time and gap from Fajr iqama */}
         <div className="flex-1 flex flex-col items-center py-3 px-1">
-          <span className="text-xs text-gray-400">Sunrise</span>
+          <span className="text-xs text-gray-400">{t('prayers.sunrise')}</span>
           <span className="text-xs text-gray-500 mt-0.5">
             <bdi dir="ltr">{schedule.sunrise}</bdi>
           </span>
@@ -114,10 +108,10 @@ export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps)
 
           return (
             <div key={prayer} className="flex-1 flex flex-col items-center py-3 px-1">
-              <span className="text-xs text-gray-400">{PRAYER_LABELS[prayer]}</span>
+              <span className="text-xs text-gray-400">{t(`prayers.${prayer}`)}</span>
               <span
                 className={`text-xs mt-0.5 ${entry.azan_customized ? 'font-medium text-orange-500' : 'text-gray-500'}`}
-                title={entry.azan_customized ? 'Customized Azan time' : undefined}
+                title={entry.azan_customized ? t('schedule.customizedAzan') : undefined}
               >
                 <bdi dir="ltr">{formatTime12(entry.azan)}</bdi>
               </span>
@@ -129,7 +123,7 @@ export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps)
                   data-testid={`conflict-badge-${prayer}`}
                   className="text-[10px] bg-red-100 text-red-800 rounded-full px-1.5 mt-0.5"
                 >
-                  Conflict
+                  {t('schedule.conflict')}
                 </span>
               )}
               {override ? (

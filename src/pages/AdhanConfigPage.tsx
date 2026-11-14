@@ -12,6 +12,7 @@
  */
 
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import type {
   PrayerKey,
   AdhanSettings,
@@ -33,11 +34,7 @@ import { GeneralSettingsDrawer } from '../components/adhan-config/GeneralSetting
 import { PrayerOffsetDrawer } from '../components/adhan-config/PrayerOffsetDrawer';
 import { ReviewDialog } from '../components/adhan-config/ReviewDialog';
 import { PeriodsSection } from '../components/adhan-config/PeriodsSection';
-import {
-  METHOD_LABELS,
-  HIGH_LAT_LABELS,
-  MADHAB_LABELS,
-} from '../components/adhan-config/method-labels';
+import { joinList } from '../i18n/list';
 
 const ALL_PRAYERS: PrayerKey[] = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
@@ -82,6 +79,7 @@ function periodLabelsForPrayer(activePeriods: AdhanConfigPeriod[], prayer: Praye
 type ActiveTab = 'overview' | 'periods';
 
 export function AdhanConfigPage() {
+  const { t } = useTranslation();
   const { config, catalog, loading, error, refresh } = useAdhanConfig();
   const draft = useAdhanDraft(config?.today);
 
@@ -132,7 +130,7 @@ export function AdhanConfigPage() {
       const result = await previewVersion(proposedSettings, draft.draft.effectiveFrom);
       setPreview(result);
     } catch (e: unknown) {
-      setPreviewError(e instanceof Error ? e.message : 'Preview failed');
+      setPreviewError(e instanceof Error ? e.message : t('adhanConfig.previewFailed'));
     } finally {
       setPreviewLoading(false);
     }
@@ -150,11 +148,11 @@ export function AdhanConfigPage() {
       );
       draft.reset();
       setReviewOpen(false);
-      setSuccessMsg('Settings saved. The public schedule has been updated.');
+      setSuccessMsg(t('adhanConfig.savedToast'));
       setTimeout(() => setSuccessMsg(null), 4000);
       refresh();
     } catch (e: unknown) {
-      setPreviewError(e instanceof Error ? e.message : 'Failed to save');
+      setPreviewError(e instanceof Error ? e.message : t('adhanConfig.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -164,12 +162,7 @@ export function AdhanConfigPage() {
 
   if (loading) {
     return (
-      <div
-        className="p-4 space-y-4"
-        dir="ltr"
-        aria-busy="true"
-        aria-label="Loading Adhan configuration"
-      >
+      <div className="p-4 space-y-4" aria-busy="true" aria-label={t('adhanConfig.loadingAria')}>
         {[1, 2, 3].map((i) => (
           <div key={i} className="h-20 bg-gray-100 rounded-xl animate-pulse" />
         ))}
@@ -179,11 +172,11 @@ export function AdhanConfigPage() {
 
   if (error) {
     return (
-      <div className="p-4" dir="ltr">
+      <div className="p-4">
         <div className="bg-red-50 border border-red-200 rounded-xl p-4">
           <p className="text-sm text-red-700">{error}</p>
           <button onClick={refresh} className="mt-2 text-sm text-red-600 underline">
-            Retry
+            {t('common.retry')}
           </button>
         </div>
       </div>
@@ -210,7 +203,7 @@ export function AdhanConfigPage() {
       : 0;
 
   return (
-    <div className="min-h-screen bg-gray-50" dir="ltr">
+    <div className="min-h-screen bg-gray-50">
       {/* Sub-tabs */}
       <nav className="flex border-b border-gray-200 bg-white sticky top-0 z-10">
         {(['overview', 'periods'] as ActiveTab[]).map((tab) => (
@@ -223,7 +216,7 @@ export function AdhanConfigPage() {
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            {tab}
+            {t(`adhanConfig.${tab}`)}
           </button>
         ))}
       </nav>
@@ -245,19 +238,19 @@ export function AdhanConfigPage() {
           role="status"
           className="sticky top-[49px] z-10 mx-4 mt-2 bg-blue-600 text-white rounded-xl px-4 py-2.5 flex items-center justify-between text-sm shadow-lg"
         >
-          <span>Unsaved changes</span>
+          <span>{t('adhanConfig.unsavedChanges')}</span>
           <div className="flex gap-3">
             <button
               onClick={draft.reset}
               className="text-blue-200 hover:text-white underline min-h-[44px] px-2"
             >
-              Discard
+              {t('adhanConfig.discard')}
             </button>
             <button
               onClick={openReview}
               className="bg-white text-blue-600 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 min-h-[44px]"
             >
-              Review &amp; save
+              {t('adhanConfig.reviewAndSave')}
             </button>
           </div>
         </div>
@@ -279,23 +272,28 @@ export function AdhanConfigPage() {
                       ℹ️
                     </span>
                     <div className="min-w-0">
-                      <span className="font-medium">Config v{config.currentRevision}</span>
+                      <span className="font-medium">
+                        {t('adhanConfig.configVersion', { version: config.currentRevision })}
+                      </span>
                       {currentVersion?.createdAt && (
                         <span className="text-blue-600">
-                          {' '}
-                          · Last updated{' '}
-                          {new Date(currentVersion.createdAt).toLocaleString(undefined, {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                            hour: 'numeric',
-                            minute: '2-digit',
-                          })}
+                          {' · '}
+                          <bdi dir="ltr">
+                            {t('adhanConfig.lastUpdated', {
+                              date: new Date(currentVersion.createdAt).toLocaleString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                                hour: 'numeric',
+                                minute: '2-digit',
+                              }),
+                            })}
+                          </bdi>
                         </span>
                       )}
                       {todayActivePeriods.length > 0 && (
-                        <span className="ml-2 text-purple-600">
-                          + {todayActivePeriods.map((p) => p.label).join(', ')}
+                        <span className="ms-2 text-purple-600">
+                          + {joinList(todayActivePeriods.map((p) => p.label))}
                         </span>
                       )}
                     </div>
@@ -307,7 +305,7 @@ export function AdhanConfigPage() {
             {effective ? (
               <div>
                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                  Prayer Azan offsets
+                  {t('adhanConfig.prayerOffsets')}
                 </h3>
                 <div className="grid grid-cols-3 gap-2">
                   {ALL_PRAYERS.map((prayer) => (
@@ -330,50 +328,58 @@ export function AdhanConfigPage() {
               </div>
             ) : (
               <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
-                No configuration found. Please run the seed migration.
+                {t('adhanConfig.noConfiguration')}
               </div>
             )}
 
             {/* General settings */}
             <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-gray-800">General settings</h3>
+                <h3 className="text-sm font-medium text-gray-800">
+                  {t('adhanConfig.generalSettings')}
+                </h3>
                 <button
                   onClick={() => setGeneralDrawerOpen(true)}
                   className="text-sm text-blue-600 hover:text-blue-700 px-2 py-1.5 min-h-[44px]"
                 >
-                  Edit
+                  {t('adhanConfig.edit')}
                 </button>
               </div>
               <dl className="text-sm text-gray-600 space-y-1">
                 <div className="flex gap-2">
-                  <dt className="text-gray-400 w-28 shrink-0">Timezone</dt>
+                  <dt className="text-gray-400 w-28 shrink-0">{t('adhanConfig.timezone')}</dt>
                   <dd className="font-medium">
-                    {config.timezone ?? 'America/Vancouver'}{' '}
-                    <span className="text-gray-400 font-normal">(read-only)</span>
+                    <bdi dir="ltr">{config.timezone ?? 'America/Vancouver'}</bdi>{' '}
+                    <span className="text-gray-400 font-normal">{t('adhanConfig.readOnly')}</span>
                   </dd>
                 </div>
                 <div className="flex gap-2">
-                  <dt className="text-gray-400 w-28 shrink-0">Location</dt>
+                  <dt className="text-gray-400 w-28 shrink-0">{t('adhanConfig.location')}</dt>
                   <dd className="font-medium font-mono">
-                    {config.latitude?.toFixed(7)}, {config.longitude?.toFixed(7)}{' '}
-                    <span className="text-gray-400 font-normal font-sans">(read-only)</span>
+                    <bdi dir="ltr">
+                      {config.latitude?.toFixed(7)}, {config.longitude?.toFixed(7)}
+                    </bdi>{' '}
+                    <span className="text-gray-400 font-normal font-sans">
+                      {t('adhanConfig.readOnly')}
+                    </span>
                   </dd>
                 </div>
                 <div className="mt-2 pt-2 border-t border-gray-100 flex gap-2">
-                  <dt className="text-gray-400 w-28 shrink-0">Method</dt>
-                  <dd className="font-medium">{METHOD_LABELS[currentGeneral.method]}</dd>
+                  <dt className="text-gray-400 w-28 shrink-0">{t('adhanConfig.method')}</dt>
+                  <dd className="font-medium">{t(`methods.${currentGeneral.method}`)}</dd>
                 </div>
                 <div className="flex gap-2">
-                  <dt className="text-gray-400 w-28 shrink-0">Madhab</dt>
-                  <dd>{MADHAB_LABELS[currentGeneral.madhab]}</dd>
+                  <dt className="text-gray-400 w-28 shrink-0">{t('adhanConfig.madhab')}</dt>
+                  <dd>{t(`madhabLabels.${currentGeneral.madhab}`)}</dd>
                 </div>
                 <div className="flex gap-2">
-                  <dt className="text-gray-400 w-28 shrink-0">High latitude</dt>
+                  <dt className="text-gray-400 w-28 shrink-0">{t('adhanConfig.highLatitude')}</dt>
                   <dd>
-                    {HIGH_LAT_LABELS[currentGeneral.highLatitudeRule]}
+                    {t(`highLat.${currentGeneral.highLatitudeRule}`)}
                     {currentGeneral.highLatitudeRule === config.recommendedHighLatitudeRule && (
-                      <span className="ml-1 text-xs text-green-600">(recommended)</span>
+                      <span className="ms-1 text-xs text-green-600">
+                        {t('adhanConfig.recommended')}
+                      </span>
                     )}
                   </dd>
                 </div>

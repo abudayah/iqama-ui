@@ -24,15 +24,6 @@ interface Props {
   onClick: () => void;
 }
 
-const PRAYER_DISPLAY: Record<PrayerKey, string> = {
-  fajr: 'Fajr',
-  sunrise: 'Sunrise',
-  dhuhr: 'Dhuhr',
-  asr: 'Asr',
-  maghrib: 'Maghrib',
-  isha: 'Isha',
-};
-
 export function PrayerCard({
   prayer,
   effective,
@@ -42,8 +33,9 @@ export function PrayerCard({
   azanTime,
   onClick,
 }: Props) {
-  // Subscribe to language changes so the 12-hour time re-formats on toggle.
-  useTranslation();
+  // Subscribe to language changes so labels and 12-hour times re-format on toggle.
+  const { t } = useTranslation();
+  const prayerLabel = t(`prayers.${prayer}`);
   const perPrayer = effective.perPrayer[prayer];
   const savedOffset = perPrayer?.offsetMinutes ?? 0;
 
@@ -62,23 +54,23 @@ export function PrayerCard({
     displayOffset === 0
       ? null
       : displayOffset > 0
-        ? `+${displayOffset} min`
-        : `${displayOffset} min`;
+        ? `+${displayOffset} ${t('adhanPrayerDrawer.min')}`
+        : `${displayOffset} ${t('adhanPrayerDrawer.min')}`;
 
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-start p-3 rounded-xl border text-left transition-colors min-h-[44px] w-full ${
+      className={`flex flex-col items-start p-3 rounded-xl border text-start transition-colors min-h-[44px] w-full ${
         hasDraftChange
           ? 'border-blue-400 bg-blue-50'
           : isCustomized || hasPeriod
             ? 'border-amber-400 bg-amber-50'
             : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
       }`}
-      aria-label={`Edit ${PRAYER_DISPLAY[prayer]} Azan offset`}
+      aria-label={t('adhanConfig.editOffsetAria', { prayer: prayerLabel })}
     >
       <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-        {PRAYER_DISPLAY[prayer]}
+        {prayerLabel}
       </span>
 
       {azanTime && (
@@ -100,12 +92,12 @@ export function PrayerCard({
       <div className="mt-1.5 flex flex-wrap gap-1">
         {isCustomized && !hasDraftChange && (
           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 border border-amber-300">
-            ✦ Customized
+            {t('adhanConfig.customized')}
           </span>
         )}
         {hasDraftChange && (
           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-300">
-            ● Draft
+            {t('adhanConfig.draft')}
           </span>
         )}
         {hasPeriod &&

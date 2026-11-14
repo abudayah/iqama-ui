@@ -4,12 +4,15 @@
  * Shown at the top of the page when URL simulator params are active.
  * Displays the simulated date and time, and provides a link to exit.
  */
+import { useTranslation } from 'react-i18next';
+
 interface SimulatorBannerProps {
   simDateStr: string;
   simNow: Date;
 }
 
 export function SimulatorBanner({ simDateStr, simNow }: SimulatorBannerProps) {
+  const { t } = useTranslation();
   const timeStr = simNow.toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',
@@ -27,7 +30,7 @@ export function SimulatorBanner({ simDateStr, simNow }: SimulatorBannerProps) {
     <div
       role="status"
       id="simulator-banner"
-      aria-label="Simulator mode active"
+      aria-label={t('simulator.activeAria')}
       className="flex items-center justify-between gap-3 px-4 py-2 text-xs font-medium"
       style={{ background: '#7c3aed', color: '#fff' }}
     >
@@ -47,16 +50,19 @@ export function SimulatorBanner({ simDateStr, simNow }: SimulatorBannerProps) {
             clipRule="evenodd"
           />
         </svg>
-        <span>
-          Simulator active — {simDateStr} at {timeStr}
+        <span dir="auto">
+          {t('simulator.active', {
+            date: <bdi dir="ltr">{simDateStr}</bdi>,
+            time: <bdi dir="ltr">{timeStr}</bdi>,
+          })}
         </span>
       </span>
       <button
         onClick={exitSimulator}
         className="underline underline-offset-2 opacity-80 hover:opacity-100 transition-opacity"
-        aria-label="Exit simulator"
+        aria-label={t('simulator.exitAria')}
       >
-        Exit
+        {t('simulator.exit')}
       </button>
     </div>
   );

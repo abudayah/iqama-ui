@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { PrayerKey, PrayerSettings } from '../../types';
 
 interface Props {
@@ -16,22 +17,14 @@ interface Props {
   onApply: (prayer: PrayerKey, patch: PrayerSettings) => void;
 }
 
-const PRAYER_DISPLAY: Record<PrayerKey, string> = {
-  fajr: 'Fajr',
-  sunrise: 'Sunrise',
-  dhuhr: 'Dhuhr',
-  asr: 'Asr',
-  maghrib: 'Maghrib',
-  isha: 'Isha',
-};
-
 /** Describes which prayers have a rule-fixed iqama (not driven by Azan value). */
-const RULE_FIXED_IQAMA: Partial<Record<PrayerKey, string>> = {
-  dhuhr: 'Iqama is fixed at 12:45 / 13:45 (DST-aware) and is not affected by the Azan offset.',
-  asr: 'Iqama follows a Friday-anchored seasonal fixed schedule (each season starts on the first Friday of its month) and is not directly affected by the Azan offset.',
+const RULE_FIXED_IQAMA_KEYS: Partial<Record<PrayerKey, string>> = {
+  dhuhr: 'adhanPrayerDrawer.ruleDhuhr',
+  asr: 'adhanPrayerDrawer.ruleAsr',
 };
 
 export function PrayerOffsetDrawer({ isOpen, onClose, prayer, currentOffset, onApply }: Props) {
+  const { t } = useTranslation();
   const [offset, setOffset] = useState(0);
 
   useEffect(() => {
@@ -49,11 +42,16 @@ export function PrayerOffsetDrawer({ isOpen, onClose, prayer, currentOffset, onA
 
   if (!isOpen || !prayer) return null;
 
-  const ruleNote = RULE_FIXED_IQAMA[prayer];
+  const ruleKey = RULE_FIXED_IQAMA_KEYS[prayer];
+  const ruleNote = ruleKey ? t(ruleKey) : undefined;
   const hasChange = offset !== currentOffset;
 
   const label =
-    offset === 0 ? 'No offset' : offset > 0 ? `+${offset} min later` : `${offset} min earlier`;
+    offset === 0
+      ? t('adhanPrayerDrawer.noOffset')
+      : offset > 0
+        ? t('adhanPrayerDrawer.later', { n: offset })
+        : t('adhanPrayerDrawer.earlier', { n: offset });
 
   const handleApply = () => {
     onApply(prayer, { offsetMinutes: offset });
@@ -73,12 +71,12 @@ export function PrayerOffsetDrawer({ isOpen, onClose, prayer, currentOffset, onA
           {/* Header */}
           <div className="flex items-center justify-between">
             <h2 id="prayer-drawer-title" className="text-base font-semibold text-gray-900">
-              {PRAYER_DISPLAY[prayer]} · Azan offset
+              {t('adhanPrayerDrawer.title', { prayer: t(`prayers.${prayer}`) })}
             </h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
-              aria-label="Close drawer"
+              aria-label={t('adhanPrayerDrawer.close')}
             >
               ✕
             </button>
@@ -94,15 +92,17 @@ export function PrayerOffsetDrawer({ isOpen, onClose, prayer, currentOffset, onA
           {/* Offset slider + numeric input */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">Azan offset</span>
+              <span className="text-sm font-medium text-gray-700">
+                {t('adhanPrayerDrawer.azanOffset')}
+              </span>
               <span
                 className={`text-sm font-semibold ${
                   offset > 0 ? 'text-orange-600' : offset < 0 ? 'text-blue-600' : 'text-gray-500'
                 }`}
                 aria-live="polite"
-                aria-label={`Offset value: ${label}`}
+                aria-label={t('adhanPrayerDrawer.valueAria', { label })}
               >
-                {label}
+                <bdi dir="ltr">{label}</bdi>
               </span>
             </div>
 
@@ -115,7 +115,7 @@ export function PrayerOffsetDrawer({ isOpen, onClose, prayer, currentOffset, onA
               value={offset}
               onChange={(e) => setOffset(parseInt(e.target.value, 10))}
               className="w-full accent-blue-600"
-              aria-label={`Offset slider, ${label}`}
+              aria-label={t('adhanPrayerDrawer.sliderAria', { label })}
               aria-valuemin={-30}
               aria-valuemax={30}
               aria-valuenow={offset}
@@ -123,9 +123,9 @@ export function PrayerOffsetDrawer({ isOpen, onClose, prayer, currentOffset, onA
             />
 
             <div className="flex justify-between text-xs text-gray-400">
-              <span>−30 min</span>
+              <span dir="ltr">−30 {t('adhanPrayerDrawer.min')}</span>
               <span>0</span>
-              <span>+30 min</span>
+              <span dir="ltr">+30 {t('adhanPrayerDrawer.min')}</span>
             </div>
 
             {/* Numeric input + stepper */}
@@ -133,7 +133,7 @@ export function PrayerOffsetDrawer({ isOpen, onClose, prayer, currentOffset, onA
               <button
                 onClick={() => setOffset((v) => Math.max(-30, v - 1))}
                 className="w-10 h-10 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-lg"
-                aria-label="Decrease offset by 1 minute"
+                aria-label={t('adhanPrayerDrawer.decrease')}
               >
                 −
               </button>
@@ -147,11 +147,12 @@ export function PrayerOffsetDrawer({ isOpen, onClose, prayer, currentOffset, onA
                   if (!isNaN(v)) setOffset(Math.max(-30, Math.min(30, v)));
                 }}
                 className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
+                dir="ltr"
               />
               <button
                 onClick={() => setOffset((v) => Math.min(30, v + 1))}
                 className="w-10 h-10 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-lg"
-                aria-label="Increase offset by 1 minute"
+                aria-label={t('adhanPrayerDrawer.increase')}
               >
                 +
               </button>
@@ -162,14 +163,12 @@ export function PrayerOffsetDrawer({ isOpen, onClose, prayer, currentOffset, onA
                 onClick={() => setOffset(0)}
                 className="text-xs text-blue-600 hover:text-blue-700"
               >
-                Reset to 0
+                {t('adhanPrayerDrawer.reset')}
               </button>
             )}
 
             {Math.abs(offset) > 10 && (
-              <p className="text-xs text-amber-600">
-                ⚠️ Offset above 10 min is large. Please confirm this is intentional.
-              </p>
+              <p className="text-xs text-amber-600">{t('adhanPrayerDrawer.largeWarning')}</p>
             )}
           </div>
 
@@ -179,14 +178,14 @@ export function PrayerOffsetDrawer({ isOpen, onClose, prayer, currentOffset, onA
               onClick={onClose}
               className="flex-1 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 min-h-[44px]"
             >
-              Cancel
+              {t('adhanPrayerDrawer.cancel')}
             </button>
             <button
               onClick={handleApply}
               disabled={!hasChange}
               className="flex-1 py-2 text-sm rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-40 min-h-[44px]"
             >
-              Add to changes
+              {t('adhanPrayerDrawer.addToChanges')}
             </button>
           </div>
         </div>

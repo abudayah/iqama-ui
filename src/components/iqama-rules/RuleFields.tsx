@@ -4,6 +4,7 @@
  * a cleared number or time is '' (never silently turned into 0 or truncated)
  * and errors are shown next to the field that caused them.
  */
+import { useTranslation } from 'react-i18next';
 import type { PrayerName } from '../../types/index';
 import type { CatalogField } from '../../types/iqama-rules';
 import { emptyObject, emptyValue, variantFields } from '../../logic/rule-defaults';
@@ -47,6 +48,7 @@ interface FieldProps {
 }
 
 function Field({ field, value, onChange, path, ctx }: FieldProps) {
+  const { t } = useTranslation();
   const id = fieldId(ctx, path);
   const error = ctx.errors[path];
   const errId = `${id}-error`;
@@ -65,7 +67,7 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
             {field.min !== undefined && field.max !== undefined && (
               <span className="text-gray-400">
                 {' '}
-                ({field.min} to {field.max})
+                ({t('ruleEditor.range', { min: field.min, max: field.max })})
               </span>
             )}
           </label>
@@ -117,7 +119,7 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
             className={`${inputCls} mt-1 bg-white ${border}`}
             {...aria}
           >
-            <option value="">Choose…</option>
+            <option value="">{t('ruleEditor.choose')}</option>
             {field.options?.map((o) => (
               <option key={String(o.value)} value={String(o.value)}>
                 {o.label}
@@ -149,7 +151,7 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
             {field.minItems !== undefined && field.maxItems !== undefined && (
               <span className="text-gray-400">
                 {' '}
-                ({field.minItems} to {field.maxItems})
+                ({t('ruleEditor.range', { min: field.minItems, max: field.maxItems })})
               </span>
             )}
           </legend>
@@ -159,7 +161,7 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
             <div
               key={i}
               role="group"
-              aria-label={`${field.label} ${i + 1}`}
+              aria-label={t('ruleEditor.itemAria', { label: field.label, index: i + 1 })}
               className="border border-gray-200 rounded-lg p-3 space-y-2 bg-gray-50"
             >
               <ObjectFields
@@ -174,9 +176,9 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
                   type="button"
                   onClick={() => onChange(items.filter((_, j) => j !== i))}
                   className="text-sm text-red-600 min-h-[44px] px-2"
-                  aria-label={`Remove ${field.label} ${i + 1}`}
+                  aria-label={t('ruleEditor.removeAria', { label: field.label, index: i + 1 })}
                 >
-                  Remove
+                  {t('ruleEditor.remove')}
                 </button>
               )}
             </div>
@@ -187,7 +189,7 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
             onClick={() => onChange([...items, emptyObject(field.item ?? [])])}
             className="text-sm text-blue-600 border border-blue-200 rounded-lg px-3 min-h-[44px] disabled:opacity-40"
           >
-            + Add
+            {t('ruleEditor.add')}
           </button>
         </fieldset>
       );
@@ -212,7 +214,7 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
               className={`${inputCls} bg-white ${border}`}
               {...aria}
             >
-              {!variant && <option value="">Choose…</option>}
+              {!variant && <option value="">{t('ruleEditor.choose')}</option>}
               {field.variants.map((v) => (
                 <option key={v.value} value={v.value}>
                   {v.label}

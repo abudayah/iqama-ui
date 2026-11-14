@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { Override } from '../types/index';
 import { isActive } from '../logic/is-active';
 
@@ -25,16 +26,10 @@ interface OverrideRowProps {
   clamped?: boolean;
 }
 
-const PRAYER_LABELS: Record<string, string> = {
-  fajr: 'Fajr',
-  dhuhr: 'Dhuhr',
-  asr: 'Asr',
-  maghrib: 'Maghrib',
-  isha: 'Isha',
-};
-
 export function OverrideRow({ override, today, onEdit, onDelete, clamped }: OverrideRowProps) {
+  const { t } = useTranslation();
   const active = isActive(override, today);
+  const prayerLabel = t(`prayers.${override.prayer}`);
 
   return (
     <div
@@ -47,45 +42,46 @@ export function OverrideRow({ override, today, onEdit, onDelete, clamped }: Over
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-gray-800">
-            {PRAYER_LABELS[override.prayer] ?? override.prayer}
+            {t(`prayers.${override.prayer}`)}
           </span>
           <span
             className={`text-xs px-2 py-0.5 rounded-full ${
               active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
             }`}
           >
-            {active ? 'Active' : 'Inactive'}
+            {active ? t('overrides.active') : t('overrides.inactive')}
           </span>
         </div>
         <p className="text-xs text-gray-500 mt-0.5">
-          {override.overrideType}: {override.value} · {formatDate(override.startDate)} –{' '}
-          {formatDate(override.endDate)}
+          {override.overrideType === 'FIXED' ? t('overrideForm.fixed') : t('overrideForm.offset')}:{' '}
+          <bdi dir="ltr">{override.value}</bdi> ·{' '}
+          <bdi dir="ltr">{formatDate(override.startDate)}</bdi> –{' '}
+          <bdi dir="ltr">{formatDate(override.endDate)}</bdi>
         </p>
         {clamped && (
           <p
             data-testid={`override-clamp-warning-${override.id}`}
             className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded px-2 py-1 mt-1"
           >
-            ⚠ Safety limits change this time on some days (minimum gap after Azan, or Fajr before
-            sunrise).
+            {t('overrides.clampWarning')}
           </p>
         )}
       </div>
-      <div className="flex gap-2 ml-2">
+      <div className="flex gap-2 ms-2">
         <button
           onClick={() => onEdit(override)}
           className="text-blue-600 text-sm px-3 py-2 rounded min-h-[44px] min-w-[44px]"
-          aria-label={`Edit override for ${override.prayer}`}
+          aria-label={t('overrides.editAria', { prayer: prayerLabel })}
         >
-          Edit
+          {t('overrides.edit')}
         </button>
         <button
           onClick={() => onDelete(override.id)}
           className="text-red-600 text-sm px-3 py-2 rounded min-h-[44px] min-w-[44px]"
-          aria-label={`Delete override for ${override.prayer}`}
+          aria-label={t('overrides.deleteAria', { prayer: prayerLabel })}
           data-testid={`delete-btn-${override.id}`}
         >
-          Delete
+          {t('overrides.delete')}
         </button>
       </div>
     </div>
