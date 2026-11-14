@@ -1,11 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import type { PrayerName, PrayerEntry } from '../types/index';
-
-// Helper to format time from 24hr to 12hr AM/PM with leading zero for hours
-const formatTime12Hr = (time24: string): string => {
-  const [hours, minutes] = time24.split(':');
-  const date = new Date(2000, 0, 1, parseInt(hours!), parseInt(minutes!));
-  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-};
+import { formatTime12 } from '../i18n/format-time';
 
 interface PrayerRowProps {
   name: PrayerName | 'sunrise';
@@ -26,13 +21,14 @@ interface PrayerRowProps {
   onTap?: (() => void) | undefined;
 }
 
-const PRAYER_LABELS: Record<string, string> = {
-  fajr: 'Fajr',
-  dhuhr: 'Dhuhr',
-  asr: 'Asr',
-  maghrib: 'Maghrib',
-  isha: 'Isha',
-  sunrise: 'Sunrise',
+/** Translation key per prayer name */
+const PRAYER_LABEL_KEYS: Record<string, string> = {
+  fajr: 'prayers.fajr',
+  dhuhr: 'prayers.dhuhr',
+  asr: 'prayers.asr',
+  maghrib: 'prayers.maghrib',
+  isha: 'prayers.isha',
+  sunrise: 'prayers.sunrise',
 };
 
 /** Dot colour per prayer — matches the design system */
@@ -57,9 +53,12 @@ export function PrayerRow({
   isQiyam = false,
   onTap,
 }: PrayerRowProps) {
+  const { t } = useTranslation();
   const isSunrise = name === 'sunrise';
   const dotColor = DOT_COLORS[name] ?? '#6b7280';
   const iqamaValue = 'iqama' in entry && entry.iqama ? entry.iqama : null;
+  const prayerName = t(PRAYER_LABEL_KEYS[name] ?? 'prayers.fajr');
+  const displayLabel = label ?? prayerName;
 
   const highlightStyle = isActive
     ? { backgroundColor: 'rgba(248, 180, 0, 0.3)' }
@@ -75,7 +74,7 @@ export function PrayerRow({
     <div
       role={onTap ? 'button' : undefined}
       aria-pressed={onTap ? isPeeked : undefined}
-      aria-label={onTap ? `Preview ${PRAYER_LABELS[name] ?? name} prayer time` : undefined}
+      aria-label={onTap ? t('prayers.previewAria', { prayer: displayLabel }) : undefined}
       onClick={onTap}
       className={[
         'flex items-center justify-between px-3 py-[18px]',
@@ -113,19 +112,19 @@ export function PrayerRow({
             fontStyle: isSunrise ? 'italic' : undefined,
           }}
         >
-          {label ?? PRAYER_LABELS[name] ?? name}
+          {displayLabel}
         </span>
 
         {/* "now" pill removed per user preference */}
       </div>
 
-      {/* Right: azan + iqama times */}
+      {/* Right: azan + iqama times — always LTR, even in Arabic */}
       <div className="flex gap-6 tabular-nums">
         <span className="text-[1.05rem] font-semibold" style={{ color: '#205072' }}>
-          {formatTime12Hr(entry.azan)}
+          <bdi dir="ltr">{formatTime12(entry.azan)}</bdi>
         </span>
         <span className="text-[1.05rem] font-semibold" style={{ color: '#329D9C' }}>
-          {iqamaValue ? formatTime12Hr(iqamaValue) : ''}
+          {iqamaValue ? <bdi dir="ltr">{formatTime12(iqamaValue)}</bdi> : ''}
         </span>
       </div>
     </div>

@@ -100,7 +100,10 @@ export function EidPrayerModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4"
+      dir="ltr"
+    >
       <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-md p-6">
         {/* Header */}
         <div className="flex items-center gap-2 mb-4">

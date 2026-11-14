@@ -41,7 +41,7 @@ export function ScheduleRangePage() {
   }
 
   return (
-    <div id="schedule-range-page">
+    <div id="schedule-range-page" dir="ltr">
       <div className="p-4 bg-white border-b border-gray-200">
         <label className="block text-xs text-gray-500 mb-1">Week</label>
         <WeekSelect start={start} end={end} onWeekChange={handleWeekChange} />

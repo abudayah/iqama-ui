@@ -9,6 +9,8 @@
  */
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
+import { joinList } from '../../i18n/list';
 import type { PrayerName } from '../../types/index';
 import type { IqamaPreviewResponse, PrayerRule } from '../../types/iqama-rules';
 import {
@@ -16,7 +18,6 @@ import {
   formatDay,
   isFriday,
   newlyMovedDays,
-  prayerLabel,
   upcomingFridays,
 } from '../../logic/iqama-rules';
 import { useModalA11y } from '../../hooks/useModalA11y';
@@ -73,13 +74,6 @@ function exampleDays(preview: IqamaPreviewResponse, prayer: PrayerName) {
     }));
 }
 
-function changeLine(preview: IqamaPreviewResponse, prayer: PrayerName): string {
-  const n = preview.summary.byPrayer[prayer]?.daysChanged ?? 0;
-  if (n === 0) return 'No time changes';
-  if (n >= preview.summary.totalDays) return 'Changes every day';
-  return `Changes on ${n} day${n === 1 ? '' : 's'}`;
-}
-
 export function RuleReviewDialog({
   minDate,
   effectiveFrom,
@@ -98,6 +92,7 @@ export function RuleReviewDialog({
   onConfirm,
   onClose,
 }: Props) {
+  const { t } = useTranslation();
   const [confirmedFor, setConfirmedFor] = useState<string | null>(null);
   const [ackFor, setAckFor] = useState<string | null>(null);
   const [reason, setReason] = useState('');
@@ -113,7 +108,9 @@ export function RuleReviewDialog({
 
   const fridayError =
     needsFriday.length > 0 && !isFriday(effectiveFrom)
-      ? `${needsFriday.map(prayerLabel).join(', ')} can only change on a Friday. Pick a Friday.`
+      ? t('rules.review.fridayError', {
+          prayers: joinList(needsFriday.map((p) => t(`prayers.${p}`))),
+        })
       : null;
   const s = preview?.summary;
   // Only days moved because of THIS change; days that were already moved are not a warning.
@@ -126,6 +123,14 @@ export function RuleReviewDialog({
     (conflicts.length === 0 || acked) &&
     !loading &&
     !saving;
+
+  const changeLine = (prayer: PrayerName): string => {
+    if (!preview) return '';
+    const n = preview.summary.byPrayer[prayer]?.daysChanged ?? 0;
+    if (n === 0) return t('rules.review.noTimeChanges');
+    if (n >= preview.summary.totalDays) return t('rules.review.changesEveryDay');
+    return t('rules.review.changesOn', { count: n });
+  };
 
   return createPortal(
     <div data-modal-root>
@@ -141,14 +146,15 @@ export function RuleReviewDialog({
         >
           <div className="px-5 pt-5 pb-3 border-b border-gray-100">
             <h2 id="iqama-review-title" className="text-lg font-semibold text-gray-900">
-              Review changes
+              {t('rules.review.title')}
             </h2>
             <p className="text-sm text-gray-600 mt-1" data-testid="review-subtitle">
-              {changed.map(prayerLabel).join(', ')} · from {formatDay(effectiveFrom)}
+              {joinList(changed.map((p) => t(`prayers.${p}`)))} ·{' '}
+              {t('rules.versions.from', { date: formatDay(effectiveFrom) })}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <label className="text-sm text-gray-700" htmlFor="iqama-effective-from">
-                Effective from
+                {t('rules.review.effectiveFrom')}
               </label>
               <input
                 id="iqama-effective-from"
@@ -160,7 +166,10 @@ export function RuleReviewDialog({
               />
             </div>
             {needsFriday.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2" aria-label="Upcoming Fridays">
+              <div
+                className="flex flex-wrap gap-2 mt-2"
+                aria-label={t('rules.review.upcomingFridays')}
+              >
                 {upcomingFridays(minDate, 4).map((d) => (
                   <button
                     key={d}
@@ -173,7 +182,7 @@ export function RuleReviewDialog({
                         : 'border-gray-300 text-gray-700'
                     }`}
                   >
-                    Fri {d.slice(5)}
+                    {t('rules.review.fridayShort', { date: d.slice(5) })}
                   </button>
                 ))}
               </div>
@@ -186,7 +195,7 @@ export function RuleReviewDialog({
           </div>
 
           <div className="px-5 py-4 overflow-y-auto flex-1 space-y-4">
-            {loading && <p className="text-sm text-gray-500">Checking the next 365 days…</p>}
+            {loading && <p className="text-sm text-gray-500">{t('rules.review.checking')}</p>}
 
             {preview && s && (
               <div data-testid="year-scan" className="space-y-3">
@@ -196,11 +205,11 @@ export function RuleReviewDialog({
                     <section
                       key={c.prayer}
                       data-testid={`change-${c.prayer}`}
-                      aria-label={prayerLabel(c.prayer)}
+                      aria-label={t(`prayers.${c.prayer}`)}
                       className="border border-gray-200 rounded-lg p-3 space-y-1"
                     >
                       <h3 className="text-sm font-semibold text-gray-900">
-                        {prayerLabel(c.prayer)}
+                        {t(`prayers.${c.prayer}`)}
                       </h3>
                       <p className="text-sm text-gray-700">
                         {describeRule(c.before)} → {describeRule(c.after)}
@@ -209,12 +218,14 @@ export function RuleReviewDialog({
                         <ul className="text-sm text-gray-800 font-mono space-y-0.5">
                           {examples.map((e) => (
                             <li key={e.date}>
-                              {e.label}&nbsp;&nbsp;{e.from} → {e.to}
+                              <bdi dir="ltr">
+                                {e.label}&nbsp;&nbsp;{e.from} → {e.to}
+                              </bdi>
                             </li>
                           ))}
                         </ul>
                       )}
-                      <p className="text-xs text-gray-500">{changeLine(preview, c.prayer)}</p>
+                      <p className="text-xs text-gray-500">{changeLine(c.prayer)}</p>
                     </section>
                   );
                 })}
@@ -224,7 +235,10 @@ export function RuleReviewDialog({
                     data-testid="newly-moved-warning"
                     className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2"
                   >
-                    ⚠ {newlyMoved} day{newlyMoved === 1 ? '' : 's'} will be moved by safety rules
+                    {t('rules.review.newlyMovedWarning', {
+                      n: newlyMoved,
+                      count: newlyMoved,
+                    })}
                   </p>
                 )}
               </div>
@@ -236,16 +250,23 @@ export function RuleReviewDialog({
                 className="bg-red-50 border border-red-200 rounded-lg p-3 space-y-2"
               >
                 <p className="text-sm font-medium text-red-800">
-                  ⛔ Fajr will be too close to sunrise on {s?.conflictDays ?? conflicts.length} day
-                  {(s?.conflictDays ?? conflicts.length) === 1 ? '' : 's'}
+                  ⛔{' '}
+                  {t('rules.review.conflictTitle', {
+                    n: s?.conflictDays ?? conflicts.length,
+                    count: s?.conflictDays ?? conflicts.length,
+                  })}
                   {s?.conflictDays && s.conflictDays > conflicts.length
-                    ? ` (first ${conflicts.length} listed)`
+                    ? ` ${t('rules.review.conflictListed', { m: conflicts.length })}`
                     : ''}
                 </p>
                 <ul className="text-sm text-red-800 space-y-1 max-h-40 overflow-y-auto">
                   {conflicts.map((c) => (
                     <li key={`${c.date}-${c.prayer}`}>
-                      {c.date}: iqama {c.iqama}, sunrise {c.sunrise}
+                      {t('rules.review.conflictLine', {
+                        date: c.date,
+                        iqama: c.iqama,
+                        sunrise: c.sunrise,
+                      })}
                     </li>
                   ))}
                 </ul>
@@ -257,8 +278,7 @@ export function RuleReviewDialog({
                     className="mt-0.5 h-5 w-5 rounded border-gray-300 text-red-600"
                   />
                   <span className="text-sm text-red-900">
-                    I understand Fajr will be less than {fajrMinBeforeSunrise ?? 60} min before
-                    sunrise on these days
+                    {t('rules.understandFajr', { min: fajrMinBeforeSunrise ?? 60 })}
                   </span>
                 </label>
               </div>
@@ -275,16 +295,13 @@ export function RuleReviewDialog({
                 role="alert"
                 className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2"
               >
-                <p className="text-sm text-amber-900">
-                  The rules changed on the engine since you opened this page. Reload to see the
-                  latest rules. Your edits are kept and applied on top of them.
-                </p>
+                <p className="text-sm text-amber-900">{t('rules.review.staleNotice')}</p>
                 <button
                   type="button"
                   onClick={onReload}
                   className="text-sm bg-amber-600 text-white rounded-lg px-3 min-h-[44px]"
                 >
-                  Reload latest rules
+                  {t('rules.review.reloadLatest')}
                 </button>
               </div>
             )}
@@ -296,7 +313,7 @@ export function RuleReviewDialog({
               >
                 <p>⛔ {error}</p>
                 {fieldErrors && fieldErrors.length > 0 && (
-                  <ul className="mt-1 list-disc pl-5">
+                  <ul className="mt-1 list-disc ps-5">
                     {fieldErrors.map((f, i) => (
                       <li key={i}>
                         {f.path}: {f.message}
@@ -316,7 +333,8 @@ export function RuleReviewDialog({
                   onClick={() => setDetailsOpen((o) => !o)}
                   className="text-sm text-blue-600 min-h-[44px] flex items-center gap-1"
                 >
-                  <span aria-hidden="true">{detailsOpen ? '▾' : '▸'}</span> Details
+                  <span aria-hidden="true">{detailsOpen ? '▾' : '▸'}</span>{' '}
+                  {t('rules.review.details')}
                 </button>
                 {detailsOpen && (
                   <div id="iqama-review-details" data-testid="review-details" className="space-y-3">
@@ -324,31 +342,44 @@ export function RuleReviewDialog({
                     <div className="grid grid-cols-2 gap-2 text-center">
                       <div className="bg-gray-50 rounded-lg p-3">
                         <div className="text-2xl font-semibold text-gray-900">{s.daysChanged}</div>
-                        <div className="text-xs text-gray-500">days changed (of {s.totalDays})</div>
+                        <div className="text-xs text-gray-500">
+                          {t('rules.review.daysChanged', {
+                            n: s.daysChanged,
+                            count: s.daysChanged,
+                            total: s.totalDays,
+                          })}
+                        </div>
                       </div>
                       <div
                         className={`rounded-lg p-3 ${s.daysClamped ? 'bg-amber-50' : 'bg-gray-50'}`}
                       >
                         <div className="text-2xl font-semibold text-gray-900">{s.daysClamped}</div>
-                        <div className="text-xs text-gray-500">days moved by safety rules</div>
+                        <div className="text-xs text-gray-500">
+                          {t('rules.review.daysMoved', {
+                            n: s.daysClamped,
+                            count: s.daysClamped,
+                          })}
+                        </div>
                       </div>
                     </div>
                     <p className="text-sm text-gray-700">
-                      Moved by safety rules: {s.movedNow ?? s.daysClampedCurrent} already today,{' '}
-                      {newlyMoved} new from this change.
+                      {t('rules.review.movedSummary', {
+                        already: s.movedNow ?? s.daysClampedCurrent,
+                        n: newlyMoved,
+                      })}
                     </p>
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="text-left text-xs text-gray-500 uppercase">
-                          <th className="pb-1 font-medium">Prayer</th>
-                          <th className="pb-1 font-medium">Changed</th>
-                          <th className="pb-1 font-medium">Moved by safety rules</th>
+                          <th className="pb-1 font-medium">{t('rules.review.tablePrayer')}</th>
+                          <th className="pb-1 font-medium">{t('rules.review.tableChanged')}</th>
+                          <th className="pb-1 font-medium">{t('rules.review.tableMoved')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
                         {(Object.keys(s.byPrayer) as PrayerName[]).map((p) => (
                           <tr key={p}>
-                            <td className="py-1">{prayerLabel(p)}</td>
+                            <td className="py-1">{t(`prayers.${p}`)}</td>
                             <td className="py-1">{s.byPrayer[p].daysChanged}</td>
                             <td className="py-1">{s.byPrayer[p].daysClamped}</td>
                           </tr>
@@ -357,19 +388,19 @@ export function RuleReviewDialog({
                     </table>
                     {s.firstChangedDates.length > 0 && (
                       <p className="text-sm text-gray-700">
-                        <span className="font-medium">First changed:</span>{' '}
+                        <span className="font-medium">{t('rules.review.firstChanged')}</span>{' '}
                         {s.firstChangedDates.join(', ')}
                       </p>
                     )}
                     {s.newlyMovedDates && s.newlyMovedDates.length > 0 && (
                       <p className="text-sm text-amber-800">
-                        <span className="font-medium">First newly moved:</span>{' '}
+                        <span className="font-medium">{t('rules.review.firstNewlyMoved')}</span>{' '}
                         {s.newlyMovedDates.join(', ')}
                       </p>
                     )}
                     {s.firstClampedDates.length > 0 && (
                       <p className="text-sm text-amber-800">
-                        <span className="font-medium">First moved by safety rules:</span>{' '}
+                        <span className="font-medium">{t('rules.review.firstMoved')}</span>{' '}
                         {s.firstClampedDates.join(', ')}
                       </p>
                     )}
@@ -379,7 +410,8 @@ export function RuleReviewDialog({
             )}
 
             <label className="block text-sm font-medium text-gray-700" htmlFor="iqama-reason">
-              Reason for change <span className="font-normal text-gray-400">(optional)</span>
+              {t('rules.review.reason')}{' '}
+              <span className="font-normal text-gray-400">{t('rules.review.reasonOptional')}</span>
               <textarea
                 id="iqama-reason"
                 value={reason}
@@ -400,11 +432,9 @@ export function RuleReviewDialog({
                   setConfirmedFor(e.target.checked && preview ? preview.previewId : null)
                 }
                 className="mt-0.5 h-5 w-5 rounded border-gray-300 text-blue-600"
-                aria-label="I understand this changes times shown to the community"
+                aria-label={t('rules.review.understandAria')}
               />
-              <span className="text-sm text-gray-700">
-                I understand this will change the prayer times shown to the community.
-              </span>
+              <span className="text-sm text-gray-700">{t('rules.review.understandLabel')}</span>
             </label>
           </div>
 
@@ -414,7 +444,7 @@ export function RuleReviewDialog({
               disabled={saving}
               className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 min-h-[44px]"
             >
-              Cancel
+              {t('rules.review.cancel')}
             </button>
             <button
               onClick={() =>
@@ -428,7 +458,7 @@ export function RuleReviewDialog({
               disabled={!canSave}
               className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white font-medium disabled:opacity-40 min-h-[44px]"
             >
-              {saving ? 'Saving…' : 'Save rules'}
+              {saving ? t('rules.review.saving') : t('rules.review.save')}
             </button>
           </div>
         </div>

@@ -164,7 +164,12 @@ export function AdhanConfigPage() {
 
   if (loading) {
     return (
-      <div className="p-4 space-y-4" aria-busy="true" aria-label="Loading Adhan configuration">
+      <div
+        className="p-4 space-y-4"
+        dir="ltr"
+        aria-busy="true"
+        aria-label="Loading Adhan configuration"
+      >
         {[1, 2, 3].map((i) => (
           <div key={i} className="h-20 bg-gray-100 rounded-xl animate-pulse" />
         ))}
@@ -174,7 +179,7 @@ export function AdhanConfigPage() {
 
   if (error) {
     return (
-      <div className="p-4">
+      <div className="p-4" dir="ltr">
         <div className="bg-red-50 border border-red-200 rounded-xl p-4">
           <p className="text-sm text-red-700">{error}</p>
           <button onClick={refresh} className="mt-2 text-sm text-red-600 underline">
@@ -205,7 +210,7 @@ export function AdhanConfigPage() {
       : 0;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" dir="ltr">
       {/* Sub-tabs */}
       <nav className="flex border-b border-gray-200 bg-white sticky top-0 z-10">
         {(['overview', 'periods'] as ActiveTab[]).map((tab) => (

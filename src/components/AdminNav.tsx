@@ -1,6 +1,9 @@
 import { NavLink, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { LangToggle } from './LangToggle';
 
 export function AdminNav() {
+  const { t } = useTranslation();
   // One "Iqama" tab covers both /admin (Overrides) and /admin/iqama (Rules).
   const { pathname } = useLocation();
   const iqamaActive =
@@ -17,7 +20,7 @@ export function AdminNav() {
           }`
         }
       >
-        Iqama
+        {t('nav.iqama')}
       </NavLink>
       <NavLink
         to="/admin/schedule"
@@ -29,7 +32,7 @@ export function AdminNav() {
           }`
         }
       >
-        Weekly View
+        {t('nav.weeklyView')}
       </NavLink>
       <NavLink
         to="/admin/eid"
@@ -41,7 +44,7 @@ export function AdminNav() {
           }`
         }
       >
-        Ramadan &amp; Eid
+        {t('nav.ramadanEid')}
       </NavLink>
       <NavLink
         to="/admin/adhan"
@@ -53,8 +56,11 @@ export function AdminNav() {
           }`
         }
       >
-        Adhan
+        {t('nav.adhan')}
       </NavLink>
+      <div className="flex shrink-0 items-center px-2">
+        <LangToggle />
+      </div>
     </nav>
   );
 }

@@ -5,7 +5,9 @@
  * any "Customized" / "Period active" badges. Clicking opens the offset drawer.
  */
 
+import { useTranslation } from 'react-i18next';
 import type { PrayerKey, AdhanConfigResponse, AdhanSettings } from '../../types';
+import { formatTime12 } from '../../i18n/format-time';
 
 interface Props {
   prayer: PrayerKey;
@@ -31,13 +33,6 @@ const PRAYER_DISPLAY: Record<PrayerKey, string> = {
   isha: 'Isha',
 };
 
-/** Formats an HH:mm 24-hour time as a 12-hour AM/PM string (e.g. "05:30 AM"). */
-function formatTime12Hr(time24: string): string {
-  const [hours, minutes] = time24.split(':');
-  const date = new Date(2000, 0, 1, parseInt(hours!, 10), parseInt(minutes!, 10));
-  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-}
-
 export function PrayerCard({
   prayer,
   effective,
@@ -47,6 +42,8 @@ export function PrayerCard({
   azanTime,
   onClick,
 }: Props) {
+  // Subscribe to language changes so the 12-hour time re-formats on toggle.
+  useTranslation();
   const perPrayer = effective.perPrayer[prayer];
   const savedOffset = perPrayer?.offsetMinutes ?? 0;
 
@@ -86,7 +83,7 @@ export function PrayerCard({
 
       {azanTime && (
         <span className="mt-0.5 text-sm font-semibold text-gray-800">
-          {formatTime12Hr(azanTime)}
+          <bdi dir="ltr">{formatTime12(azanTime)}</bdi>
         </span>
       )}
 
@@ -96,7 +93,7 @@ export function PrayerCard({
             hasDraftChange ? 'text-blue-700' : 'text-amber-700'
           }`}
         >
-          {offsetLabel}
+          <bdi dir="ltr">{offsetLabel}</bdi>
         </span>
       )}
 

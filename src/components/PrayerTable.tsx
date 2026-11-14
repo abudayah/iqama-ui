@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { DailySchedule, PrayerName } from '../types/index';
 import type { PrayerEvent } from '../logic/derive-next-prayer';
 import type { CountdownMode } from '../hooks/usePrayerContext';
@@ -82,6 +83,7 @@ function DayRows({
     | undefined;
   peekedPrayer?: PeekTarget | null | undefined;
 }) {
+  const { t } = useTranslation();
   const now = new Date();
 
   // activePrayer: only applies when we're in the azan→iqama window (isToday only)
@@ -133,7 +135,7 @@ function DayRows({
       {schedule.eid_prayer_1 && (
         <PrayerRow
           name="fajr"
-          label="1st Eid Prayer"
+          label={t('prayers.eid1')}
           isEid
           entry={{ azan: schedule.eid_prayer_1, iqama: '' }}
           isNext={nextPrayer === 'eid-prayer-1'}
@@ -146,7 +148,7 @@ function DayRows({
                   onPeekPrayer(
                     'eid-prayer-1',
                     { ...schedule, sunrise: schedule.eid_prayer_1! },
-                    '1st Prayer',
+                    t('prayers.firstPrayer'),
                   )
               : undefined
           }
@@ -155,7 +157,7 @@ function DayRows({
       {schedule.eid_prayer_2 && (
         <PrayerRow
           name="fajr"
-          label="2nd Eid Prayer"
+          label={t('prayers.eid2')}
           isEid
           entry={{ azan: schedule.eid_prayer_2, iqama: '' }}
           isNext={nextPrayer === 'eid-prayer-2'}
@@ -168,7 +170,7 @@ function DayRows({
                   onPeekPrayer(
                     'eid-prayer-2',
                     { ...schedule, sunrise: schedule.eid_prayer_2! },
-                    '2nd Prayer',
+                    t('prayers.secondPrayer'),
                   )
               : undefined
           }
@@ -182,7 +184,7 @@ function DayRows({
           <PrayerRow
             key={prayer}
             name={prayer}
-            {...(isFridayDhuhr ? { label: 'Friday' } : {})}
+            {...(isFridayDhuhr ? { label: t('prayers.friday') } : {})}
             entry={schedule[prayer]}
             isNext={nextPrayer === prayer}
             isActive={activePrayer === prayer}
@@ -197,7 +199,7 @@ function DayRows({
       {schedule.qiyam_time && (
         <PrayerRow
           name="isha"
-          label="Qiyam"
+          label={t('prayers.qiyam')}
           isQiyam
           entry={{ azan: schedule.qiyam_time, iqama: '' }}
           isNext={false}
@@ -222,6 +224,7 @@ export function PrayerTable({
   onPeekPrayer,
   peekedPrayer,
 }: PrayerTableProps) {
+  const { t, i18n } = useTranslation();
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const startXRef = useRef<number | null>(null);
@@ -244,8 +247,13 @@ export function PrayerTable({
   const activeSchedule =
     activeTab === 'today' ? todaySchedule : (tomorrowSchedule ?? todaySchedule);
 
-  /* Base translate: today = 0%, tomorrow = -50% (strip is 200% wide) */
-  const baseTranslate = activeTab === 'today' ? 0 : -50;
+  /*
+   * Base translate: today = 0, tomorrow = one panel over.
+   * The strip is 200% wide and RTL flex lays the panels right-to-left, so the
+   * offset that reveals "tomorrow" flips sign in Arabic.
+   */
+  const isRtl = i18n.language === 'ar';
+  const baseTranslate = activeTab === 'today' ? 0 : isRtl ? 50 : -50;
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     startXRef.current = e.touches[0]?.clientX ?? null;
@@ -299,9 +307,13 @@ export function PrayerTable({
         className="flex items-center justify-between px-6 pt-6 pb-4 flex-shrink-0"
       >
         <div>
-          <h3 className="text-l font-bold text-gray-900">{activeSchedule.hijri_date}</h3>
+          <h3 className="text-l font-bold text-gray-900">
+            <bdi dir="ltr">{activeSchedule.hijri_date}</bdi>
+          </h3>
           <p className="text-sm text-gray-500 mt-1">
-            {formatDisplayDate(activeSchedule.date, activeSchedule.day_of_week)}
+            <bdi dir="ltr">
+              {formatDisplayDate(activeSchedule.date, activeSchedule.day_of_week)}
+            </bdi>
           </p>
         </div>
 
@@ -314,7 +326,7 @@ export function PrayerTable({
             }`}
             aria-pressed={activeTab === 'today'}
           >
-            Today
+            {t('prayerTable.today')}
           </button>
           <button
             onClick={() => onTabChange('tomorrow')}
@@ -324,7 +336,7 @@ export function PrayerTable({
             aria-pressed={activeTab === 'tomorrow'}
             disabled={!tomorrowSchedule}
           >
-            Tomorrow
+            {t('prayerTable.tomorrow')}
           </button>
         </div>
       </div>
@@ -371,7 +383,9 @@ export function PrayerTable({
                 peekedPrayer={peekedPrayer}
               />
             ) : (
-              <div className="px-6 py-8 text-center text-gray-400 text-sm">Loading tomorrow…</div>
+              <div className="px-6 py-8 text-center text-gray-400 text-sm">
+                {t('prayerTable.loadingTomorrow')}
+              </div>
             )}
           </div>
         </div>

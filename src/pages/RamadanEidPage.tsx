@@ -231,7 +231,7 @@ export function RamadanEidPage() {
   // ── Render ──
 
   return (
-    <div id="ramadan-eid-page" className="p-4 space-y-8">
+    <div id="ramadan-eid-page" className="p-4 space-y-8" dir="ltr">
       {/* ══════════════════════════════════════════════════════════════════
           Section 1: Moon Sighting — SightingCard (always visible)
       ══════════════════════════════════════════════════════════════════ */}
