@@ -231,3 +231,34 @@ describe('PrayerTable — Property 4: no Qiyam row when qiyam_time is absent', (
     );
   });
 });
+
+describe('PrayerTable — RTL', () => {
+  /**
+   * The 200%-wide strip lays its panels right-to-left in Arabic, so the offset
+   * that reveals "tomorrow" flips sign. Without that, the table renders off
+   * screen in Arabic.
+   */
+  it('slides the strip the other way in Arabic', async () => {
+    const i18n = (await import('i18next')).default;
+    const tomorrow = { ...fixtureSchedule, date: '2025-01-16' };
+    const props = {
+      todaySchedule: fixtureSchedule,
+      tomorrowSchedule: tomorrow,
+      nextPrayer: null,
+      nextSchedule: null,
+      onTabChange: () => undefined,
+    };
+
+    await i18n.changeLanguage('ar');
+    try {
+      const { container, rerender } = render(<PrayerTable {...props} activeTab="today" />);
+      const strip = () => container.querySelector('div[style*="200%"]') as HTMLElement;
+      expect(strip().style.transform).toBe('translateX(0%)');
+
+      rerender(<PrayerTable {...props} activeTab="tomorrow" />);
+      expect(strip().style.transform).toBe('translateX(50%)');
+    } finally {
+      await i18n.changeLanguage('en');
+    }
+  });
+});

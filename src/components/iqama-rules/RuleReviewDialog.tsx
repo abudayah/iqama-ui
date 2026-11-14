@@ -217,7 +217,9 @@ export function RuleReviewDialog({
                         <ul className="text-sm text-gray-800 font-mono space-y-0.5">
                           {examples.map((e) => (
                             <li key={e.date}>
-                              {e.label}&nbsp;&nbsp;{e.from} → {e.to}
+                              <bdi dir="ltr">
+                                {e.label}&nbsp;&nbsp;{e.from} → {e.to}
+                              </bdi>
                             </li>
                           ))}
                         </ul>

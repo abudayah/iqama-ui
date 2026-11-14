@@ -1,12 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { PrayerName, PrayerEntry } from '../types/index';
-
-// Helper to format time from 24hr to 12hr AM/PM with leading zero for hours
-const formatTime12Hr = (time24: string): string => {
-  const [hours, minutes] = time24.split(':');
-  const date = new Date(2000, 0, 1, parseInt(hours!), parseInt(minutes!));
-  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-};
+import { formatTime12 } from '../i18n/format-time';
 
 interface PrayerRowProps {
   name: PrayerName | 'sunrise';
@@ -124,13 +118,13 @@ export function PrayerRow({
         {/* "now" pill removed per user preference */}
       </div>
 
-      {/* Right: azan + iqama times */}
+      {/* Right: azan + iqama times — always LTR, even in Arabic */}
       <div className="flex gap-6 tabular-nums">
         <span className="text-[1.05rem] font-semibold" style={{ color: '#205072' }}>
-          {formatTime12Hr(entry.azan)}
+          <bdi dir="ltr">{formatTime12(entry.azan)}</bdi>
         </span>
         <span className="text-[1.05rem] font-semibold" style={{ color: '#329D9C' }}>
-          {iqamaValue ? formatTime12Hr(iqamaValue) : ''}
+          {iqamaValue ? <bdi dir="ltr">{formatTime12(iqamaValue)}</bdi> : ''}
         </span>
       </div>
     </div>

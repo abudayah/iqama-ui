@@ -224,7 +224,7 @@ export function PrayerTable({
   onPeekPrayer,
   peekedPrayer,
 }: PrayerTableProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const startXRef = useRef<number | null>(null);
@@ -247,8 +247,13 @@ export function PrayerTable({
   const activeSchedule =
     activeTab === 'today' ? todaySchedule : (tomorrowSchedule ?? todaySchedule);
 
-  /* Base translate: today = 0%, tomorrow = -50% (strip is 200% wide) */
-  const baseTranslate = activeTab === 'today' ? 0 : -50;
+  /*
+   * Base translate: today = 0, tomorrow = one panel over.
+   * The strip is 200% wide and RTL flex lays the panels right-to-left, so the
+   * offset that reveals "tomorrow" flips sign in Arabic.
+   */
+  const isRtl = i18n.language === 'ar';
+  const baseTranslate = activeTab === 'today' ? 0 : isRtl ? 50 : -50;
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
     startXRef.current = e.touches[0]?.clientX ?? null;
@@ -302,9 +307,13 @@ export function PrayerTable({
         className="flex items-center justify-between px-6 pt-6 pb-4 flex-shrink-0"
       >
         <div>
-          <h3 className="text-l font-bold text-gray-900">{activeSchedule.hijri_date}</h3>
+          <h3 className="text-l font-bold text-gray-900">
+            <bdi dir="ltr">{activeSchedule.hijri_date}</bdi>
+          </h3>
           <p className="text-sm text-gray-500 mt-1">
-            {formatDisplayDate(activeSchedule.date, activeSchedule.day_of_week)}
+            <bdi dir="ltr">
+              {formatDisplayDate(activeSchedule.date, activeSchedule.day_of_week)}
+            </bdi>
           </p>
         </div>
 

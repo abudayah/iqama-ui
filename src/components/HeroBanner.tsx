@@ -622,10 +622,12 @@ export function HeroBanner({
             aria-live="polite"
             aria-atomic="true"
           >
-            {displayCountdown.display.slice(0, 5)}
-            <span className="text-2xl font-semibold opacity-70">
-              &nbsp;:&nbsp;{displayCountdown.display.slice(6)}
-            </span>
+            <bdi dir="ltr">
+              {displayCountdown.display.slice(0, 5)}
+              <span className="text-2xl font-semibold opacity-70">
+                &nbsp;:&nbsp;{displayCountdown.display.slice(6)}
+              </span>
+            </bdi>
           </p>
         )}
 
