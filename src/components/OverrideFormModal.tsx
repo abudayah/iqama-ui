@@ -98,7 +98,10 @@ export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModa
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4"
+      dir="ltr"
+    >
       <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-md p-6">
         <h2 className="text-lg font-bold mb-4">{initial ? 'Edit Override' : 'New Override'}</h2>
 
