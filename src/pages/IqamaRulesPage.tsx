@@ -10,11 +10,12 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useIqamaRules } from '../hooks/useIqamaRules';
 import { overlappingPrayers, useIqamaRulesDraft } from '../hooks/useIqamaRulesDraft';
 import { previewIqamaRules, saveIqamaRules } from '../services/iqama-rules-service';
 import { ApiError } from '../api/errors';
-import { canonicalJson, changedPrayers, prayerLabel } from '../logic/iqama-rules';
+import { canonicalJson, changedPrayers } from '../logic/iqama-rules';
 import type { PrayerName } from '../types/index';
 import type { IqamaPreviewResponse, PrayerRule, RuleSet } from '../types/iqama-rules';
 import { RuleCard } from '../components/iqama-rules/RuleCard';
@@ -26,6 +27,7 @@ import { RuleReviewDialog } from '../components/iqama-rules/RuleReviewDialog';
 const later = (a: string, b: string) => (a > b ? a : b);
 
 export function IqamaRulesPage() {
+  const { t } = useTranslation();
   const { config, catalog, loading, error, refresh } = useIqamaRules();
   // Inside the Iqama tab the draft is owned by IqamaTabLayout so it survives a
   // switch to Overrides; standalone (tests) the page keeps its own.
@@ -169,7 +171,7 @@ export function IqamaRulesPage() {
       );
       reset();
       setReviewOpen(false);
-      setSuccessMsg('Rules saved and published.');
+      setSuccessMsg(t('rules.saved'));
       setTimeout(() => setSuccessMsg(null), 6000);
       refresh();
     } catch (e) {
@@ -184,7 +186,7 @@ export function IqamaRulesPage() {
         setSaveError(api.message);
         setScan((n) => n + 1);
       } else {
-        setSaveError(e instanceof Error ? e.message : 'Failed to save');
+        setSaveError(e instanceof Error ? e.message : t('rules.errors.saveFailed'));
         if (api?.errors) setFieldErrors(api.errors);
       }
     } finally {
@@ -194,7 +196,7 @@ export function IqamaRulesPage() {
 
   if (loading) {
     return (
-      <div className="p-4 space-y-4" aria-busy="true" aria-label="Loading Iqama rules">
+      <div className="p-4 space-y-4" aria-busy="true" aria-label={t('rules.loadingAria')}>
         {[1, 2, 3].map((i) => (
           <div key={i} className="h-20 bg-gray-100 rounded-xl animate-pulse" />
         ))}
@@ -207,7 +209,7 @@ export function IqamaRulesPage() {
         <div className="bg-red-50 border border-red-200 rounded-xl p-4" role="alert">
           <p className="text-sm text-red-700">{error}</p>
           <button onClick={refresh} className="mt-2 text-sm text-red-600 underline min-h-[44px]">
-            Retry
+            {t('common.retry')}
           </button>
         </div>
       </div>
@@ -231,13 +233,13 @@ export function IqamaRulesPage() {
           role="status"
           className="sticky top-0 z-10 mx-4 mt-2 bg-blue-600 text-white rounded-xl px-4 py-2.5 flex items-center justify-between text-sm shadow-lg"
         >
-          <span>Unsaved changes</span>
+          <span>{t('rules.unsavedChanges')}</span>
           <div className="flex gap-3">
             <button
               onClick={reset}
               className="text-blue-200 hover:text-white underline min-h-[44px] px-2"
             >
-              Discard
+              {t('rules.discard')}
             </button>
             <button
               onClick={() => {
@@ -246,7 +248,7 @@ export function IqamaRulesPage() {
               }}
               className="bg-white text-blue-600 font-medium px-3 py-1.5 rounded-lg hover:bg-blue-50 min-h-[44px]"
             >
-              Review &amp; save
+              {t('rules.reviewAndSave')}
             </button>
           </div>
         </div>
@@ -254,7 +256,7 @@ export function IqamaRulesPage() {
 
       <div className="p-4 space-y-4">
         <p className="text-sm text-gray-600" data-testid="public-schedule-note">
-          The public schedule uses these rules.
+          {t('rules.publicScheduleNote')}
         </p>
 
         {!latest && (
@@ -262,8 +264,7 @@ export function IqamaRulesPage() {
             role="alert"
             className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800"
           >
-            No rules are saved on the engine yet, so there is nothing to edit. Seed the engine
-            first.
+            {t('rules.noRules')}
           </div>
         )}
         {latest && !baseline && (
@@ -271,8 +272,7 @@ export function IqamaRulesPage() {
             role="alert"
             className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700"
           >
-            Version {latest.versionId} is stored but invalid ({latest.error}). Editing is off until
-            it is fixed on the engine.
+            {t('rules.invalid', { version: latest.versionId, error: latest.error })}
           </div>
         )}
 
@@ -286,40 +286,35 @@ export function IqamaRulesPage() {
               >
                 {notices.overlaps.map((p) => (
                   <div key={p} className="flex items-center justify-between gap-3">
-                    <span>
-                      {prayerLabel(p)} was changed by another save: your version is kept, review it.
-                    </span>
+                    <span>{t('rules.notices.overlaps', { prayer: t(`prayers.${p}`) })}</span>
                     <button
                       type="button"
                       onClick={() => {
                         dropPrayer(p);
                         setNotices((n) => ({ ...n, overlaps: n.overlaps.filter((x) => x !== p) }));
                       }}
-                      aria-label={`Use the saved version instead for ${prayerLabel(p)}`}
+                      aria-label={t('rules.notices.useSavedAria', { prayer: t(`prayers.${p}`) })}
                       className="shrink-0 text-sm border border-amber-400 rounded-lg px-3 min-h-[44px] bg-white"
                     >
-                      Use the saved version instead
+                      {t('rules.notices.useSaved')}
                     </button>
                   </div>
                 ))}
                 {notices.dateMoved && (
-                  <p>
-                    The effective date moved to {notices.dateMoved}, because the newest version
-                    starts later than the date you chose.
-                  </p>
+                  <p>{t('rules.notices.dateMoved', { date: notices.dateMoved })}</p>
                 )}
                 <button
                   type="button"
                   onClick={() => setNotices({ overlaps: [], dateMoved: null })}
                   className="text-sm text-amber-800 underline min-h-[44px]"
                 >
-                  Dismiss
+                  {t('common.dismiss')}
                 </button>
               </div>
             )}
             <VersionsPanel config={config} />
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-              Iqama rules
+              {t('rules.title')}
             </h3>
             <div className="space-y-2">
               {catalog.prayers.map(({ name }) => (
@@ -355,7 +350,10 @@ export function IqamaRulesPage() {
           minDate={minDate}
           effectiveFrom={effectiveFrom}
           onEffectiveFromChange={setEffectiveFrom}
-          baseNote={`Building on version ${latest.versionId} (effective ${latest.effectiveFrom}).`}
+          baseNote={t('rules.buildOn', {
+            version: latest.versionId,
+            date: latest.effectiveFrom,
+          })}
           changes={changed.map((p) => ({ prayer: p, before: baseline![p], after: proposed![p] }))}
           needsFriday={needsFriday}
           preview={activePreview}

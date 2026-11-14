@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { CountdownMode } from '../hooks/usePrayerContext';
 import type { PrayerName, DailySchedule, CountdownState } from '../types/index';
 import type { PrayerEvent } from '../logic/derive-next-prayer';
@@ -34,15 +35,15 @@ interface HeroBannerProps {
 }
 
 /* ─── Constants ─────────────────────────────────────────────────────────────── */
-const PRAYER_LABELS: Record<string, string> = {
-  fajr: 'Fajr',
-  dhuhr: 'Dhuhr',
-  asr: 'Asr',
-  maghrib: 'Maghrib',
-  isha: 'Isha',
-  sunrise: 'Sunrise',
-  'eid-prayer-1': '1st Prayer',
-  'eid-prayer-2': '2nd Prayer',
+const PRAYER_LABEL_KEYS: Record<string, string> = {
+  fajr: 'prayers.fajr',
+  dhuhr: 'prayers.dhuhr',
+  asr: 'prayers.asr',
+  maghrib: 'prayers.maghrib',
+  isha: 'prayers.isha',
+  sunrise: 'prayers.sunrise',
+  'eid-prayer-1': 'prayers.firstPrayer',
+  'eid-prayer-2': 'prayers.secondPrayer',
 };
 
 /* ─── Time helpers ───────────────────────────────────────────────────────────── */
@@ -447,6 +448,7 @@ export function HeroBanner({
   peekLabel,
   compact = false,
 }: HeroBannerProps) {
+  const { t } = useTranslation();
   const now = simulatedNow ?? new Date();
   const nowMin = nowMinutes(now);
 
@@ -501,7 +503,7 @@ export function HeroBanner({
           const [y, mo, d] = peekSchedule.date.split('-').map(Number);
           const targetDate = new Date(y!, mo! - 1, d!, h!, m!, 0, 0);
           const diffMs = targetDate.getTime() - now.getTime();
-          if (diffMs <= 0) return { phase: 'done' as const, display: 'All prayers complete' };
+          if (diffMs <= 0) return { phase: 'done' as const, display: t('hero.allComplete') };
           const total = Math.floor(diffMs / 1000);
           const hh = Math.floor(total / 3600);
           const mm = Math.floor((total % 3600) / 60);
@@ -514,7 +516,7 @@ export function HeroBanner({
       : countdown;
 
   const prayerLabel =
-    peekLabel ?? (displayPrayer ? (PRAYER_LABELS[displayPrayer] ?? displayPrayer) : '—');
+    peekLabel ?? (displayPrayer ? t(PRAYER_LABEL_KEYS[displayPrayer] ?? 'prayers.fajr') : '—');
 
   const isNonAzanEvent = (p: typeof displayPrayer) =>
     p === 'sunrise' || p === 'eid-prayer-1' || p === 'eid-prayer-2';
@@ -540,32 +542,32 @@ export function HeroBanner({
   // Determine super-title based on what's being displayed
   const superTitle = isPeeking
     ? isEidPeek
-      ? 'EID PRAYER IN'
+      ? t('hero.eidPrayerIn')
       : peekPrayer === 'sunrise'
-        ? 'SUNRISE IN'
-        : 'AZAN IN'
+        ? t('hero.sunriseIn')
+        : t('hero.azanIn')
     : displayPrayer === 'sunrise'
-      ? 'SUNRISE IN'
+      ? t('hero.sunriseIn')
       : displayPrayer === 'eid-prayer-1' || displayPrayer === 'eid-prayer-2'
-        ? 'NEXT PRAYER'
+        ? t('hero.nextPrayer')
         : isIqamaWindow
-          ? 'TIME UNTIL IQAMA'
-          : 'NEXT PRAYER';
+          ? t('hero.timeUntilIqama')
+          : t('hero.nextPrayer');
 
   const subLine = isPeeking
     ? azanTime
-      ? `${prayerLabel} · at ${azanTime}`
+      ? t('hero.at', { prayer: prayerLabel, time: azanTime })
       : prayerLabel
     : isIqamaWindow
       ? iqamaTime
-        ? `${prayerLabel} · Iqama at ${iqamaTime}`
+        ? t('hero.iqamaAt', { prayer: prayerLabel, time: iqamaTime })
         : prayerLabel
       : displayPrayer === 'sunrise'
         ? azanTime
-          ? `${prayerLabel} · at ${azanTime}`
+          ? t('hero.at', { prayer: prayerLabel, time: azanTime })
           : prayerLabel
         : azanTime
-          ? `${prayerLabel} · Azan at ${azanTime}`
+          ? t('hero.azanAt', { prayer: prayerLabel, time: azanTime })
           : prayerLabel;
 
   /* ── Moon phase ── */
@@ -599,7 +601,7 @@ export function HeroBanner({
         height: 300,
         background: `linear-gradient(to bottom, ${sky.top}, ${sky.mid}, ${sky.bot})`,
       }}
-      aria-label="Prayer hero banner"
+      aria-label={t('hero.aria')}
     >
       {/* ── Text content — left-aligned stacked layout ── */}
       <div

@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AdminNav } from '../components/AdminNav';
 import { useConfig } from '../hooks/useConfig';
 import { clearCache } from '../services/override-service';
 
 export function AdminPage() {
+  const { t } = useTranslation();
   const { clearApiKey } = useConfig();
   const navigate = useNavigate();
   const [clearing, setClearing] = useState(false);
@@ -38,11 +40,11 @@ export function AdminPage() {
       >
         <Link
           to="/"
-          aria-label="Back to prayer times"
+          aria-label={t('admin.backAria')}
           className="flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-gray-800 px-2 py-2 rounded min-h-[44px] transition-colors"
         >
           <span aria-hidden="true">←</span>
-          <span>Back</span>
+          <span>{t('admin.back')}</span>
         </Link>
         <div className="flex items-center gap-2">
           <button
@@ -55,21 +57,21 @@ export function AdminPage() {
                   ? 'text-red-500'
                   : 'text-gray-500 hover:text-gray-700'
             } disabled:opacity-50`}
-            title="Clear server schedule cache"
+            title={t('admin.clearCacheTitle')}
           >
             {clearing
-              ? 'Clearing…'
+              ? t('admin.clearing')
               : clearStatus === 'success'
-                ? '✓ Cache cleared'
+                ? t('admin.cacheCleared')
                 : clearStatus === 'error'
-                  ? '✗ Failed'
-                  : '🗑 Clear cache'}
+                  ? t('admin.failed')
+                  : t('admin.clearCache')}
           </button>
           <button
             onClick={handleSignOut}
             className="text-sm text-red-600 hover:text-red-700 px-3 py-2 rounded min-h-[44px] transition-colors"
           >
-            Sign out
+            {t('admin.signOut')}
           </button>
         </div>
       </header>

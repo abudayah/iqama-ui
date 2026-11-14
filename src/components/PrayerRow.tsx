@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { PrayerName, PrayerEntry } from '../types/index';
 
 // Helper to format time from 24hr to 12hr AM/PM with leading zero for hours
@@ -26,13 +27,14 @@ interface PrayerRowProps {
   onTap?: (() => void) | undefined;
 }
 
-const PRAYER_LABELS: Record<string, string> = {
-  fajr: 'Fajr',
-  dhuhr: 'Dhuhr',
-  asr: 'Asr',
-  maghrib: 'Maghrib',
-  isha: 'Isha',
-  sunrise: 'Sunrise',
+/** Translation key per prayer name */
+const PRAYER_LABEL_KEYS: Record<string, string> = {
+  fajr: 'prayers.fajr',
+  dhuhr: 'prayers.dhuhr',
+  asr: 'prayers.asr',
+  maghrib: 'prayers.maghrib',
+  isha: 'prayers.isha',
+  sunrise: 'prayers.sunrise',
 };
 
 /** Dot colour per prayer — matches the design system */
@@ -57,9 +59,12 @@ export function PrayerRow({
   isQiyam = false,
   onTap,
 }: PrayerRowProps) {
+  const { t } = useTranslation();
   const isSunrise = name === 'sunrise';
   const dotColor = DOT_COLORS[name] ?? '#6b7280';
   const iqamaValue = 'iqama' in entry && entry.iqama ? entry.iqama : null;
+  const prayerName = t(PRAYER_LABEL_KEYS[name] ?? 'prayers.fajr');
+  const displayLabel = label ?? prayerName;
 
   const highlightStyle = isActive
     ? { backgroundColor: 'rgba(248, 180, 0, 0.3)' }
@@ -75,7 +80,7 @@ export function PrayerRow({
     <div
       role={onTap ? 'button' : undefined}
       aria-pressed={onTap ? isPeeked : undefined}
-      aria-label={onTap ? `Preview ${PRAYER_LABELS[name] ?? name} prayer time` : undefined}
+      aria-label={onTap ? t('prayers.previewAria', { prayer: displayLabel }) : undefined}
       onClick={onTap}
       className={[
         'flex items-center justify-between px-3 py-[18px]',
@@ -113,7 +118,7 @@ export function PrayerRow({
             fontStyle: isSunrise ? 'italic' : undefined,
           }}
         >
-          {label ?? PRAYER_LABELS[name] ?? name}
+          {displayLabel}
         </span>
 
         {/* "now" pill removed per user preference */}

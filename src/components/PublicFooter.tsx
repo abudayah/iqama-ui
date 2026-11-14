@@ -1,5 +1,7 @@
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { LangToggle } from './LangToggle';
 
 const DIRECTIONS_URL = 'https://maps.app.goo.gl/UFtWUajt1Q4Xib3B8';
 
@@ -61,18 +63,19 @@ function GearIcon() {
 }
 
 export function PublicFooter() {
+  const { t } = useTranslation();
   const { canInstall, triggerInstall } = useInstallPrompt();
 
   return (
     <footer
       id="public-footer"
       className="mt-auto fixed bottom-0 left-0 right-0 md:relative z-50"
-      aria-label="Site footer"
+      aria-label={t('footer.aria')}
       style={{ background: '#ffffff', borderTop: '1px solid #f0f0f0' }}
     >
       <div className="max-w-lg mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
         <span style={{ fontSize: '11px', color: '#999', letterSpacing: '0.02em' }}>
-          Masjid Al-Hidayah
+          {t('footer.masjidName')}
         </span>
 
         <div className="flex items-center gap-2.5">
@@ -80,7 +83,7 @@ export function PublicFooter() {
             href={DIRECTIONS_URL}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Get directions to Masjid Al-Hidayah"
+            aria-label={t('footer.directionsAria')}
             className="flex items-center gap-1 transition-colors hover:text-gray-600"
             style={{
               fontSize: '11px',
@@ -91,7 +94,7 @@ export function PublicFooter() {
             }}
           >
             <DirectionsIcon />
-            <span>Directions</span>
+            <span>{t('footer.directions')}</span>
           </a>
 
           {canInstall && (
@@ -99,7 +102,7 @@ export function PublicFooter() {
               <span style={{ width: 1, height: 10, background: '#ddd', display: 'inline-block' }} />
               <button
                 onClick={() => void triggerInstall()}
-                aria-label="Install this app on your device"
+                aria-label={t('footer.installAria')}
                 className="flex items-center gap-1 transition-colors hover:text-gray-600 cursor-pointer"
                 style={{
                   fontSize: '11px',
@@ -112,7 +115,7 @@ export function PublicFooter() {
                 }}
               >
                 <DownloadIcon />
-                <span>Install</span>
+                <span>{t('footer.install')}</span>
               </button>
             </>
           )}
@@ -121,9 +124,12 @@ export function PublicFooter() {
             className="md:hidden"
             style={{ width: 1, height: 10, background: '#ddd', display: 'inline-block' }}
           />
+          <div className="flex items-center md:hidden">
+            <LangToggle />
+          </div>
           <Link
             to="/admin"
-            aria-label="Admin panel"
+            aria-label={t('footer.adminAria')}
             className="flex items-center transition-colors hover:text-gray-600 md:hidden p-1"
             style={{
               color: '#888',

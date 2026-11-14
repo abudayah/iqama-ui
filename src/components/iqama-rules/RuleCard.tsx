@@ -1,6 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import type { PrayerName } from '../../types/index';
 import type { PrayerRule } from '../../types/iqama-rules';
-import { describeRule, prayerLabel } from '../../logic/iqama-rules';
+import { describeRule } from '../../logic/iqama-rules';
 
 interface Props {
   prayer: PrayerName;
@@ -10,6 +11,8 @@ interface Props {
 }
 
 export function RuleCard({ prayer, rule, edited, onClick }: Props) {
+  const { t } = useTranslation();
+
   return (
     <button
       type="button"
@@ -19,10 +22,10 @@ export function RuleCard({ prayer, rule, edited, onClick }: Props) {
     >
       <span className="min-w-0">
         <span className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-gray-900">{prayerLabel(prayer)}</span>
+          <span className="text-sm font-semibold text-gray-900">{t(`prayers.${prayer}`)}</span>
           {edited && (
             <span className="text-xs bg-blue-100 text-blue-700 rounded-full px-2 py-0.5">
-              Edited
+              {t('rules.edited')}
             </span>
           )}
         </span>
