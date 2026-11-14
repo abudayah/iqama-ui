@@ -116,9 +116,21 @@ export interface I18nKeys {
       checking: string;
       noTimeChanges: string;
       changesEveryDay: string;
-      changesOn: string;
-      newlyMovedWarning: string;
-      conflictTitle: string;
+      changesOn_one: string;
+      changesOn_other: string;
+      changesOn_two?: string;
+      changesOn_few?: string;
+      changesOn_many?: string;
+      newlyMovedWarning_one: string;
+      newlyMovedWarning_other: string;
+      newlyMovedWarning_two?: string;
+      newlyMovedWarning_few?: string;
+      newlyMovedWarning_many?: string;
+      conflictTitle_one: string;
+      conflictTitle_other: string;
+      conflictTitle_two?: string;
+      conflictTitle_few?: string;
+      conflictTitle_many?: string;
       conflictListed: string;
       conflictLine: string;
       understandLabel: string;
@@ -126,8 +138,16 @@ export interface I18nKeys {
       staleNotice: string;
       reloadLatest: string;
       details: string;
-      daysChanged: string;
-      daysMoved: string;
+      daysChanged_one: string;
+      daysChanged_other: string;
+      daysChanged_two?: string;
+      daysChanged_few?: string;
+      daysChanged_many?: string;
+      daysMoved_one: string;
+      daysMoved_other: string;
+      daysMoved_two?: string;
+      daysMoved_few?: string;
+      daysMoved_many?: string;
       movedSummary: string;
       tablePrayer: string;
       tableChanged: string;
@@ -141,9 +161,14 @@ export interface I18nKeys {
     guardrails: {
       title: string;
       minGap: string;
+      /** Arabic plural form (3–10) for `minGap`; English falls back to `minGap`. */
+      minGap_few?: string;
       fajrLimit: string;
+      fajrLimit_few?: string;
       fajrConflict: string;
+      fajrConflict_few?: string;
       step: string;
+      step_few?: string;
       fridayStart: string;
       anyDay: string;
       footnote: string;
@@ -285,9 +310,12 @@ const en: I18nKeys = {
       checking: 'Checking the next 365 days…',
       noTimeChanges: 'No time changes',
       changesEveryDay: 'Changes every day',
-      changesOn: 'Changes on {{n}} day{{s}}',
-      newlyMovedWarning: '⚠ {{n}} day{{s}} will be moved by safety rules',
-      conflictTitle: 'Fajr will be too close to sunrise on {{n}} day{{s}}',
+      changesOn_one: 'Changes on {{count}} day',
+      changesOn_other: 'Changes on {{count}} days',
+      newlyMovedWarning_one: '⚠ {{count}} day will be moved by safety rules',
+      newlyMovedWarning_other: '⚠ {{count}} days will be moved by safety rules',
+      conflictTitle_one: 'Fajr will be too close to sunrise on {{count}} day',
+      conflictTitle_other: 'Fajr will be too close to sunrise on {{count}} days',
       conflictListed: '(first {{m}} listed)',
       conflictLine: '{{date}}: iqama {{iqama}}, sunrise {{sunrise}}',
       understandLabel: 'I understand this will change the prayer times shown to the community.',
@@ -296,8 +324,10 @@ const en: I18nKeys = {
         'The rules changed on the engine since you opened this page. Reload to see the latest rules. Your edits are kept and applied on top of them.',
       reloadLatest: 'Reload latest rules',
       details: 'Details',
-      daysChanged: '{{n}} day{{s}} changed (of {{total}})',
-      daysMoved: '{{n}} day{{s}} moved by safety rules',
+      daysChanged_one: '{{count}} day changed (of {{total}})',
+      daysChanged_other: '{{count}} days changed (of {{total}})',
+      daysMoved_one: '{{count}} day moved by safety rules',
+      daysMoved_other: '{{count}} days moved by safety rules',
       movedSummary: 'Moved by safety rules: {{already}} already today, {{n}} new from this change.',
       tablePrayer: 'Prayer',
       tableChanged: 'Changed',

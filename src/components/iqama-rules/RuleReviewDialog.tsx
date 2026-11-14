@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
+import { joinList } from '../../i18n/list';
 import type { PrayerName } from '../../types/index';
 import type { IqamaPreviewResponse, PrayerRule } from '../../types/iqama-rules';
 import {
@@ -108,7 +109,7 @@ export function RuleReviewDialog({
   const fridayError =
     needsFriday.length > 0 && !isFriday(effectiveFrom)
       ? t('rules.review.fridayError', {
-          prayers: needsFriday.map((p) => t(`prayers.${p}`)).join(', '),
+          prayers: joinList(needsFriday.map((p) => t(`prayers.${p}`))),
         })
       : null;
   const s = preview?.summary;
@@ -128,7 +129,7 @@ export function RuleReviewDialog({
     const n = preview.summary.byPrayer[prayer]?.daysChanged ?? 0;
     if (n === 0) return t('rules.review.noTimeChanges');
     if (n >= preview.summary.totalDays) return t('rules.review.changesEveryDay');
-    return t('rules.review.changesOn', { n, s: n === 1 ? '' : 's' });
+    return t('rules.review.changesOn', { count: n });
   };
 
   return createPortal(
@@ -148,7 +149,7 @@ export function RuleReviewDialog({
               {t('rules.review.title')}
             </h2>
             <p className="text-sm text-gray-600 mt-1" data-testid="review-subtitle">
-              {changed.map((p) => t(`prayers.${p}`)).join(', ')} ·{' '}
+              {joinList(changed.map((p) => t(`prayers.${p}`)))} ·{' '}
               {t('rules.versions.from', { date: formatDay(effectiveFrom) })}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -236,7 +237,7 @@ export function RuleReviewDialog({
                   >
                     {t('rules.review.newlyMovedWarning', {
                       n: newlyMoved,
-                      s: newlyMoved === 1 ? '' : 's',
+                      count: newlyMoved,
                     })}
                   </p>
                 )}
@@ -252,7 +253,7 @@ export function RuleReviewDialog({
                   ⛔{' '}
                   {t('rules.review.conflictTitle', {
                     n: s?.conflictDays ?? conflicts.length,
-                    s: (s?.conflictDays ?? conflicts.length) === 1 ? '' : 's',
+                    count: s?.conflictDays ?? conflicts.length,
                   })}
                   {s?.conflictDays && s.conflictDays > conflicts.length
                     ? ` ${t('rules.review.conflictListed', { m: conflicts.length })}`
@@ -312,7 +313,7 @@ export function RuleReviewDialog({
               >
                 <p>⛔ {error}</p>
                 {fieldErrors && fieldErrors.length > 0 && (
-                  <ul className="mt-1 list-disc pl-5">
+                  <ul className="mt-1 list-disc ps-5">
                     {fieldErrors.map((f, i) => (
                       <li key={i}>
                         {f.path}: {f.message}
@@ -344,7 +345,7 @@ export function RuleReviewDialog({
                         <div className="text-xs text-gray-500">
                           {t('rules.review.daysChanged', {
                             n: s.daysChanged,
-                            s: s.daysChanged === 1 ? '' : 's',
+                            count: s.daysChanged,
                             total: s.totalDays,
                           })}
                         </div>
@@ -356,7 +357,7 @@ export function RuleReviewDialog({
                         <div className="text-xs text-gray-500">
                           {t('rules.review.daysMoved', {
                             n: s.daysClamped,
-                            s: s.daysClamped === 1 ? '' : 's',
+                            count: s.daysClamped,
                           })}
                         </div>
                       </div>
