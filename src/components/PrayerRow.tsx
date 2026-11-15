@@ -57,7 +57,9 @@ export function PrayerRow({
   const isSunrise = name === 'sunrise';
   const dotColor = DOT_COLORS[name] ?? '#6b7280';
   const iqamaValue = 'iqama' in entry && entry.iqama ? entry.iqama : null;
-  const prayerName = t(PRAYER_LABEL_KEYS[name] ?? 'prayers.fajr');
+  const prayerKey = PRAYER_LABEL_KEYS[name];
+  if (!prayerKey) throw new RangeError(`Unknown prayer label: ${name}`);
+  const prayerName = t(prayerKey);
   const displayLabel = label ?? prayerName;
 
   const highlightStyle = isActive

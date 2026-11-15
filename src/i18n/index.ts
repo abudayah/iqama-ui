@@ -12,21 +12,24 @@ export type Lang = 'en' | 'ar';
  * Language detection order: saved choice → browser language → English.
  * Arabic (any regional variant, e.g. ar-EG) starts the UI in Arabic.
  */
-export function detectLang(): Lang {
+export function detectLang(search = '', saved?: string | null, browser = ''): Lang {
+  const requested = new URLSearchParams(search).get('lang');
+  if (requested === 'en' || requested === 'ar') return requested;
   try {
-    const saved = localStorage.getItem(LANG_KEY);
-    if (saved === 'en' || saved === 'ar') return saved;
+    const stored = saved === undefined ? localStorage.getItem(LANG_KEY) : saved;
+    if (stored === 'en' || stored === 'ar') return stored;
   } catch {
     // localStorage can throw in private/sandboxed contexts — fall through.
   }
-  const browser =
-    typeof navigator !== 'undefined' && typeof navigator.language === 'string'
+  const detectedBrowser =
+    browser ||
+    (typeof navigator !== 'undefined' && typeof navigator.language === 'string'
       ? navigator.language.toLowerCase()
-      : '';
-  return browser.startsWith('ar') ? 'ar' : 'en';
+      : '');
+  return detectedBrowser.startsWith('ar') ? 'ar' : 'en';
 }
 
-const initialLang = detectLang();
+const initialLang = detectLang(typeof window === 'undefined' ? '' : window.location.search);
 
 i18n.use(initReactI18next).init({
   resources: {

@@ -50,6 +50,81 @@ const LABEL_KEYS: Record<string, string> = {
 };
 
 export function translateRuleCatalog(label: string, language: string): string {
+  if (!language.startsWith('ar')) return label;
   const key = LABEL_KEYS[label];
+  return key ? i18n.t(`ruleEditor.catalog.${key}`, { lng: language }) : label;
+}
+
+/** Translate catalog values using their stable field/value identity, with labels as fallback. */
+const IDENTITY_KEYS: Record<string, string> = {
+  OFFSET: 'offsetMinutes',
+  FIXED_TIME: 'fixedClockTime',
+  SCALED_GAP: 'scaledGap',
+  SEASONAL: 'seasonalFixedTimes',
+  limits: 'limits',
+  rounding: 'rounding',
+  'limits.minAfterAzan': 'minAfterAzan',
+  'limits.latestBeforeSunrise': 'latestBeforeSunrise',
+  'rounding.mode': 'direction',
+  'rounding.step': 'multipleMinutes',
+  'weekdayAdjust.SUN': 'weekdaySun',
+  'weekdayAdjust.MON': 'weekdayMon',
+  'weekdayAdjust.TUE': 'weekdayTue',
+  'weekdayAdjust.WED': 'weekdayWed',
+  'weekdayAdjust.THU': 'weekdayThu',
+  'weekdayAdjust.FRI': 'weekdayFri',
+  'weekdayAdjust.SAT': 'weekdaySat',
+  'points.azan': 'whenAzanAt',
+  'points.gapMinutes': 'gapAfterAzan',
+  'segments.start.DATE': 'calendarDate',
+  'segments.start.FIRST_FRIDAY': 'firstFriday',
+  'segments.time': 'iqamaTime',
+  'segments.start.month': 'monthNumber',
+  'segments.start.day': 'dayOfMonth',
+  mode: 'direction',
+  step: 'multipleMinutes',
+  weekdayAdjust: 'weekdayAdjustment',
+  weeklyLock: 'weeklyLock',
+  points: 'points',
+  segments: 'segments',
+  start: 'startsOn',
+  minutes: 'offsetMinutes',
+  time: 'time',
+  azan: 'whenAzanAt',
+  gapMinutes: 'gapAfterAzan',
+  month: 'monthNumber',
+  day: 'dayOfMonth',
+  SUN: 'weekdaySun',
+  MON: 'weekdayMon',
+  TUE: 'weekdayTue',
+  WED: 'weekdayWed',
+  THU: 'weekdayThu',
+  FRI: 'weekdayFri',
+  SAT: 'weekdaySat',
+  'mode.CEIL': 'roundUp',
+  'mode.FLOOR': 'roundDown',
+  'mode.NEAREST': 'roundNearest',
+  'step.5': 'minutes5',
+  'step.10': 'minutes10',
+  'step.15': 'minutes15',
+  'step.30': 'minutes30',
+  'step.60': 'minutes60',
+  'start.DATE': 'calendarDate',
+  'start.FIRST_FRIDAY': 'firstFriday',
+};
+
+export function translateCatalogIdentity(
+  identity: string,
+  label: string,
+  language: string,
+): string {
+  if (!language.startsWith('ar')) return label;
+  const parts = identity.split('.').filter((part) => !/^\\d+$/.test(part));
+  const stableIdentity = parts.slice(-2).join('.');
+  const key =
+    LABEL_KEYS[label] ??
+    IDENTITY_KEYS[identity] ??
+    IDENTITY_KEYS[stableIdentity] ??
+    IDENTITY_KEYS[parts[parts.length - 1] ?? ''];
   return key ? i18n.t(`ruleEditor.catalog.${key}`, { lng: language }) : label;
 }

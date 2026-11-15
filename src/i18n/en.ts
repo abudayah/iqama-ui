@@ -21,6 +21,7 @@ export interface I18nKeys {
     dismiss: string;
     details: string;
     save: string;
+    confirm: string;
   };
   hijriMonths: {
     muharram: string;
@@ -174,6 +175,9 @@ export interface I18nKeys {
     eidFitrWillFall: string;
     eidAdhaWillFall: string;
     monthWillBeDays_one: string;
+    monthWillBeDays_two?: string;
+    monthWillBeDays_few?: string;
+    monthWillBeDays_many?: string;
     monthWillBeDays_other: string;
   };
   sightingCard: {
@@ -218,6 +222,30 @@ export interface I18nKeys {
   };
   installPrompt: {
     alreadyInstalled: string;
+  };
+  api: {
+    tooManyRequests: string;
+  };
+  widgetLang: {
+    switch: string;
+    switchAria: string;
+  };
+  validation: {
+    required: string;
+    boolean: string;
+    number: string;
+    integer: string;
+    min: string;
+    max: string;
+    time: string;
+    option: string;
+    list: string;
+    minItems: string;
+    maxItems: string;
+    invalidItem: string;
+    invalidValue: string;
+    unavailablePrayer: string;
+    ruleType: string;
   };
   eidCard: {
     preliminary: string;
@@ -395,6 +423,7 @@ export interface I18nKeys {
     modifiers: string;
     next7Days: string;
     loadingPreview: string;
+    previewRateLimited: string;
     adjusted: string;
     movedBySafety: string;
     fillRed: string;
@@ -410,6 +439,9 @@ export interface I18nKeys {
     fixed: string;
     scaled: string;
     seasonal_one: string;
+    seasonal_two?: string;
+    seasonal_few?: string;
+    seasonal_many?: string;
     seasonal_other: string;
     roundUp: string;
     roundDown: string;
@@ -460,6 +492,7 @@ export interface I18nKeys {
     buildOn: string;
     saved: string;
     publicScheduleNote: string;
+    reloadFailed: string;
     review: {
       save: string;
       reason: string;
@@ -569,6 +602,7 @@ const en: I18nKeys = {
     dismiss: 'Dismiss',
     details: 'Details',
     save: 'Save',
+    confirm: 'Confirm',
   },
   hijriMonths: {
     muharram: 'Muharram',
@@ -601,7 +635,7 @@ const en: I18nKeys = {
   },
   simulator: {
     activeAria: 'Simulator mode active',
-    active: 'Simulator active — {{date}} at {{time}}',
+    active: 'Simulator active — <d>{{date}}</d> at <t>{{time}}</t>',
     exit: 'Exit',
     exitAria: 'Exit simulator',
   },
@@ -726,11 +760,15 @@ const en: I18nKeys = {
     eidFitrWillFall: 'Eid al-Fitr will fall on {{date}}',
     eidAdhaWillFall: 'Eid al-Adha will fall on {{date}}',
     monthWillBeDays_one: 'Month will be {{count}} day',
+    monthWillBeDays_two: 'Month will be {{count}} days',
+    monthWillBeDays_few: 'Month will be {{count}} days',
+    monthWillBeDays_many: 'Month will be {{count}} days',
     monthWillBeDays_other: 'Month will be {{count}} days',
   },
   sightingCard: {
     title: 'Moon Sighting',
-    prompt: 'Today is the 29th of {{currentMonth}}. Has the moon for {{nextMonth}} been sighted?',
+    prompt:
+      'Today is the 29th of <month>{{currentMonth}}</month>. Has the moon for <month>{{nextMonth}}</month> been sighted?',
     monthEndsToday: 'Yes, month ends today (29 days)',
     complete30Days: 'No, complete 30 days',
   },
@@ -770,6 +808,30 @@ const en: I18nKeys = {
   },
   installPrompt: {
     alreadyInstalled: 'App is already installed! You can find it on your home screen.',
+  },
+  api: {
+    tooManyRequests: 'Too many requests. Wait a minute and try again.',
+  },
+  widgetLang: {
+    switch: 'عربي',
+    switchAria: 'Switch to Arabic',
+  },
+  validation: {
+    required: 'Required',
+    boolean: 'Must be on or off',
+    number: 'Enter a number',
+    integer: 'Enter a whole number',
+    min: 'Must be {{min}} or more',
+    max: 'Must be {{max}} or less',
+    time: 'Enter a time (HH:mm)',
+    option: 'Choose one of the options',
+    list: 'Must be a list',
+    minItems: 'Add at least {{min}}',
+    maxItems: 'At most {{max}} allowed',
+    invalidItem: 'Invalid item',
+    invalidValue: 'Invalid value',
+    unavailablePrayer: 'Not available for this prayer',
+    ruleType: 'Choose a rule type',
   },
   eidCard: {
     preliminary: 'Preliminary times — subject to moon-sighting confirmation',
@@ -831,7 +893,7 @@ const en: I18nKeys = {
     statusPast: 'Past',
     noChanges: 'No changes',
     methodSummary: 'Method: {{method}}',
-    highLatSummary: 'High lat: {{method}}',
+    highLatSummary: 'High lat: {{rule}}',
     deleteFailed: 'Failed to delete period',
   },
   adhanPeriodForm: {
@@ -998,6 +1060,7 @@ const en: I18nKeys = {
     modifiers: 'Modifiers',
     next7Days: 'Next 7 days (Azan → Iqama)',
     loadingPreview: 'Loading preview…',
+    previewRateLimited: 'Preview is temporarily rate limited.',
     adjusted: '⚠ Adjusted',
     movedBySafety: 'Moved by safety rules',
     fillRed: 'Fill in the fields marked in red',
@@ -1013,6 +1076,9 @@ const en: I18nKeys = {
     fixed: 'Fixed at {{time}}',
     scaled: 'Gap after Azan scales from {{min}} to {{max}} min',
     seasonal_one: 'Seasonal fixed times ({{count}} period)',
+    seasonal_two: 'Seasonal fixed times ({{count}} periods)',
+    seasonal_few: 'Seasonal fixed times ({{count}} periods)',
+    seasonal_many: 'Seasonal fixed times ({{count}} periods)',
     seasonal_other: 'Seasonal fixed times ({{count}} periods)',
     roundUp: 'rounded up to the next {{step}}',
     roundDown: 'rounded down to the previous {{step}}',
@@ -1065,6 +1131,7 @@ const en: I18nKeys = {
     buildOn: 'Building on version {{version}} (effective {{date}}).',
     saved: 'Rules saved and published.',
     publicScheduleNote: 'The public schedule uses these rules.',
+    reloadFailed: 'Unable to load the latest rules.',
     review: {
       save: 'Save rules',
       reason: 'Reason for change',

@@ -30,6 +30,16 @@ describe('i18n — Arabic plurals', () => {
     expect(i18n.t('rules.review.changesOn', { count: 60 })).toBe('يتغير في 60 يوماً');
   });
 
+  it('provides Arabic forms for the exposed month and seasonal plural keys', async () => {
+    await i18n.changeLanguage('ar');
+    for (const count of [0, 1, 2, 3, 11, 100]) {
+      expect(i18n.t('ramadan.monthWillBeDays', { count })).not.toBe('ramadan.monthWillBeDays');
+      expect(i18n.t('ruleDescribe.seasonal', { count })).not.toBe('ruleDescribe.seasonal');
+      expect(i18n.t('ramadan.monthWillBeDays', { count })).not.toMatch(/Month will be/);
+      expect(i18n.t('ruleDescribe.seasonal', { count })).not.toMatch(/Seasonal fixed times/);
+    }
+  });
+
   it('keeps English unchanged', async () => {
     await i18n.changeLanguage('en');
     expect(i18n.t('rules.review.changesOn', { count: 3 })).toBe('Changes on 3 days');

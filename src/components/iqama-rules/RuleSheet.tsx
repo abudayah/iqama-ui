@@ -4,7 +4,7 @@
  * Invalid input never reaches the API: preview and "Add to changes" stay off
  * until the catalog validator is happy.
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import type { PrayerName } from '../../types/index';
@@ -17,7 +17,7 @@ import type {
 import { describeRule } from '../../logic/iqama-rules';
 import { formatTime12 } from '../../i18n/format-time';
 import { formatWeekdayName, getIntlLocale } from '../../i18n/locale';
-import { translateRuleCatalog } from '../../i18n/rule-catalog';
+import { translateCatalogIdentity, translateRuleCatalog } from '../../i18n/rule-catalog';
 import { emptyObject, emptyValue, pruneEmpty } from '../../logic/rule-defaults';
 import { modifierAllowedFor, validateRule } from '../../logic/rule-validator';
 import { previewIqamaRules } from '../../services/iqama-rules-service';
@@ -78,33 +78,51 @@ function SheetBody({
   const [rule, setRule] = useState<Draft>(initialRule as unknown as Draft);
   const [preview, setPreview] = useState<IqamaPreviewResponse | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [previewRateLimited, setPreviewRateLimited] = useState(false);
+  const [previewRetry, setPreviewRetry] = useState(0);
+  const lastPreviewKey = useRef<string | null>(null);
   const dialogRef = useModalA11y(onClose);
 
   const errors = useMemo(() => validateRule(rule, prayer, catalog), [rule, prayer, catalog]);
   const valid = Object.keys(errors).length === 0;
   const cleaned = useMemo(() => pruneEmpty(rule) as unknown as PrayerRule, [rule]);
   const cleanedKey = JSON.stringify(cleaned);
+  const previewKey = JSON.stringify([prayer, cleanedKey, effectiveFrom]);
 
   useEffect(() => {
     if (!valid) {
       setPreview(null);
       setPreviewError(null);
+      setPreviewRateLimited(false);
+      lastPreviewKey.current = null;
       return;
     }
-    let cancelled = false; // a late answer for an older rule must not replace a newer one
-    const t = setTimeout(() => {
+    if (lastPreviewKey.current === previewKey) return;
+    let cancelled = false;
+    lastPreviewKey.current = previewKey;
+    setPreview(null);
+    setPreviewError(null);
+    setPreviewRateLimited(false);
+    // A late answer for an older rule must not replace a newer one.
+    const timer = setTimeout(() => {
       previewIqamaRules(
         buildSettings(prayer, JSON.parse(cleanedKey) as PrayerRule),
         effectiveFrom || undefined,
       )
         .then((r) => {
           if (cancelled) return;
+          lastPreviewKey.current = previewKey;
           setPreview(r);
           setPreviewError(null);
+          setPreviewRateLimited(false);
         })
         .catch((e: Error) => {
           if (cancelled) return;
-          setPreview(null);
+          if (e instanceof ApiError && e.status === 429) {
+            setPreviewRateLimited(true);
+            setPreviewError(null);
+            return;
+          }
           setPreviewError(
             e instanceof ApiError && e.errors?.length
               ? e.errors.map((x) => `${x.path}: ${x.message}`).join('; ')
@@ -114,11 +132,11 @@ function SheetBody({
     }, 400);
     return () => {
       cancelled = true;
-      clearTimeout(t);
+      clearTimeout(timer);
     };
     // buildSettings changes identity every render; cleanedKey captures the rule.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prayer, cleanedKey, effectiveFrom, valid]);
+  }, [prayer, cleanedKey, effectiveFrom, valid, previewKey, previewRetry]);
 
   const baseType = catalog.baseTypes.find((b) => b.type === (rule['base'] as Draft)?.['type']);
   const baseValues: Draft = { ...(rule['base'] as Draft) };
@@ -183,7 +201,7 @@ function SheetBody({
               {!baseType && <option value="">{t('ruleEditor.choose')}</option>}
               {catalog.baseTypes.map((b) => (
                 <option key={b.type} value={b.type}>
-                  {translateRuleCatalog(b.label, i18n.language)}
+                  {translateCatalogIdentity(b.type, b.label, i18n.language)}
                 </option>
               ))}
             </select>
@@ -215,15 +233,15 @@ function SheetBody({
               return (
                 <div key={m.name}>
                   <Toggle
-                    label={translateRuleCatalog(m.label, i18n.language)}
+                    label={translateCatalogIdentity(m.name, m.label, i18n.language)}
                     checked={on}
                     onChange={(v) => toggleModifier(m.name, v)}
                   />
                   {on && m.kind === 'object' && (
-                    <div className="pl-8 space-y-2">
+                    <div className="ps-8 space-y-2">
                       {m.note && (
                         <p className="text-xs text-gray-500">
-                          {translateRuleCatalog(m.note, i18n.language)}
+                          {translateCatalogIdentity(`${m.name}.note`, m.note, i18n.language)}
                         </p>
                       )}
                       {errors[m.name] && (
@@ -251,6 +269,21 @@ function SheetBody({
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
               {t('ruleEditor.next7Days')}
             </h3>
+            {previewRateLimited && (
+              <div role="status" className="text-sm text-amber-800 bg-amber-50 rounded-lg p-2">
+                <span>{t('ruleEditor.previewRateLimited')}</span>{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    lastPreviewKey.current = null;
+                    setPreviewRetry((n) => n + 1);
+                  }}
+                  className="underline min-h-[44px]"
+                >
+                  {t('common.retry')}
+                </button>
+              </div>
+            )}
             {previewError && (
               <p
                 role="alert"

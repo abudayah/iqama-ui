@@ -34,7 +34,7 @@ function summarizeSettings(settings: string, t: TFunction): string {
     if (s.general?.highLatitudeRule) {
       parts.push(
         t('adhanPeriods.highLatSummary', {
-          method: t(`highLat.${s.general.highLatitudeRule}`),
+          rule: t(`highLat.${s.general.highLatitudeRule}`),
         }),
       );
     }
@@ -42,7 +42,7 @@ function summarizeSettings(settings: string, t: TFunction): string {
       for (const [p, ps] of Object.entries(s.prayers)) {
         if (ps?.offsetMinutes !== undefined && ps.offsetMinutes !== 0) {
           const sign = ps.offsetMinutes > 0 ? '+' : '';
-          parts.push(`${t(`prayers.${p as keyof typeof s.prayers}`)} ${sign}${ps.offsetMinutes}m`);
+          parts.push(`${t(`prayers.${p}`)} ${sign}${ps.offsetMinutes}m`);
         }
       }
     }

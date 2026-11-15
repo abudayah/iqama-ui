@@ -1,3 +1,8 @@
+# Local AI tooling and review artifacts
+.qwen/
+semantic-review/
+.playwright-cli/
+
 # Logs
 logs
 *.log

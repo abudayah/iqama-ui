@@ -11,14 +11,14 @@ interface Props {
 }
 
 export function RuleCard({ prayer, rule, edited, onClick }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   return (
     <button
       type="button"
       onClick={onClick}
       data-testid={`rule-card-${prayer}`}
-      className="w-full text-left bg-white rounded-xl border border-gray-200 px-4 py-3 min-h-[44px] hover:border-blue-300 flex items-center justify-between gap-3"
+      className="w-full text-start bg-white rounded-xl border border-gray-200 px-4 py-3 min-h-[44px] hover:border-blue-300 flex items-center justify-between gap-3"
     >
       <span className="min-w-0">
         <span className="flex items-center gap-2">
@@ -31,7 +31,10 @@ export function RuleCard({ prayer, rule, edited, onClick }: Props) {
         </span>
         <span className="block text-sm text-gray-600 mt-0.5">{describeRule(rule)}</span>
       </span>
-      <span className="text-gray-400" aria-hidden="true">
+      <span
+        className={`text-gray-400 ${i18n.dir(i18n.language) === 'rtl' ? 'rotate-180' : ''}`}
+        aria-hidden="true"
+      >
         ›
       </span>
     </button>

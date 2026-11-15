@@ -43,7 +43,7 @@ export function ConfirmationSheet({
             onClick={onConfirm}
             className="flex-1 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded py-3 text-sm font-medium transition-colors min-h-[44px]"
           >
-            {t('eidModal.confirm')}
+            {t('common.confirm')}
           </button>
         </div>
       </div>

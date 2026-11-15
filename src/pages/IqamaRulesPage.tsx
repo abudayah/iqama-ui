@@ -34,6 +34,7 @@ export function IqamaRulesPage() {
   const shared = useOutletContext<ReturnType<typeof useIqamaRulesDraft> | null>();
   const own = useIqamaRulesDraft();
   const { draft, hasChanges, setRule, setEffectiveFrom, reset, dropPrayer, rebase } = shared ?? own;
+  const effectiveFromInputRef = useRef('');
 
   const [sheetPrayer, setSheetPrayer] = useState<PrayerName | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -53,6 +54,7 @@ export function IqamaRulesPage() {
   const keepSaveError = useRef(false);
   // After "Reload latest rules": waiting for the new config so the edits can be re-applied.
   const [reloading, setReloading] = useState(false);
+  const [latestError, setLatestError] = useState<string | null>(null);
   const [notices, setNotices] = useState<{ overlaps: PrayerName[]; dateMoved: string | null }>({
     overlaps: [],
     dateMoved: null,
@@ -69,6 +71,7 @@ export function IqamaRulesPage() {
   const minDate = config ? later(config.today, latest?.effectiveFrom ?? config.today) : '';
   const effectiveFrom =
     draft.effectiveFrom || (config ? later(config.defaultEffectiveFrom, minDate) : '');
+  effectiveFromInputRef.current = effectiveFrom;
   const changed = useMemo(() => {
     if (!baseline) return [];
     // Catalog order (Fajr … Isha), not the order the user edited in.
@@ -137,13 +140,15 @@ export function IqamaRulesPage() {
     if (!reloading || loading) return;
     const rules = config?.latest?.rules;
     if (error || !config || !rules) {
+      setLatestError(error ?? t('rules.reloadFailed'));
       setReloading(false);
       return;
     }
+    setLatestError(null);
     const overlaps = overlappingPrayers(draft, rules);
     const min = later(config.today, config.latest!.effectiveFrom);
     let dateMoved: string | null = null;
-    if (draft.effectiveFrom && draft.effectiveFrom < min) {
+    if (effectiveFromInputRef.current && effectiveFromInputRef.current < min) {
       dateMoved = later(config.defaultEffectiveFrom, min);
       setEffectiveFrom('');
     }
@@ -170,6 +175,7 @@ export function IqamaRulesPage() {
         extra,
       );
       reset();
+      setNotices({ overlaps: [], dateMoved: null });
       setReviewOpen(false);
       setSuccessMsg(t('rules.saved'));
       setTimeout(() => setSuccessMsg(null), 6000);
@@ -236,7 +242,10 @@ export function IqamaRulesPage() {
           <span>{t('rules.unsavedChanges')}</span>
           <div className="flex gap-3">
             <button
-              onClick={reset}
+              onClick={() => {
+                reset();
+                setNotices({ overlaps: [], dateMoved: null });
+              }}
               className="text-blue-200 hover:text-white underline min-h-[44px] px-2"
             >
               {t('rules.discard')}
@@ -358,7 +367,7 @@ export function IqamaRulesPage() {
           needsFriday={needsFriday}
           preview={activePreview}
           loading={previewLoading}
-          error={previewError ?? saveError}
+          error={previewError ?? saveError ?? latestError}
           fieldErrors={fieldErrors}
           stale={stale}
           onReload={reloadLatest}

@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, it } from 'vitest';
-import i18n from './index';
+import i18n, { detectLang } from './index';
 import { formatHijriDate } from './format-hijri-date';
 import { formatTime12 } from './format-time';
 import { getIntlLocale } from './locale';
@@ -7,6 +7,12 @@ import { getIntlLocale } from './locale';
 describe('locale-aware date and time formatting', () => {
   afterAll(async () => {
     await i18n.changeLanguage('en');
+  });
+
+  it('honors an embed lang query parameter over saved/browser preferences', () => {
+    expect(detectLang('?lang=ar', 'en', 'en-US')).toBe('ar');
+    expect(detectLang('?lang=en', 'ar', 'ar-EG')).toBe('en');
+    expect(detectLang('', 'ar', 'en-US')).toBe('ar');
   });
 
   it('uses Arabic locale formatting while retaining Latin digits', () => {

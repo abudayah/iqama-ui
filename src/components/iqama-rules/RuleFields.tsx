@@ -9,7 +9,7 @@ import type { PrayerName } from '../../types/index';
 import type { CatalogField } from '../../types/iqama-rules';
 import { emptyObject, emptyValue, variantFields } from '../../logic/rule-defaults';
 import { isEmpty, type FieldErrors } from '../../logic/rule-validator';
-import { translateRuleCatalog } from '../../i18n/rule-catalog';
+import { translateCatalogIdentity } from '../../i18n/rule-catalog';
 
 import { inputCls } from './styles';
 
@@ -64,7 +64,11 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
       return (
         <div>
           <label className="block text-sm text-gray-700" htmlFor={id}>
-            {translateRuleCatalog(field.label, i18n.language)}
+            {translateCatalogIdentity(
+              path ? `${path}.${field.name}` : field.name,
+              field.label,
+              i18n.language,
+            )}
             {field.min !== undefined && field.max !== undefined && (
               <span className="text-gray-400">
                 {' '}
@@ -91,7 +95,11 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
       return (
         <div>
           <label className="block text-sm text-gray-700" htmlFor={id}>
-            {translateRuleCatalog(field.label, i18n.language)}
+            {translateCatalogIdentity(
+              path ? `${path}.${field.name}` : field.name,
+              field.label,
+              i18n.language,
+            )}
           </label>
           <input
             id={id}
@@ -108,7 +116,11 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
       return (
         <div>
           <label className="block text-sm text-gray-700" htmlFor={id}>
-            {translateRuleCatalog(field.label, i18n.language)}
+            {translateCatalogIdentity(
+              path ? `${path}.${field.name}` : field.name,
+              field.label,
+              i18n.language,
+            )}
           </label>
           <select
             id={id}
@@ -123,7 +135,11 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
             <option value="">{t('ruleEditor.choose')}</option>
             {field.options?.map((o) => (
               <option key={String(o.value)} value={String(o.value)}>
-                {translateRuleCatalog(o.label, i18n.language)}
+                {translateCatalogIdentity(
+                  `${path ? `${path}.` : ''}${field.name}.${o.value}`,
+                  o.label,
+                  i18n.language,
+                )}
               </option>
             ))}
           </select>
@@ -139,7 +155,11 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
             onChange={(e) => onChange(e.target.checked)}
             className="h-5 w-5 rounded border-gray-300 text-blue-600"
           />
-          {translateRuleCatalog(field.label, i18n.language)}
+          {translateCatalogIdentity(
+            path ? `${path}.${field.name}` : field.name,
+            field.label,
+            i18n.language,
+          )}
         </label>
       );
     case 'list': {
@@ -148,7 +168,11 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
       return (
         <fieldset className="space-y-2" {...aria}>
           <legend className="text-sm text-gray-700">
-            {translateRuleCatalog(field.label, i18n.language)}
+            {translateCatalogIdentity(
+              path ? `${path}.${field.name}` : field.name,
+              field.label,
+              i18n.language,
+            )}
             {field.minItems !== undefined && field.maxItems !== undefined && (
               <span className="text-gray-400">
                 {' '}
@@ -158,7 +182,11 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
           </legend>
           {field.note && (
             <p className="text-xs text-gray-500">
-              {translateRuleCatalog(field.note, i18n.language)}
+              {translateCatalogIdentity(
+                `${path ? `${path}.` : ''}${field.name}.note`,
+                field.note,
+                i18n.language,
+              )}
             </p>
           )}
           <ErrorText id={errId} message={error} />
@@ -167,7 +195,11 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
               key={i}
               role="group"
               aria-label={t('ruleEditor.itemAria', {
-                label: translateRuleCatalog(field.label, i18n.language),
+                label: translateCatalogIdentity(
+                  path ? `${path}.${field.name}` : field.name,
+                  field.label,
+                  i18n.language,
+                ),
                 index: i + 1,
               })}
               className="border border-gray-200 rounded-lg p-3 space-y-2 bg-gray-50"
@@ -185,7 +217,11 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
                   onClick={() => onChange(items.filter((_, j) => j !== i))}
                   className="text-sm text-red-600 min-h-[44px] px-2"
                   aria-label={t('ruleEditor.removeAria', {
-                    label: translateRuleCatalog(field.label, i18n.language),
+                    label: translateCatalogIdentity(
+                      path ? `${path}.${field.name}` : field.name,
+                      field.label,
+                      i18n.language,
+                    ),
                     index: i + 1,
                   })}
                 >
@@ -213,7 +249,11 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
         return (
           <div className="space-y-2">
             <label className="block text-sm text-gray-700" htmlFor={id}>
-              {translateRuleCatalog(field.label, i18n.language)}
+              {translateCatalogIdentity(
+                path ? `${path}.${field.name}` : field.name,
+                field.label,
+                i18n.language,
+              )}
             </label>
             <select
               id={id}
@@ -228,7 +268,11 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
               {!variant && <option value="">{t('ruleEditor.choose')}</option>}
               {field.variants.map((v) => (
                 <option key={v.value} value={v.value}>
-                  {translateRuleCatalog(v.label, i18n.language)}
+                  {translateCatalogIdentity(
+                    `${path ? `${path}.` : ''}${field.name}.${v.value}`,
+                    v.label,
+                    i18n.language,
+                  )}
                 </option>
               ))}
             </select>
@@ -249,11 +293,19 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
       return (
         <fieldset className="space-y-2">
           <legend className="text-sm text-gray-700">
-            {translateRuleCatalog(field.label, i18n.language)}
+            {translateCatalogIdentity(
+              path ? `${path}.${field.name}` : field.name,
+              field.label,
+              i18n.language,
+            )}
           </legend>
           {field.note && (
             <p className="text-xs text-gray-500">
-              {translateRuleCatalog(field.note, i18n.language)}
+              {translateCatalogIdentity(
+                `${path ? `${path}.` : ''}${field.name}.note`,
+                field.note,
+                i18n.language,
+              )}
             </p>
           )}
           <ErrorText id={errId} message={error} />

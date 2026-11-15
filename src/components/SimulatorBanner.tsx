@@ -4,7 +4,7 @@
  * Shown at the top of the page when URL simulator params are active.
  * Displays the simulated date and time, and provides a link to exit.
  */
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { getIntlLocale } from '../i18n/locale';
 
 interface SimulatorBannerProps {
@@ -14,7 +14,7 @@ interface SimulatorBannerProps {
 
 export function SimulatorBanner({ simDateStr, simNow }: SimulatorBannerProps) {
   const { t, i18n } = useTranslation();
-  const timeStr = simNow.toLocaleTimeString(getIntlLocale(), {
+  const timeStr = simNow.toLocaleTimeString(getIntlLocale(i18n.language), {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
@@ -52,21 +52,17 @@ export function SimulatorBanner({ simDateStr, simNow }: SimulatorBannerProps) {
           />
         </svg>
         <span dir="auto">
-          {t('simulator.active', {
-            date: (
-              <bdi dir="ltr">
-                {new Date(`${simDateStr}T12:00:00`).toLocaleDateString(
-                  getIntlLocale(i18n.language),
-                  {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                  },
-                )}
-              </bdi>
-            ),
-            time: <bdi dir="ltr">{timeStr}</bdi>,
-          })}
+          <Trans
+            i18nKey="simulator.active"
+            values={{
+              date: new Date(`${simDateStr}T12:00:00`).toLocaleDateString(
+                getIntlLocale(i18n.language),
+                { year: 'numeric', month: 'short', day: 'numeric' },
+              ),
+              time: timeStr,
+            }}
+            components={{ d: <bdi dir="auto" />, t: <bdi dir="ltr" /> }}
+          />
         </span>
       </span>
       <button

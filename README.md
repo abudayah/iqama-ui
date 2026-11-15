@@ -80,7 +80,7 @@ npm run build
 - **Edit sheet:** tap a card to pick a rule type, fill its fields, and toggle modifiers. Forms and validation are built from the engine catalog (no invented defaults). A live 7-day strip shows Azan → Iqama, with an "Adjusted" badge on days a fixed rule moved the time.
 - **Versions:** every change is built on the newest saved version. The page shows which version that is, what is in force today, scheduled versions, and a short history with reasons.
 - **Review & save:** shows the effective date (default: next Friday) and a 365-day scan (days changed, days adjusted, first dates). Fajr, Dhuhr, Asr and Isha changes must start on a Friday; Maghrib can start any day.
-- **Always applied:** a read-only numbered list at the bottom of the page: iqama at least 3 min after Azan, Fajr at least 60 min before sunrise, Friday starts, Maghrib any day. Values come from the catalog; when Fajr cannot meet both its sunrise buffer and the minimum gap, the gap wins and you must acknowledge the conflict before saving.
+- **Always applied:** a read-only numbered list at the bottom of the page. All limits, steps and prayer lists come from the engine catalog; when Fajr cannot meet both its sunrise buffer and the minimum gap, the gap wins and you must acknowledge the conflict before saving.
 - **Overrides tab:** an override shows a warning when a fixed rule would move its time on some day in the next 31 days.
 
 Spec: `.kiro/specs/iqama-rules-admin/`.
@@ -91,10 +91,10 @@ The simulator lets you preview any date and time without changing your system cl
 
 ### URL Params
 
-| Param | Format | Description |
-|---|---|---|
-| `sim_date` | `YYYY-MM-DD` | Simulate a different date |
-| `sim_time` | `HH:mm` | Simulate a specific time of day |
+| Param      | Format       | Description                     |
+| ---------- | ------------ | ------------------------------- |
+| `sim_date` | `YYYY-MM-DD` | Simulate a different date       |
+| `sim_time` | `HH:mm`      | Simulate a specific time of day |
 
 Both params are optional and independent — use one or both together.
 
@@ -103,44 +103,50 @@ Both params are optional and independent — use one or both together.
 - `sim_date` changes which date is fetched from the backend. The backend computes the correct prayer times **and Hijri date** for that day, so everything is accurate.
 - `sim_time` shifts the clock used for "next prayer" and countdown logic. The countdown display freezes at that moment (it doesn't tick forward).
 - When either param is active, a purple **Simulator** banner appears at the top of the page with an **Exit** button that removes the params.
+- On `/widget`, `?lang=en` or `?lang=ar` selects the embed language regardless of the visitor's saved preference; the widget includes a language link that preserves other query parameters.
 
 ### Examples
 
 Simulate a winter day (early Asr, long Isha delay):
+
 ```
 /?sim_date=2025-01-15
 ```
 
 Simulate pre-Fajr time (DAWN sky, Fajr countdown):
+
 ```
 /?sim_time=04:30
 ```
 
 Simulate Maghrib window (DUSK sky):
+
 ```
 /?sim_time=19:45
 ```
 
 Simulate a specific date and time together:
+
 ```
 /?sim_date=2025-06-15&sim_time=20:00
 ```
 
 Simulate a Friday in Ramadan:
+
 ```
 /?sim_date=2025-03-07&sim_time=03:45
 ```
 
 ### What Gets Simulated
 
-| Thing | Simulated? | Notes |
-|---|---|---|
-| Prayer times | ✅ | Backend fetches real times for `sim_date` |
-| Hijri date & moon phase | ✅ | Derived from `sim_date` by the backend |
-| Day of week | ✅ | Comes from the backend response |
-| Sky phase (dawn/day/dusk/night) | ✅ | Driven by which prayer is next at `sim_time` |
-| Countdown display | ✅ | Frozen at `sim_time` |
-| System clock | ❌ | Never touched |
+| Thing                           | Simulated? | Notes                                        |
+| ------------------------------- | ---------- | -------------------------------------------- |
+| Prayer times                    | ✅         | Backend fetches real times for `sim_date`    |
+| Hijri date & moon phase         | ✅         | Derived from `sim_date` by the backend       |
+| Day of week                     | ✅         | Comes from the backend response              |
+| Sky phase (dawn/day/dusk/night) | ✅         | Driven by which prayer is next at `sim_time` |
+| Countdown display               | ✅         | Frozen at `sim_time`                         |
+| System clock                    | ❌         | Never touched                                |
 
 ### Implementation
 

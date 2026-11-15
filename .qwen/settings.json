@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(env)"
-    ]
-  },
-  "$version": 4
-}

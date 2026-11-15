@@ -48,6 +48,11 @@ function calcProgress(schedule: DailySchedule, nextPrayer: PrayerName, now: Date
 
 export function NextPrayerBanner({ nextPrayer, countdown, schedule }: NextPrayerBannerProps) {
   const { t } = useTranslation();
+  const prayerLabel = (prayer: PrayerName) => {
+    const key = PRAYER_LABEL_KEYS[prayer];
+    if (!key) throw new RangeError(`Unknown prayer label: ${prayer}`);
+    return t(key);
+  };
   if (!nextPrayer || !schedule) return null;
 
   const now = new Date();
@@ -99,9 +104,7 @@ export function NextPrayerBanner({ nextPrayer, countdown, schedule }: NextPrayer
             <p className="text-xs" style={{ opacity: 0.75 }}>
               {t('nextPrayerBanner.nextPrayer')}
             </p>
-            <p className="text-2xl font-medium mt-0.5">
-              {t(PRAYER_LABEL_KEYS[nextPrayer] ?? 'prayers.fajr')}
-            </p>
+            <p className="text-2xl font-medium mt-0.5">{prayerLabel(nextPrayer)}</p>
             <p className="text-sm mt-0.5" style={{ opacity: 0.7 }}>
               {t('nextPrayerBanner.iqamaAt', { time: formatTime12(iqamaTime) })}
             </p>
@@ -132,11 +135,10 @@ export function NextPrayerBanner({ nextPrayer, countdown, schedule }: NextPrayer
           </div>
           <div className="flex justify-between mt-1">
             <p className="text-xs" style={{ opacity: 0.6 }}>
-              {t(PRAYER_LABEL_KEYS[prev] ?? 'prayers.fajr')} {formatTime12(schedule[prev].azan)}
+              {prayerLabel(prev)} {formatTime12(schedule[prev].azan)}
             </p>
             <p className="text-xs" style={{ opacity: 0.6 }}>
-              {t(PRAYER_LABEL_KEYS[nextAfter] ?? 'prayers.fajr')}{' '}
-              {formatTime12(schedule[nextAfter].azan)}
+              {prayerLabel(nextAfter)} {formatTime12(schedule[nextAfter].azan)}
             </p>
           </div>
         </div>

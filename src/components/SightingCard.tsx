@@ -1,4 +1,4 @@
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 
 const HIJRI_MONTH_KEYS = [
   'hijriMonths.muharram',
@@ -22,8 +22,13 @@ interface SightingCardProps {
 
 export function SightingCard({ hijriMonth, onDecision }: SightingCardProps) {
   const { t } = useTranslation();
-  const currentMonthName = t(HIJRI_MONTH_KEYS[hijriMonth - 1] ?? 'hijriMonths.muharram');
-  const nextMonthName = t(HIJRI_MONTH_KEYS[hijriMonth % 12] ?? 'hijriMonths.muharram');
+  const currentMonthKey = HIJRI_MONTH_KEYS[hijriMonth - 1];
+  const nextMonthKey = HIJRI_MONTH_KEYS[hijriMonth % 12];
+  if (!currentMonthKey || !nextMonthKey) {
+    throw new RangeError(`Invalid Hijri month: ${hijriMonth}`);
+  }
+  const currentMonthName = t(currentMonthKey);
+  const nextMonthName = t(nextMonthKey);
 
   return (
     <div
@@ -44,7 +49,11 @@ export function SightingCard({ hijriMonth, onDecision }: SightingCardProps) {
 
         {/* Prompt */}
         <p className="text-sm text-gray-700 mb-5">
-          {t('sightingCard.prompt', { currentMonth: currentMonthName, nextMonth: nextMonthName })}
+          <Trans
+            i18nKey="sightingCard.prompt"
+            values={{ currentMonth: currentMonthName, nextMonth: nextMonthName }}
+            components={{ month: <strong /> }}
+          />
         </p>
 
         {/* Action buttons */}

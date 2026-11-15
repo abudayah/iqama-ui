@@ -52,7 +52,7 @@ export function EidCard({ record }: EidCardProps) {
 
         {/* Date */}
         <p className="text-sm text-gray-500 mb-4 ms-9">
-          <bdi dir="ltr">{formattedDate}</bdi>
+          <bdi dir="auto">{formattedDate}</bdi>
         </p>
 
         {/* Prayer times */}
@@ -62,7 +62,13 @@ export function EidCard({ record }: EidCardProps) {
               key={entry.label}
               className="flex items-center justify-between rounded-lg bg-gray-50 px-4 py-2"
             >
-              <span className="text-sm font-medium text-gray-700">{entry.label}</span>
+              <span className="text-sm font-medium text-gray-700">
+                {entry.label === '1st Eid Prayer'
+                  ? t('prayers.eid1')
+                  : entry.label === '2nd Eid Prayer'
+                    ? t('prayers.eid2')
+                    : entry.label}
+              </span>
               <span className="text-sm font-semibold text-emerald-700">
                 <bdi dir="ltr">{formatTime12(entry.time)}</bdi>
               </span>

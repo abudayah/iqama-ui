@@ -122,8 +122,10 @@ export function RamadanEidPage() {
 
   const currentMonthLength: MonthLength = status?.overrideLength ?? 'astronomical';
 
+  const hijriMonthKey = status ? HIJRI_MONTH_KEYS[(status.hijriMonth ?? 0) - 1] : undefined;
+  if (status && !hijriMonthKey) throw new RangeError(`Invalid Hijri month: ${status.hijriMonth}`);
   const hijriDateDisplay = status
-    ? `${t(HIJRI_MONTH_KEYS[(status.hijriMonth ?? 1) - 1] ?? 'hijriMonths.muharram')} ${status.hijriDay}, ${status.hijriYear}`
+    ? `${t(hijriMonthKey!)} ${status.hijriDay}, ${status.hijriYear}`
     : null;
 
   // ── Moon Sighting tile handler ──
@@ -274,7 +276,7 @@ export function RamadanEidPage() {
               <div>
                 <p className="text-sm text-gray-500">{t('ramadan.currentHijriMonth')}</p>
                 <p className="text-base font-semibold text-gray-800" data-testid="hijri-date">
-                  <bdi dir="ltr">{hijriDateDisplay}</bdi>
+                  <bdi dir="auto">{hijriDateDisplay}</bdi>
                 </p>
               </div>
 
@@ -360,7 +362,7 @@ export function RamadanEidPage() {
                       disabled={sightingSaving}
                       className="flex-1 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg px-3 py-2 disabled:opacity-50 min-h-[44px]"
                     >
-                      {sightingSaving ? t('common.saving') : t('eidModal.confirm')}
+                      {sightingSaving ? t('common.saving') : t('common.confirm')}
                     </button>
                   </div>
                 </div>
@@ -383,7 +385,7 @@ export function RamadanEidPage() {
                       disabled={sightingSaving}
                       className="flex-1 text-sm font-medium text-white bg-gray-700 hover:bg-gray-800 rounded-lg px-3 py-2 disabled:opacity-50 min-h-[44px]"
                     >
-                      {sightingSaving ? t('common.saving') : t('eidModal.confirm')}
+                      {sightingSaving ? t('common.saving') : t('common.confirm')}
                     </button>
                   </div>
                 </div>
@@ -464,7 +466,7 @@ export function RamadanEidPage() {
                       {hasOverrideRecord && record ? (
                         <div className="space-y-1">
                           <p className="text-xs text-gray-500">
-                            <bdi dir="ltr">
+                            <bdi dir="auto">
                               {new Date(record.date + 'T12:00:00').toLocaleDateString(
                                 getIntlLocale(i18n.language),
                                 {
@@ -478,7 +480,14 @@ export function RamadanEidPage() {
                           </p>
                           {record.prayers.map((prayer) => (
                             <p key={prayer.label} className="text-xs text-gray-700">
-                              <span className="font-medium">{prayer.label}:</span>{' '}
+                              <span className="font-medium">
+                                {prayer.label === '1st Eid Prayer'
+                                  ? t('prayers.eid1')
+                                  : prayer.label === '2nd Eid Prayer'
+                                    ? t('prayers.eid2')
+                                    : prayer.label}
+                                :
+                              </span>{' '}
                               <bdi dir="ltr">{formatTime12(prayer.time)}</bdi>
                             </p>
                           ))}

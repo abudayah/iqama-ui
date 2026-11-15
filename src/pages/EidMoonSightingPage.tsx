@@ -138,8 +138,10 @@ export function EidMoonSightingPage() {
   };
 
   /* ── Hijri date display ── */
+  const hijriMonthKey = status ? HIJRI_MONTH_KEYS[status.hijriMonth - 1] : undefined;
+  if (status && !hijriMonthKey) throw new RangeError(`Invalid Hijri month: ${status.hijriMonth}`);
   const hijriDateDisplay = status
-    ? `${t(HIJRI_MONTH_KEYS[status.hijriMonth - 1] ?? 'hijriMonths.muharram')} ${status.hijriDay}, ${new Date(status.gregorianDate).getFullYear()}`
+    ? `${t(hijriMonthKey!)} ${status.hijriDay}, ${new Date(status.gregorianDate).getFullYear()}`
     : null;
 
   return (
@@ -240,19 +242,28 @@ export function EidMoonSightingPage() {
                       {hasOverrideRecord && record ? (
                         <div className="space-y-1">
                           <p className="text-xs text-gray-500">
-                            {new Date(record.date + 'T12:00:00').toLocaleDateString(
-                              getIntlLocale(i18n.language),
-                              {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric',
-                              },
-                            )}
+                            <bdi dir="auto">
+                              {new Date(record.date + 'T12:00:00').toLocaleDateString(
+                                getIntlLocale(i18n.language),
+                                {
+                                  weekday: 'long',
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                },
+                              )}
+                            </bdi>
                           </p>
                           {record.prayers.map((prayer) => (
                             <p key={prayer.label} className="text-xs text-gray-700">
-                              <span className="font-medium">{prayer.label}:</span>{' '}
+                              <span className="font-medium">
+                                {prayer.label === '1st Eid Prayer'
+                                  ? t('prayers.eid1')
+                                  : prayer.label === '2nd Eid Prayer'
+                                    ? t('prayers.eid2')
+                                    : prayer.label}
+                                :
+                              </span>{' '}
                               <bdi dir="ltr">{formatTime12(prayer.time)}</bdi>
                             </p>
                           ))}

@@ -86,8 +86,8 @@ export function EidPrayerModal({
         type: eidType,
         date: eidDate.toISOString().slice(0, 10),
         prayers: [
-          { label: t('prayers.eid1'), time: firstPrayerTime },
-          { label: t('prayers.eid2'), time: secondPrayerTime },
+          { label: '1st Eid Prayer', time: firstPrayerTime },
+          { label: '2nd Eid Prayer', time: secondPrayerTime },
         ],
       },
     };

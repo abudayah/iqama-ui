@@ -1,13 +1,9 @@
 /**
- * Formats a YYYY-MM-DD date string and a day-of-week string into a
- * human-readable date label for the widget section header.
+ * Formats a YYYY-MM-DD date string into a locale-aware date label for the widget section header.
  *
  * @param dateStr   - ISO date string, e.g. "2025-06-20"
  * @param locale - BCP 47 language tag for the displayed date
  * @returns A locale-formatted date label
- *
- * The day-of-week is passed in directly (not derived from the date) so that
- * the widget always matches the server-supplied `DailySchedule.day_of_week`.
  *
  * Parsing is done by splitting the YYYY-MM-DD string directly (rather than
  * using `new Date()`) to avoid timezone-offset issues where the UTC date

@@ -11,18 +11,6 @@ import { joinList } from '../i18n/list';
 import { formatTime12 } from '../i18n/format-time';
 import { formatWeekdayName, getIntlLocale } from '../i18n/locale';
 
-const PRAYER_LABELS: Record<string, string> = {
-  fajr: 'Fajr',
-  dhuhr: 'Dhuhr',
-  asr: 'Asr',
-  maghrib: 'Maghrib',
-  isha: 'Isha',
-};
-
-/** Display name for a prayer; falls back to a capitalised key for unknown ones. */
-export const prayerLabel = (name: string): string =>
-  PRAYER_LABELS[name] ?? name.charAt(0).toUpperCase() + name.slice(1);
-
 const WEEKDAY_LABELS: Record<Weekday, string> = {
   SUN: 'Sunday',
   MON: 'Monday',

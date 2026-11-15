@@ -132,7 +132,7 @@ export function WeekSelect({ start, onWeekChange }: WeekSelectProps) {
         aria-expanded={open}
       >
         <span className="truncate text-gray-800">
-          <bdi dir="ltr">{displayLabel}</bdi>
+          <bdi dir="auto">{displayLabel}</bdi>
         </span>
         <svg
           className={`ms-2 h-4 w-4 text-gray-400 flex-shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
@@ -169,7 +169,7 @@ export function WeekSelect({ start, onWeekChange }: WeekSelectProps) {
                     ${isSelected ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-800 hover:bg-gray-50'}`}
                 >
                   <span>
-                    <bdi dir="ltr">{week.label}</bdi>
+                    <bdi dir="auto">{week.label}</bdi>
                   </span>
                   {isCurrent && !isSelected && (
                     <span className="text-xs text-gray-400 flex-shrink-0">

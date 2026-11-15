@@ -218,7 +218,7 @@ function DaySection({
         className="px-4 pt-2 pb-1 flex items-baseline justify-between gap-4"
       >
         <h2 className="text-base font-bold text-gray-900 shrink-0">{t(labelKey)}</h2>
-        <p className="text-xs text-gray-500 text-right">
+        <p className="text-xs text-gray-500 text-end" dir="auto">
           {formatHijriDate(schedule.hijri_date, i18n.language)}
           {' · '}
           {formatWidgetDate(schedule.date, getIntlLocale(i18n.language))}
@@ -232,7 +232,7 @@ function DaySection({
             <tr id={`${sectionId}-col-headers`} className="bg-slate-100">
               {/* Row-label header cell (top-left corner) */}
               <th
-                className="px-3 py-2 text-left text-sm font-semibold text-gray-400 uppercase w-24 min-w-[6rem] bg-slate-100"
+                className="px-3 py-2 text-start text-sm font-semibold text-gray-400 uppercase w-24 min-w-[6rem] bg-slate-100"
                 scope="col"
               />
               {columns.map((col) => {
@@ -261,7 +261,7 @@ function DaySection({
               <th
                 id={`${sectionId}-row-azan-label`}
                 scope="row"
-                className="px-3 py-2 text-right text-sm font-bold uppercase whitespace-nowrap"
+                className="px-3 py-2 text-end text-sm font-bold uppercase whitespace-nowrap"
                 style={{ color: '#205072' }}
               >
                 <span className="block">{t('widget.azan')}</span>
@@ -290,7 +290,7 @@ function DaySection({
               <th
                 id={`${sectionId}-row-iqama-label`}
                 scope="row"
-                className="px-3 py-2 text-right text-sm font-bold uppercase whitespace-nowrap"
+                className="px-3 py-2 text-end text-sm font-bold uppercase whitespace-nowrap"
                 style={{ color: '#329D9C' }}
               >
                 <span className="block">{t('widget.iqama')}</span>
@@ -330,7 +330,7 @@ export function WidgetPrayerTable({
   countdownMode,
   tick: _tick,
 }: WidgetPrayerTableProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const nextIsToday = nextSchedule === todaySchedule;
   const nextIsTomorrow = nextSchedule === tomorrowSchedule && tomorrowSchedule !== null;
 
@@ -346,6 +346,20 @@ export function WidgetPrayerTable({
           isToday={true}
           isNextSection={nextIsToday}
         />
+      </div>
+
+      <div className="px-3 py-1 text-end">
+        <a
+          href={(() => {
+            const url = new URL(window.location.href);
+            url.searchParams.set('lang', i18n.language === 'ar' ? 'en' : 'ar');
+            return url.toString();
+          })()}
+          aria-label={t('widgetLang.switchAria')}
+          className="inline-flex min-h-[44px] items-center text-xs text-gray-500 underline"
+        >
+          {t('widgetLang.switch')}
+        </a>
       </div>
 
       {/* Divider */}

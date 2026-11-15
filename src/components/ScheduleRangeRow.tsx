@@ -30,7 +30,7 @@ export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps)
     <div id={`schedule-range-row-${schedule.date}`} className="bg-white border-b border-gray-100">
       <div className="flex items-center px-4 py-2 bg-gray-50">
         <span className="text-sm font-medium text-gray-800 flex-1">
-          <bdi dir="ltr">
+          <bdi dir="auto">
             {new Date(`${schedule.date}T12:00:00`).toLocaleDateString(
               getIntlLocale(i18n.language),
               {

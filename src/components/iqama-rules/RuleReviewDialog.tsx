@@ -11,9 +11,8 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { joinList } from '../../i18n/list';
-import { getIntlLocale } from '../../i18n/locale';
+import { formatWeekdayName, getIntlLocale } from '../../i18n/locale';
 import { formatTime12 } from '../../i18n/format-time';
-import { formatWeekdayName } from '../../i18n/locale';
 import type { PrayerName } from '../../types/index';
 import type { IqamaPreviewResponse, PrayerRule } from '../../types/iqama-rules';
 import {
@@ -120,6 +119,7 @@ export function RuleReviewDialog({
   const newlyMoved = s ? newlyMovedDays(s, changed) : 0;
   const canSave =
     !!preview &&
+    effectiveFrom >= minDate &&
     !stale &&
     !fridayError &&
     confirmed &&
@@ -269,8 +269,8 @@ export function RuleReviewDialog({
                     <li key={`${c.date}-${c.prayer}`}>
                       {t('rules.review.conflictLine', {
                         date: c.date,
-                        iqama: c.iqama,
-                        sunrise: c.sunrise,
+                        iqama: formatTime12(c.iqama),
+                        sunrise: formatTime12(c.sunrise),
                       })}
                     </li>
                   ))}
@@ -375,7 +375,7 @@ export function RuleReviewDialog({
                     </p>
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="text-left text-xs text-gray-500 uppercase">
+                        <tr className="text-start text-xs text-gray-500 uppercase">
                           <th className="pb-1 font-medium">{t('rules.review.tablePrayer')}</th>
                           <th className="pb-1 font-medium">{t('rules.review.tableChanged')}</th>
                           <th className="pb-1 font-medium">{t('rules.review.tableMoved')}</th>
@@ -425,7 +425,7 @@ export function RuleReviewDialog({
                 onChange={(e) => setReason(e.target.value)}
                 className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
               />
-              <span className="block text-xs text-gray-400 text-right">{reason.length}/500</span>
+              <span className="block text-xs text-gray-400 text-end">{reason.length}/500</span>
             </label>
 
             <label className="flex items-start gap-3 min-h-[44px] select-none">

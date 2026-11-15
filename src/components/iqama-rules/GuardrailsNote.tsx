@@ -44,7 +44,7 @@ export function GuardrailsNote({ catalog }: { catalog: IqamaCatalog }) {
               count: minGapAfterAzanMinutes,
             })}`}
         </li>
-        {iqamaStepMinutes && (
+        {iqamaStepMinutes ? (
           <li>
             {t('rules.guardrails.step', {
               min: iqamaStepMinutes,
@@ -52,7 +52,7 @@ export function GuardrailsNote({ catalog }: { catalog: IqamaCatalog }) {
               count: iqamaStepMinutes,
             })}
           </li>
-        )}
+        ) : null}
         {friday.length > 0 && (
           <li>{t('rules.guardrails.fridayStart', { prayers: names(friday) })}</li>
         )}

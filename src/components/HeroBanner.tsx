@@ -517,7 +517,12 @@ export function HeroBanner({
       : countdown;
 
   const prayerLabel =
-    peekLabel ?? (displayPrayer ? t(PRAYER_LABEL_KEYS[displayPrayer] ?? 'prayers.fajr') : '—');
+    peekLabel ??
+    (displayPrayer
+      ? PRAYER_LABEL_KEYS[displayPrayer]
+        ? t(PRAYER_LABEL_KEYS[displayPrayer]!)
+        : displayPrayer
+      : '—');
 
   const isNonAzanEvent = (p: typeof displayPrayer) =>
     p === 'sunrise' || p === 'eid-prayer-1' || p === 'eid-prayer-2';

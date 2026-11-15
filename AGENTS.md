@@ -11,20 +11,20 @@ Guide for AI agents and human reviewers working on this repository.
 
 The backend is a separate repo, [iqama-engine](https://github.com/abudayah/iqama-engine). **The engine is the source of truth** for all prayer and iqama times, Hijri dates and validation. This repo only displays them and sends admin changes. The API contract lives in the engine; this repo's types in `src/types/` mirror it.
 
-> The "Iqama Rules" admin page (`/admin/iqama`, rule editor with preview) arrives with [PR #3](https://github.com/abudayah/iqama-ui/pull/3). It is not on `main` yet.
+The "Iqama Rules" admin page (`/admin/iqama`, rule editor with preview) is available within the Iqama admin tab.
 
 ## Stack
 
 From `package.json` (ranges, not pinned; `package-lock.json` pins the installed versions):
 
-| Area | Used |
-|---|---|
-| UI | React `^19`, react-router-dom `^6` |
-| Build | Vite `^6`, `vite-plugin-pwa` `^0.21`, TypeScript `^5` (strict, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`) |
-| Styling | Tailwind CSS `^3` (utility classes in JSX, no component library) |
-| Dates | dayjs `^1.11`, dayjs-hijri |
-| Tests | Vitest `^4` (jsdom), Testing Library, msw `^2`, fast-check `^3` |
-| Lint/format | ESLint 9 (typescript-eslint, react, react-hooks), Prettier (single quotes, 100 cols), husky + lint-staged |
+| Area        | Used                                                                                                                     |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------ |
+| UI          | React `^19`, react-router-dom `^6`                                                                                       |
+| Build       | Vite `^6`, `vite-plugin-pwa` `^0.21`, TypeScript `^5` (strict, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`) |
+| Styling     | Tailwind CSS `^3` (utility classes in JSX, no component library)                                                         |
+| Dates       | dayjs `^1.11`, dayjs-hijri                                                                                               |
+| Tests       | Vitest `^4` (jsdom), Testing Library, msw `^2`, fast-check `^3`                                                          |
+| Lint/format | ESLint 9 (typescript-eslint, react, react-hooks), Prettier (single quotes, 100 cols), husky + lint-staged                |
 
 CI (`.github/workflows/build-and-deploy.yml`) uses Node 20 and runs `npm ci` and `npm run build` only; it does **not** run lint or tests. Run them yourself.
 
@@ -50,10 +50,10 @@ VITE_API_BASE_URL=http://localhost:3000 npm run dev
 
 ## Environment variables (`.env.example`)
 
-| Variable | Meaning |
-|---|---|
-| `VITE_API_BASE_URL` | Engine base URL, no `/api` suffix (paths already contain `/api/v1/...`). When set, the first-run URL screen is skipped. |
-| `VITE_BASE_PATH` | App base path, `/` or e.g. `/ui/`. |
+| Variable               | Meaning                                                                                                                    |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_API_BASE_URL`    | Engine base URL, no `/api` suffix (paths already contain `/api/v1/...`). When set, the first-run URL screen is skipped.    |
+| `VITE_BASE_PATH`       | App base path, `/` or e.g. `/ui/`.                                                                                         |
 | `VITE_MASJID_TIMEZONE` | IANA zone of the masjid (e.g. `America/Vancouver`). Used so "now" is evaluated in masjid time. Defaults to `UTC` if unset. |
 
 `README.md` still shows a `VITE_API_KEY` line; the code does not read it. The admin password is typed at the login screen.
@@ -70,6 +70,7 @@ src/
   services/     API calls, one file per backend area
   store/        config store (localStorage: API URL and admin key)
   types/        shared TypeScript types
+  i18n/         English/Arabic resources, locale detection and formatters
 .kiro/          specs and steering notes (design history; read before big changes)
 ```
 
@@ -84,6 +85,7 @@ Tests sit next to the code as `*.test.ts(x)` and `*.property.test.ts(x)` (fast-c
 - **Accessibility:** real buttons/labels, `role` and `aria-*` on dialogs and tabs, Escape closes dialogs, don't rely on colour alone.
 - **Theme:** Tailwind utilities, consistent with neighbouring components (gray/white cards, blue primary, amber warnings, red errors).
 - **Types:** strict TypeScript. No `any` without a reason.
+- **i18n:** all user-visible strings belong in `src/i18n/en.ts` and `src/i18n/ar.ts`; add/update both together. Components use `useTranslation()`/`t()`. Keep API/data labels language-neutral when persisting; translate known values only at display time. Use locale helpers for dates/times and `dir="auto"` for mixed-script date text.
 - **No new dependencies** for small things.
 
 ## Known test failures (not caused by your PR)

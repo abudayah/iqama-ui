@@ -258,15 +258,16 @@ export function PrayerTable({
     (e: React.TouchEvent) => {
       if (startXRef.current === null) return;
       const dx = (e.touches[0]?.clientX ?? startXRef.current) - startXRef.current;
+      const logicalDx = isRtl ? -dx : dx;
 
       const canGoLeft = activeTab === 'today' && tomorrowSchedule !== null;
       const canGoRight = activeTab === 'tomorrow';
-      if (!canGoLeft && dx < 0) return;
-      if (!canGoRight && dx > 0) return;
+      if (!canGoLeft && logicalDx < 0) return;
+      if (!canGoRight && logicalDx > 0) return;
 
       setDragOffset(dx);
     },
-    [activeTab, tomorrowSchedule],
+    [activeTab, tomorrowSchedule, isRtl],
   );
 
   const onTouchEnd = useCallback(
@@ -279,13 +280,14 @@ export function PrayerTable({
       setDragOffset(0);
 
       const THRESHOLD = 50;
-      if (dx < -THRESHOLD && activeTab === 'today' && tomorrowSchedule) {
+      const logicalDx = isRtl ? -dx : dx;
+      if (logicalDx < -THRESHOLD && activeTab === 'today' && tomorrowSchedule) {
         onTabChange('tomorrow');
-      } else if (dx > THRESHOLD && activeTab === 'tomorrow') {
+      } else if (logicalDx > THRESHOLD && activeTab === 'tomorrow') {
         onTabChange('today');
       }
     },
-    [activeTab, tomorrowSchedule, onTabChange],
+    [activeTab, tomorrowSchedule, onTabChange, isRtl],
   );
 
   const translateX = isDragging ? `calc(${baseTranslate}% + ${dragOffset}px)` : `${baseTranslate}%`;
@@ -305,7 +307,7 @@ export function PrayerTable({
             <bdi dir="auto">{formatHijriDate(activeSchedule.hijri_date, i18n.language)}</bdi>
           </h3>
           <p className="text-sm text-gray-500 mt-1">
-            <bdi dir="ltr">
+            <bdi dir="auto">
               {formatDisplayDate(activeSchedule.date, getIntlLocale(i18n.language))}
             </bdi>
           </p>
