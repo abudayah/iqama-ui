@@ -1,4 +1,5 @@
 import type { FC } from 'react';
+import { useTranslation } from 'react-i18next';
 
 /* ─── Types ──────────────────────────────────────────────────────────────────── */
 type IslamicEvent = string | null;
@@ -9,37 +10,41 @@ interface IslamicEventBannerProps {
 }
 
 /* ─── Event logic ────────────────────────────────────────────────────────────── */
-function getIslamicEventGreeting(hijriMonth: number, hijriDay: number): IslamicEvent {
+/** Returns the i18n key of the greeting, or null when no event applies. */
+function getIslamicEventKey(hijriMonth: number, hijriDay: number): IslamicEvent {
   // 1. Muharram
   if (hijriMonth === 1) {
-    if (hijriDay === 1) return '🗓️ Hijri New Year';
-    if (hijriDay === 10) return '🤲 Day of Ashura';
+    if (hijriDay === 1) return 'events.newYear';
+    if (hijriDay === 10) return 'events.ashura';
   }
   // 7. Rajab — Isra' and Mi'raj
-  if (hijriMonth === 7 && hijriDay === 27) return "🕌 Isra' and Mi'raj";
+  if (hijriMonth === 7 && hijriDay === 27) return 'events.isra';
   // 9. Ramadan
   if (hijriMonth === 9) {
-    return '🌙 Ramadan Mubarak';
+    return 'events.ramadan';
   }
   // 10. Shawwal
   if (hijriMonth === 10 && hijriDay >= 1 && hijriDay <= 3) {
-    return '🌙 Eid al-Fitr Mubarak';
+    return 'events.eidFitr';
   }
   // 12. Dhu al-Hijjah
   if (hijriMonth === 12) {
-    if (hijriDay >= 1 && hijriDay <= 7) return '🕋 Hajj Season';
-    if (hijriDay === 8) return '🕋 Hajj Season';
-    if (hijriDay === 9) return '🤲 Day of Arafah';
-    if (hijriDay >= 10 && hijriDay <= 13) return '🐑 Eid al-Adha Mubarak';
+    if (hijriDay >= 1 && hijriDay <= 8) return 'events.hajj';
+    if (hijriDay === 9) return 'events.arafah';
+    if (hijriDay >= 10 && hijriDay <= 13) return 'events.eidAdha';
   }
   return null;
 }
 
 /* ─── Component ──────────────────────────────────────────────────────────────── */
 export const IslamicEventBanner: FC<IslamicEventBannerProps> = ({ hijriMonth, hijriDay }) => {
-  const greeting = getIslamicEventGreeting(hijriMonth, hijriDay);
+  // Subscribe to language changes so the greeting re-renders on toggle.
+  const { t } = useTranslation();
+  const key = getIslamicEventKey(hijriMonth, hijriDay);
 
-  if (!greeting) return null;
+  if (!key) return null;
+
+  const greeting = t(key);
 
   return (
     <div

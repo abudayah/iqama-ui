@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useOverrides } from '../hooks/useOverrides';
 import { OverrideList } from '../components/OverrideList';
 import { OverrideFormModal } from '../components/OverrideFormModal';
@@ -12,6 +13,7 @@ function getTodayDate(): string {
 }
 
 export function OverridesPage() {
+  const { t } = useTranslation();
   const { overrides, loading, error, create, update, remove, refetch } = useOverrides();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const today = getTodayDate();
@@ -19,20 +21,20 @@ export function OverridesPage() {
   return (
     <div id="overrides-page" className="p-4">
       <div id="overrides-page-header" className="flex items-center justify-between mb-4">
-        <h1 className="text-lg font-bold text-gray-800">Overrides</h1>
+        <h1 className="text-lg font-bold text-gray-800">{t('overrides.title')}</h1>
         <div className="flex gap-2">
           <button
             onClick={() => void refetch()}
             className="text-gray-600 text-sm px-3 py-2 border border-gray-300 rounded min-h-[44px]"
-            aria-label="Refresh overrides"
+            aria-label={t('overrides.refreshAria')}
           >
-            Refresh
+            {t('overrides.refresh')}
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
             className="bg-blue-600 text-white text-sm px-4 py-2 rounded min-h-[44px]"
           >
-            + New Override
+            {t('overrides.newOverride')}
           </button>
         </div>
       </div>
@@ -52,7 +54,7 @@ export function OverridesPage() {
             onClick={() => void refetch()}
             className="bg-red-600 text-white px-4 py-2 rounded text-sm min-h-[44px]"
           >
-            Retry
+            {t('common.retry')}
           </button>
         </div>
       )}

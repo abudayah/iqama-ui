@@ -1,4 +1,5 @@
 import { getConfig } from '../store/config-store';
+import i18n from '../i18n';
 import { NetworkError, AuthError, ApiError, ParseError } from './errors';
 
 export async function apiFetch<T>(
@@ -42,7 +43,7 @@ export async function apiFetch<T>(
       /* ignore parse errors on error responses */
     }
     // The server's text here is the raw exception name ("ThrottlerException: Too Many Requests").
-    if (response.status === 429) message = 'Too many requests. Wait a minute and try again.';
+    if (response.status === 429) message = i18n.t('api.tooManyRequests');
     throw new ApiError(response.status, message, code, errors);
   }
 

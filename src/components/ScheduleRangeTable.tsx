@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { DailySchedule, Override } from '../types/index';
 import { ScheduleRangeRow } from './ScheduleRangeRow';
 
@@ -14,6 +15,8 @@ export function ScheduleRangeTable({
   loading,
   error,
 }: ScheduleRangeTableProps) {
+  const { t } = useTranslation();
+
   if (loading) {
     return (
       <div className="animate-pulse space-y-2 p-4">
@@ -33,7 +36,7 @@ export function ScheduleRangeTable({
   }
 
   if (!schedules || schedules.length === 0) {
-    return <div className="p-4 text-center text-gray-500 text-sm">No schedule data available.</div>;
+    return <div className="p-4 text-center text-gray-500 text-sm">{t('schedule.noData')}</div>;
   }
 
   return (

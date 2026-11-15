@@ -4,10 +4,12 @@
  * a cleared number or time is '' (never silently turned into 0 or truncated)
  * and errors are shown next to the field that caused them.
  */
+import { useTranslation } from 'react-i18next';
 import type { PrayerName } from '../../types/index';
 import type { CatalogField } from '../../types/iqama-rules';
 import { emptyObject, emptyValue, variantFields } from '../../logic/rule-defaults';
 import { isEmpty, type FieldErrors } from '../../logic/rule-validator';
+import { translateCatalogIdentity } from '../../i18n/rule-catalog';
 
 import { inputCls } from './styles';
 
@@ -47,6 +49,7 @@ interface FieldProps {
 }
 
 function Field({ field, value, onChange, path, ctx }: FieldProps) {
+  const { t, i18n } = useTranslation();
   const id = fieldId(ctx, path);
   const error = ctx.errors[path];
   const errId = `${id}-error`;
@@ -61,11 +64,15 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
       return (
         <div>
           <label className="block text-sm text-gray-700" htmlFor={id}>
-            {field.label}
+            {translateCatalogIdentity(
+              path ? `${path}.${field.name}` : field.name,
+              field.label,
+              i18n.language,
+            )}
             {field.min !== undefined && field.max !== undefined && (
               <span className="text-gray-400">
                 {' '}
-                ({field.min} to {field.max})
+                ({t('ruleEditor.range', { min: field.min, max: field.max })})
               </span>
             )}
           </label>
@@ -88,7 +95,11 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
       return (
         <div>
           <label className="block text-sm text-gray-700" htmlFor={id}>
-            {field.label}
+            {translateCatalogIdentity(
+              path ? `${path}.${field.name}` : field.name,
+              field.label,
+              i18n.language,
+            )}
           </label>
           <input
             id={id}
@@ -105,7 +116,11 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
       return (
         <div>
           <label className="block text-sm text-gray-700" htmlFor={id}>
-            {field.label}
+            {translateCatalogIdentity(
+              path ? `${path}.${field.name}` : field.name,
+              field.label,
+              i18n.language,
+            )}
           </label>
           <select
             id={id}
@@ -117,10 +132,14 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
             className={`${inputCls} mt-1 bg-white ${border}`}
             {...aria}
           >
-            <option value="">Choose…</option>
+            <option value="">{t('ruleEditor.choose')}</option>
             {field.options?.map((o) => (
               <option key={String(o.value)} value={String(o.value)}>
-                {o.label}
+                {translateCatalogIdentity(
+                  `${path ? `${path}.` : ''}${field.name}.${o.value}`,
+                  o.label,
+                  i18n.language,
+                )}
               </option>
             ))}
           </select>
@@ -136,7 +155,11 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
             onChange={(e) => onChange(e.target.checked)}
             className="h-5 w-5 rounded border-gray-300 text-blue-600"
           />
-          {field.label}
+          {translateCatalogIdentity(
+            path ? `${path}.${field.name}` : field.name,
+            field.label,
+            i18n.language,
+          )}
         </label>
       );
     case 'list': {
@@ -145,21 +168,40 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
       return (
         <fieldset className="space-y-2" {...aria}>
           <legend className="text-sm text-gray-700">
-            {field.label}
+            {translateCatalogIdentity(
+              path ? `${path}.${field.name}` : field.name,
+              field.label,
+              i18n.language,
+            )}
             {field.minItems !== undefined && field.maxItems !== undefined && (
               <span className="text-gray-400">
                 {' '}
-                ({field.minItems} to {field.maxItems})
+                ({t('ruleEditor.range', { min: field.minItems, max: field.maxItems })})
               </span>
             )}
           </legend>
-          {field.note && <p className="text-xs text-gray-500">{field.note}</p>}
+          {field.note && (
+            <p className="text-xs text-gray-500">
+              {translateCatalogIdentity(
+                `${path ? `${path}.` : ''}${field.name}.note`,
+                field.note,
+                i18n.language,
+              )}
+            </p>
+          )}
           <ErrorText id={errId} message={error} />
           {items.map((item, i) => (
             <div
               key={i}
               role="group"
-              aria-label={`${field.label} ${i + 1}`}
+              aria-label={t('ruleEditor.itemAria', {
+                label: translateCatalogIdentity(
+                  path ? `${path}.${field.name}` : field.name,
+                  field.label,
+                  i18n.language,
+                ),
+                index: i + 1,
+              })}
               className="border border-gray-200 rounded-lg p-3 space-y-2 bg-gray-50"
             >
               <ObjectFields
@@ -174,9 +216,16 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
                   type="button"
                   onClick={() => onChange(items.filter((_, j) => j !== i))}
                   className="text-sm text-red-600 min-h-[44px] px-2"
-                  aria-label={`Remove ${field.label} ${i + 1}`}
+                  aria-label={t('ruleEditor.removeAria', {
+                    label: translateCatalogIdentity(
+                      path ? `${path}.${field.name}` : field.name,
+                      field.label,
+                      i18n.language,
+                    ),
+                    index: i + 1,
+                  })}
                 >
-                  Remove
+                  {t('ruleEditor.remove')}
                 </button>
               )}
             </div>
@@ -187,7 +236,7 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
             onClick={() => onChange([...items, emptyObject(field.item ?? [])])}
             className="text-sm text-blue-600 border border-blue-200 rounded-lg px-3 min-h-[44px] disabled:opacity-40"
           >
-            + Add
+            {t('ruleEditor.add')}
           </button>
         </fieldset>
       );
@@ -200,7 +249,11 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
         return (
           <div className="space-y-2">
             <label className="block text-sm text-gray-700" htmlFor={id}>
-              {field.label}
+              {translateCatalogIdentity(
+                path ? `${path}.${field.name}` : field.name,
+                field.label,
+                i18n.language,
+              )}
             </label>
             <select
               id={id}
@@ -212,10 +265,14 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
               className={`${inputCls} bg-white ${border}`}
               {...aria}
             >
-              {!variant && <option value="">Choose…</option>}
+              {!variant && <option value="">{t('ruleEditor.choose')}</option>}
               {field.variants.map((v) => (
                 <option key={v.value} value={v.value}>
-                  {v.label}
+                  {translateCatalogIdentity(
+                    `${path ? `${path}.` : ''}${field.name}.${v.value}`,
+                    v.label,
+                    i18n.language,
+                  )}
                 </option>
               ))}
             </select>
@@ -235,8 +292,22 @@ function Field({ field, value, onChange, path, ctx }: FieldProps) {
       }
       return (
         <fieldset className="space-y-2">
-          <legend className="text-sm text-gray-700">{field.label}</legend>
-          {field.note && <p className="text-xs text-gray-500">{field.note}</p>}
+          <legend className="text-sm text-gray-700">
+            {translateCatalogIdentity(
+              path ? `${path}.${field.name}` : field.name,
+              field.label,
+              i18n.language,
+            )}
+          </legend>
+          {field.note && (
+            <p className="text-xs text-gray-500">
+              {translateCatalogIdentity(
+                `${path ? `${path}.` : ''}${field.name}.note`,
+                field.note,
+                i18n.language,
+              )}
+            </p>
+          )}
           <ErrorText id={errId} message={error} />
           <ObjectFields
             fields={field.fields ?? []}

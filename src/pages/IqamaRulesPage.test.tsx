@@ -474,7 +474,7 @@ describe('simpler review dialog', () => {
     await reviewMaghribEdit();
     const items = within(screen.getByTestId('change-maghrib')).getAllByRole('listitem');
     expect(items).toHaveLength(3);
-    expect(items[0]!.textContent).toMatch(/^Fri 13\s+06:05 → 06:20$/);
+    expect(items[0]!.textContent).toMatch(/^Fri 13\s+06:05 AM → 06:20 AM$/);
   });
 
   it('skips days where nothing changed', async () => {
@@ -704,7 +704,7 @@ describe('reload keeps the draft', () => {
     const dhuhr = { base: { type: 'FIXED_TIME' as const, time: '13:50' } };
     await staleThenReload(newerConfig({ dhuhr }));
     expect(screen.queryByTestId('reload-notice')).toBeNull();
-    expect(screen.getByTestId('rule-card-dhuhr')).toHaveTextContent('Fixed at 13:50');
+    expect(screen.getByTestId('rule-card-dhuhr')).toHaveTextContent('Fixed at 01:50 PM');
     await openReview();
     const sent = state.previewCalls[state.previewCalls.length - 1]!.settings;
     expect(sent.dhuhr).toEqual(dhuhr);

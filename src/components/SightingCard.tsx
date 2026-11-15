@@ -1,16 +1,18 @@
-const HIJRI_MONTHS = [
-  'Muharram',
-  'Safar',
-  'Rabi al-Awwal',
-  'Rabi al-Thani',
-  'Jumada al-Awwal',
-  'Jumada al-Thani',
-  'Rajab',
-  "Sha'ban",
-  'Ramadan',
-  'Shawwal',
-  "Dhul Qi'dah",
-  'Dhul Hijjah',
+import { Trans, useTranslation } from 'react-i18next';
+
+const HIJRI_MONTH_KEYS = [
+  'hijriMonths.muharram',
+  'hijriMonths.safar',
+  'hijriMonths.rabiAlAwwal',
+  'hijriMonths.rabiAlThani',
+  'hijriMonths.jumadaAlAwwal',
+  'hijriMonths.jumadaAlThani',
+  'hijriMonths.rajab',
+  'hijriMonths.shaban',
+  'hijriMonths.ramadan',
+  'hijriMonths.shawwal',
+  'hijriMonths.dhulQidah',
+  'hijriMonths.dhulHijjah',
 ] as const;
 
 interface SightingCardProps {
@@ -19,8 +21,14 @@ interface SightingCardProps {
 }
 
 export function SightingCard({ hijriMonth, onDecision }: SightingCardProps) {
-  const currentMonthName = HIJRI_MONTHS[hijriMonth - 1];
-  const nextMonthName = HIJRI_MONTHS[hijriMonth % 12];
+  const { t } = useTranslation();
+  const currentMonthKey = HIJRI_MONTH_KEYS[hijriMonth - 1];
+  const nextMonthKey = HIJRI_MONTH_KEYS[hijriMonth % 12];
+  if (!currentMonthKey || !nextMonthKey) {
+    throw new RangeError(`Invalid Hijri month: ${hijriMonth}`);
+  }
+  const currentMonthName = t(currentMonthKey);
+  const nextMonthName = t(nextMonthKey);
 
   return (
     <div
@@ -36,13 +44,16 @@ export function SightingCard({ hijriMonth, onDecision }: SightingCardProps) {
           <span className="text-2xl" aria-hidden="true">
             🌙
           </span>
-          <h2 className="text-base font-semibold text-gray-800">Moon Sighting</h2>
+          <h2 className="text-base font-semibold text-gray-800">{t('sightingCard.title')}</h2>
         </div>
 
         {/* Prompt */}
         <p className="text-sm text-gray-700 mb-5">
-          Today is the 29th of <span className="font-medium">{currentMonthName}</span>. Has the moon
-          for <span className="font-medium">{nextMonthName}</span> been sighted?
+          <Trans
+            i18nKey="sightingCard.prompt"
+            values={{ currentMonth: currentMonthName, nextMonth: nextMonthName }}
+            components={{ month: <strong /> }}
+          />
         </p>
 
         {/* Action buttons */}
@@ -51,13 +62,13 @@ export function SightingCard({ hijriMonth, onDecision }: SightingCardProps) {
             onClick={() => onDecision(29)}
             className="flex-1 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-lg py-3 px-4 text-sm font-medium transition-colors min-h-[44px]"
           >
-            Yes, Month ends today (29 Days)
+            {t('sightingCard.monthEndsToday')}
           </button>
           <button
             onClick={() => onDecision(30)}
             className="flex-1 border border-gray-300 hover:bg-gray-50 active:bg-gray-100 text-gray-700 rounded-lg py-3 px-4 text-sm font-medium transition-colors min-h-[44px]"
           >
-            No, Complete 30 days
+            {t('sightingCard.complete30Days')}
           </button>
         </div>
       </div>

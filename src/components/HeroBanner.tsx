@@ -1,9 +1,11 @@
 import { useRef, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { CountdownMode } from '../hooks/usePrayerContext';
 import type { PrayerName, DailySchedule, CountdownState } from '../types/index';
 import type { PrayerEvent } from '../logic/derive-next-prayer';
 import { IslamicEventBanner } from './IslamicEventBanner';
 import { getMoonPhase } from './moon-phase';
+import { formatTime12 } from '../i18n/format-time';
 
 /** Prayers + sunrise + Eid prayers — anything that can be peeked */
 export type PeekTarget = PrayerName | 'sunrise' | 'eid-prayer-1' | 'eid-prayer-2';
@@ -34,15 +36,15 @@ interface HeroBannerProps {
 }
 
 /* ─── Constants ─────────────────────────────────────────────────────────────── */
-const PRAYER_LABELS: Record<string, string> = {
-  fajr: 'Fajr',
-  dhuhr: 'Dhuhr',
-  asr: 'Asr',
-  maghrib: 'Maghrib',
-  isha: 'Isha',
-  sunrise: 'Sunrise',
-  'eid-prayer-1': '1st Prayer',
-  'eid-prayer-2': '2nd Prayer',
+const PRAYER_LABEL_KEYS: Record<string, string> = {
+  fajr: 'prayers.fajr',
+  dhuhr: 'prayers.dhuhr',
+  asr: 'prayers.asr',
+  maghrib: 'prayers.maghrib',
+  isha: 'prayers.isha',
+  sunrise: 'prayers.sunrise',
+  'eid-prayer-1': 'prayers.firstPrayer',
+  'eid-prayer-2': 'prayers.secondPrayer',
 };
 
 /* ─── Time helpers ───────────────────────────────────────────────────────────── */
@@ -447,6 +449,7 @@ export function HeroBanner({
   peekLabel,
   compact = false,
 }: HeroBannerProps) {
+  const { t } = useTranslation();
   const now = simulatedNow ?? new Date();
   const nowMin = nowMinutes(now);
 
@@ -501,7 +504,7 @@ export function HeroBanner({
           const [y, mo, d] = peekSchedule.date.split('-').map(Number);
           const targetDate = new Date(y!, mo! - 1, d!, h!, m!, 0, 0);
           const diffMs = targetDate.getTime() - now.getTime();
-          if (diffMs <= 0) return { phase: 'done' as const, display: 'All prayers complete' };
+          if (diffMs <= 0) return { phase: 'done' as const, display: t('hero.allComplete') };
           const total = Math.floor(diffMs / 1000);
           const hh = Math.floor(total / 3600);
           const mm = Math.floor((total % 3600) / 60);
@@ -514,7 +517,12 @@ export function HeroBanner({
       : countdown;
 
   const prayerLabel =
-    peekLabel ?? (displayPrayer ? (PRAYER_LABELS[displayPrayer] ?? displayPrayer) : '—');
+    peekLabel ??
+    (displayPrayer
+      ? PRAYER_LABEL_KEYS[displayPrayer]
+        ? t(PRAYER_LABEL_KEYS[displayPrayer]!)
+        : displayPrayer
+      : '—');
 
   const isNonAzanEvent = (p: typeof displayPrayer) =>
     p === 'sunrise' || p === 'eid-prayer-1' || p === 'eid-prayer-2';
@@ -531,6 +539,8 @@ export function HeroBanner({
     displayPrayer && displaySchedule && !isNonAzanEvent(displayPrayer)
       ? (displaySchedule[displayPrayer as PrayerName]?.iqama ?? null)
       : null;
+  const localizedAzanTime = azanTime ? formatTime12(azanTime) : null;
+  const localizedIqamaTime = iqamaTime ? formatTime12(iqamaTime) : null;
 
   /* ── Countdown display ── */
   const effectiveMode = isPeeking ? 'to_azan' : countdownMode;
@@ -540,32 +550,32 @@ export function HeroBanner({
   // Determine super-title based on what's being displayed
   const superTitle = isPeeking
     ? isEidPeek
-      ? 'EID PRAYER IN'
+      ? t('hero.eidPrayerIn')
       : peekPrayer === 'sunrise'
-        ? 'SUNRISE IN'
-        : 'AZAN IN'
+        ? t('hero.sunriseIn')
+        : t('hero.azanIn')
     : displayPrayer === 'sunrise'
-      ? 'SUNRISE IN'
+      ? t('hero.sunriseIn')
       : displayPrayer === 'eid-prayer-1' || displayPrayer === 'eid-prayer-2'
-        ? 'NEXT PRAYER'
+        ? t('hero.nextPrayer')
         : isIqamaWindow
-          ? 'TIME UNTIL IQAMA'
-          : 'NEXT PRAYER';
+          ? t('hero.timeUntilIqama')
+          : t('hero.nextPrayer');
 
   const subLine = isPeeking
     ? azanTime
-      ? `${prayerLabel} · at ${azanTime}`
+      ? t('hero.at', { prayer: prayerLabel, time: localizedAzanTime })
       : prayerLabel
     : isIqamaWindow
       ? iqamaTime
-        ? `${prayerLabel} · Iqama at ${iqamaTime}`
+        ? t('hero.iqamaAt', { prayer: prayerLabel, time: localizedIqamaTime })
         : prayerLabel
       : displayPrayer === 'sunrise'
         ? azanTime
-          ? `${prayerLabel} · at ${azanTime}`
+          ? t('hero.at', { prayer: prayerLabel, time: localizedAzanTime })
           : prayerLabel
         : azanTime
-          ? `${prayerLabel} · Azan at ${azanTime}`
+          ? t('hero.azanAt', { prayer: prayerLabel, time: localizedAzanTime })
           : prayerLabel;
 
   /* ── Moon phase ── */
@@ -599,11 +609,17 @@ export function HeroBanner({
         height: 300,
         background: `linear-gradient(to bottom, ${sky.top}, ${sky.mid}, ${sky.bot})`,
       }}
-      aria-label="Prayer hero banner"
+      aria-label={t('hero.aria')}
     >
-      {/* ── Text content — left-aligned stacked layout ── */}
+      {/*
+       * ── Text content — stacked layout, pinned to the physical left ──
+       * The sky scene composition (sun arc, mountains) is not mirrored in RTL,
+       * so the countdown stays on the left in both directions: `ml-0 mr-auto`
+       * holds the box against the left edge, and `text-left` keeps the stack
+       * flush with it instead of inheriting `text-align: start` (right in RTL).
+       */}
       <div
-        className="relative z-10 flex flex-col justify-start px-6 pt-8 max-w-xs"
+        className="relative z-10 flex flex-col justify-start px-6 pt-8 max-w-xs ml-0 mr-auto text-left"
         style={{ textShadow: '0 2px 12px rgba(0,0,0,0.45)' }}
       >
         {/* Super-title */}
@@ -620,10 +636,12 @@ export function HeroBanner({
             aria-live="polite"
             aria-atomic="true"
           >
-            {displayCountdown.display.slice(0, 5)}
-            <span className="text-2xl font-semibold opacity-70">
-              &nbsp;:&nbsp;{displayCountdown.display.slice(6)}
-            </span>
+            <bdi dir="ltr">
+              {displayCountdown.display.slice(0, 5)}
+              <span className="text-2xl font-semibold opacity-70">
+                &nbsp;:&nbsp;{displayCountdown.display.slice(6)}
+              </span>
+            </bdi>
           </p>
         )}
 

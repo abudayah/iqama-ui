@@ -1,9 +1,12 @@
+import { useTranslation } from 'react-i18next';
+
 interface DayTabBarProps {
   activeTab: 'today' | 'tomorrow';
   onTabChange: (tab: 'today' | 'tomorrow') => void;
 }
 
 export function DayTabBar({ activeTab, onTabChange }: DayTabBarProps) {
+  const { t } = useTranslation();
   // Support swipe gesture via touchstart/touchend
   let touchStartX = 0;
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -32,7 +35,7 @@ export function DayTabBar({ activeTab, onTabChange }: DayTabBarProps) {
           aria-selected={activeTab === tab}
           role="tab"
         >
-          {tab === 'today' ? 'Today' : 'Tomorrow'}
+          {tab === 'today' ? t('prayerTable.today') : t('prayerTable.tomorrow')}
         </button>
       ))}
     </div>

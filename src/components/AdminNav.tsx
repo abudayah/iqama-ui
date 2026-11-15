@@ -1,24 +1,25 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 export function AdminNav() {
+  const { t } = useTranslation();
   // One "Iqama" tab covers both /admin (Overrides) and /admin/iqama (Rules).
   const { pathname } = useLocation();
   const iqamaActive =
     pathname.replace(/\/$/, '') === '/admin' || pathname.startsWith('/admin/iqama');
   return (
     <nav id="admin-nav" className="flex border-b border-gray-200 bg-white overflow-x-auto">
-      <NavLink
+      <Link
         to="/admin"
-        className={() =>
-          `flex-1 py-3 text-sm font-medium text-center min-h-[44px] flex items-center justify-center whitespace-nowrap px-2 ${
-            iqamaActive
-              ? 'border-b-2 border-blue-600 text-blue-600'
-              : 'text-gray-500 hover:text-gray-700'
-          }`
-        }
+        aria-current={iqamaActive ? 'page' : undefined}
+        className={`flex-1 py-3 text-sm font-medium text-center min-h-[44px] flex items-center justify-center whitespace-nowrap px-2 ${
+          iqamaActive
+            ? 'border-b-2 border-blue-600 text-blue-600'
+            : 'text-gray-500 hover:text-gray-700'
+        }`}
       >
-        Iqama
-      </NavLink>
+        {t('nav.iqama')}
+      </Link>
       <NavLink
         to="/admin/schedule"
         className={({ isActive }) =>
@@ -29,7 +30,7 @@ export function AdminNav() {
           }`
         }
       >
-        Weekly View
+        {t('nav.weeklyView')}
       </NavLink>
       <NavLink
         to="/admin/eid"
@@ -41,7 +42,7 @@ export function AdminNav() {
           }`
         }
       >
-        Ramadan &amp; Eid
+        {t('nav.ramadanEid')}
       </NavLink>
       <NavLink
         to="/admin/adhan"
@@ -53,7 +54,7 @@ export function AdminNav() {
           }`
         }
       >
-        Adhan
+        {t('nav.adhan')}
       </NavLink>
     </nav>
   );

@@ -6,43 +6,40 @@ import type {
   RuleSet,
   Weekday,
 } from '../types/iqama-rules';
-
-const PRAYER_LABELS: Record<string, string> = {
-  fajr: 'Fajr',
-  dhuhr: 'Dhuhr',
-  asr: 'Asr',
-  maghrib: 'Maghrib',
-  isha: 'Isha',
-};
-
-/** Display name for a prayer; falls back to a capitalised key for unknown ones. */
-export const prayerLabel = (name: string): string =>
-  PRAYER_LABELS[name] ?? name.charAt(0).toUpperCase() + name.slice(1);
+import i18n from '../i18n';
+import { joinList } from '../i18n/list';
+import { formatTime12 } from '../i18n/format-time';
+import { formatWeekdayName, getIntlLocale } from '../i18n/locale';
 
 const WEEKDAY_LABELS: Record<Weekday, string> = {
-  SUN: 'Sun',
-  MON: 'Mon',
-  TUE: 'Tue',
-  WED: 'Wed',
-  THU: 'Thu',
-  FRI: 'Fri',
-  SAT: 'Sat',
+  SUN: 'Sunday',
+  MON: 'Monday',
+  TUE: 'Tuesday',
+  WED: 'Wednesday',
+  THU: 'Thursday',
+  FRI: 'Friday',
+  SAT: 'Saturday',
 };
 
-const signed = (n: number) => `${n < 0 ? '−' : '+'} ${Math.abs(n)} min`;
+const signed = (n: number) => `${n < 0 ? '−' : '+'} ${Math.abs(n)} ${i18n.t('ruleDescribe.min')}`;
 
 function describeBase(base: RuleBase): string {
   switch (base.type) {
     case 'OFFSET':
-      return base.minutes === 0 ? 'At Azan' : `Azan ${signed(base.minutes)}`;
+      return base.minutes === 0
+        ? i18n.t('ruleDescribe.atAzan')
+        : i18n.t('ruleDescribe.azan', { offset: signed(base.minutes) });
     case 'FIXED_TIME':
-      return `Fixed at ${base.time}`;
+      return i18n.t('ruleDescribe.fixed', { time: formatTime12(base.time) });
     case 'SCALED_GAP': {
       const gaps = base.points.map((p) => p.gapMinutes);
-      return `Gap after Azan scales from ${Math.min(...gaps)} to ${Math.max(...gaps)} min`;
+      return i18n.t('ruleDescribe.scaled', {
+        min: Math.min(...gaps),
+        max: Math.max(...gaps),
+      });
     }
     case 'SEASONAL':
-      return `Seasonal fixed times (${base.segments.length} periods)`;
+      return i18n.t('ruleDescribe.seasonal', { count: base.segments.length });
   }
 }
 
@@ -54,23 +51,28 @@ export function describeRule(rule: PrayerRule): string {
     const s = rounding.step;
     parts.push(
       rounding.mode === 'CEIL'
-        ? `rounded up to the next ${s}`
+        ? i18n.t('ruleDescribe.roundUp', { step: s })
         : rounding.mode === 'FLOOR'
-          ? `rounded down to the previous ${s}`
-          : `rounded to the nearest ${s}`,
+          ? i18n.t('ruleDescribe.roundDown', { step: s })
+          : i18n.t('ruleDescribe.roundNearest', { step: s }),
     );
   }
   if (limits?.minAfterAzan !== undefined)
-    parts.push(`at least ${limits.minAfterAzan} min after Azan`);
+    parts.push(i18n.t('ruleDescribe.minAfterAzan', { n: limits.minAfterAzan }));
   if (limits?.latestBeforeSunrise !== undefined)
-    parts.push(`at least ${limits.latestBeforeSunrise} min before sunrise`);
+    parts.push(i18n.t('ruleDescribe.minBeforeSunrise', { n: limits.latestBeforeSunrise }));
   const adj = Object.entries(weekdayAdjust ?? {}).filter(([, v]) => v);
   if (adj.length)
     parts.push(
-      adj.map(([d, v]) => `${WEEKDAY_LABELS[d as Weekday]} ${signed(v as number)}`).join(', '),
+      joinList(
+        adj.map(
+          ([d, v]) =>
+            `${formatWeekdayName(WEEKDAY_LABELS[d as Weekday], getIntlLocale())} ${signed(v as number)}`,
+        ),
+      ),
     );
-  if (weeklyLock) parts.push('held Friday to Thursday');
-  return parts.join(', ');
+  if (weeklyLock) parts.push(i18n.t('ruleDescribe.weeklyLock'));
+  return joinList(parts);
 }
 
 export function isFriday(date: string): boolean {
@@ -104,9 +106,9 @@ export function changedPrayers(base: RuleSet, draft: Partial<RuleSet>): PrayerNa
   return (Object.keys(draft) as PrayerName[]).filter((p) => !sameRule(draft[p]!, base[p]));
 }
 
-/** "Fri, Nov 13" for a YYYY-MM-DD date. */
-export function formatDay(date: string): string {
-  return new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', {
+/** Format a YYYY-MM-DD date using the requested locale. */
+export function formatDay(date: string, locale = 'en-US'): string {
+  return new Date(`${date}T12:00:00Z`).toLocaleDateString(locale, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',

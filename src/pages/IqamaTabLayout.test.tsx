@@ -41,6 +41,19 @@ describe('Nav', () => {
     renderAt(path);
     expect(screen.getByText('Iqama', { selector: 'a' })).toHaveClass('border-blue-600');
   });
+
+  it('marks only Weekly View as the current page on /admin/schedule', () => {
+    render(
+      <MemoryRouter initialEntries={['/admin/schedule']}>
+        <AdminNav />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText('Weekly View', { selector: 'a' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    expect(screen.getByText('Iqama', { selector: 'a' })).not.toHaveAttribute('aria-current');
+  });
 });
 
 describe('Iqama tab segmented control', () => {

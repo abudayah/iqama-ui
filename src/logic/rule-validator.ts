@@ -10,6 +10,7 @@
  * catalog ever describes them.
  */
 import type { PrayerName } from '../types/index';
+import i18n from '../i18n';
 import type { CatalogField, IqamaCatalog } from '../types/iqama-rules';
 
 export type FieldErrors = Record<string, string>;
@@ -31,7 +32,8 @@ function validateFields(
 ) {
   for (const f of fields) {
     if (f.prayers && prayer && !f.prayers.includes(prayer)) {
-      if (!isEmpty(value[f.name])) errors[join(path, f.name)] = `Not available for this prayer`;
+      if (!isEmpty(value[f.name]))
+        errors[join(path, f.name)] = i18n.t('validation.unavailablePrayer');
       continue;
     }
     validateField(f, value[f.name], join(path, f.name), prayer, errors);
@@ -46,44 +48,46 @@ export function validateField(
   errors: FieldErrors,
 ): void {
   if (f.kind === 'bool') {
-    if (value !== undefined && typeof value !== 'boolean') errors[path] = 'Must be on or off';
+    if (value !== undefined && typeof value !== 'boolean')
+      errors[path] = i18n.t('validation.boolean');
     return;
   }
   if (isEmpty(value)) {
-    if (f.required) errors[path] = 'Required';
+    if (f.required) errors[path] = i18n.t('validation.required');
     return;
   }
   switch (f.kind) {
     case 'int': {
       if (typeof value !== 'number' || !Number.isFinite(value)) {
-        errors[path] = 'Enter a number';
+        errors[path] = i18n.t('validation.number');
       } else if (f.integer && !Number.isInteger(value)) {
-        errors[path] = 'Enter a whole number';
+        errors[path] = i18n.t('validation.integer');
       } else if (f.min !== undefined && value < f.min) {
-        errors[path] = `Must be ${f.min} or more`;
+        errors[path] = i18n.t('validation.min', { min: f.min });
       } else if (f.max !== undefined && value > f.max) {
-        errors[path] = `Must be ${f.max} or less`;
+        errors[path] = i18n.t('validation.max', { max: f.max });
       }
       return;
     }
     case 'time':
-      if (typeof value !== 'string' || !TIME_RE.test(value)) errors[path] = 'Enter a time (HH:mm)';
+      if (typeof value !== 'string' || !TIME_RE.test(value))
+        errors[path] = i18n.t('validation.time');
       return;
     case 'enum':
-      if (!f.options?.some((o) => o.value === value)) errors[path] = 'Choose one of the options';
+      if (!f.options?.some((o) => o.value === value)) errors[path] = i18n.t('validation.option');
       return;
     case 'list': {
       if (!Array.isArray(value)) {
-        errors[path] = 'Must be a list';
+        errors[path] = i18n.t('validation.list');
         return;
       }
       if (f.minItems !== undefined && value.length < f.minItems)
-        errors[path] = `Add at least ${f.minItems}`;
+        errors[path] = i18n.t('validation.minItems', { min: f.minItems });
       else if (f.maxItems !== undefined && value.length > f.maxItems)
-        errors[path] = `At most ${f.maxItems} allowed`;
+        errors[path] = i18n.t('validation.maxItems', { max: f.maxItems });
       value.forEach((item, i) => {
         if (typeof item !== 'object' || item === null) {
-          errors[join(path, i)] = 'Invalid item';
+          errors[join(path, i)] = i18n.t('validation.invalidItem');
           return;
         }
         validateFields(
@@ -98,7 +102,7 @@ export function validateField(
     }
     case 'object': {
       if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-        errors[path] = 'Invalid value';
+        errors[path] = i18n.t('validation.invalidValue');
         return;
       }
       const obj = value as Record<string, unknown>;
@@ -106,7 +110,7 @@ export function validateField(
         const key = obj[f.discriminator];
         const variant = f.variants.find((v) => v.value === key);
         if (!variant) {
-          errors[join(path, f.discriminator)] = 'Choose one of the options';
+          errors[join(path, f.discriminator)] = i18n.t('validation.option');
           return;
         }
         validateFields(variant.fields, obj, path, prayer, errors);
@@ -116,7 +120,7 @@ export function validateField(
         const all = f.fields ?? [];
         if (!f.required && all.length > 0 && all.every((x) => !x.required)) {
           const set = all.some((x) => !isEmpty(obj[x.name]));
-          if (!set) errors[path] = 'Set at least one value, or turn it off';
+          if (!set) errors[path] = i18n.t('ruleEditor.emptyGroup');
         }
       }
       return;
@@ -139,13 +143,13 @@ export function validateRule(
   const base = rule['base'] as Record<string, unknown> | undefined;
   const baseType = catalog.baseTypes.find((b) => b.type === base?.['type']);
   if (!base || !baseType) {
-    errors['base.type'] = 'Choose a rule type';
+    errors['base.type'] = i18n.t('validation.ruleType');
   } else {
     validateFields(baseType.fields, base, 'base', prayer, errors);
   }
   for (const m of catalog.modifiers) {
     if (!modifierAllowedFor(m, prayer)) {
-      if (rule[m.name] !== undefined) errors[m.name] = 'Not available for this prayer';
+      if (rule[m.name] !== undefined) errors[m.name] = i18n.t('validation.unavailablePrayer');
       continue;
     }
     if (rule[m.name] === undefined) continue;

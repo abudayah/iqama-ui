@@ -1,18 +1,13 @@
+import { useTranslation } from 'react-i18next';
 import type { DailySchedule, Override, PrayerName } from '../types/index';
 import { isActive } from '../logic/is-active';
+import { formatTime12 } from '../i18n/format-time';
+import { formatWeekdayName, getIntlLocale } from '../i18n/locale';
 
 interface ScheduleRangeRowProps {
   schedule: DailySchedule;
   overrides: Override[];
 }
-
-const PRAYER_LABELS: Record<string, string> = {
-  fajr: 'Fajr',
-  dhuhr: 'Dhuhr',
-  asr: 'Asr',
-  maghrib: 'Maghrib',
-  isha: 'Isha',
-};
 
 // Prayers rendered before the sunrise column
 const PRAYERS_BEFORE_SUNRISE: PrayerName[] = ['fajr'];
@@ -26,29 +21,39 @@ function diffMinutes(a: string, b: string): number {
   return bh! * 60 + bm! - (ah! * 60 + am!);
 }
 
-/** Formats an HH:mm 24-hour time as a 12-hour AM/PM string (e.g. "05:30 AM"). */
-function formatTime12Hr(time24: string): string {
-  const [hours, minutes] = time24.split(':');
-  const date = new Date(2000, 0, 1, parseInt(hours!, 10), parseInt(minutes!, 10));
-  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-}
-
 export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps) {
+  // Subscribe to language changes so labels and 12-hour times re-format on toggle.
+  const { t, i18n } = useTranslation();
   const activeOverrides = overrides.filter((o) => isActive(o, schedule.date));
 
   return (
     <div id={`schedule-range-row-${schedule.date}`} className="bg-white border-b border-gray-100">
       <div className="flex items-center px-4 py-2 bg-gray-50">
-        <span className="text-sm font-medium text-gray-800 flex-1">{schedule.date}</span>
+        <span className="text-sm font-medium text-gray-800 flex-1">
+          <bdi dir="auto">
+            {new Date(`${schedule.date}T12:00:00`).toLocaleDateString(
+              getIntlLocale(i18n.language),
+              {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+              },
+            )}
+          </bdi>
+        </span>
         {schedule.iqama_conflict && (
           <span
             data-testid="day-conflict-badge"
-            className="text-[10px] bg-red-100 text-red-800 rounded-full px-1.5 mr-2"
+            className="text-[10px] bg-red-100 text-red-800 rounded-full px-1.5 me-2"
           >
-            Conflict
+            {t('schedule.conflict')}
           </span>
         )}
-        <span className="text-xs text-gray-500">{schedule.day_of_week}</span>
+        <span className="text-xs text-gray-500">
+          <bdi dir="auto">
+            {formatWeekdayName(schedule.day_of_week, getIntlLocale(i18n.language))}
+          </bdi>
+        </span>
       </div>
       <div className="flex">
         {PRAYERS_BEFORE_SUNRISE.map((prayer) => {
@@ -59,28 +64,34 @@ export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps)
 
           return (
             <div key={prayer} className="flex-1 flex flex-col items-center py-3 px-1">
-              <span className="text-xs text-gray-400">{PRAYER_LABELS[prayer]}</span>
+              <span className="text-xs text-gray-400">{t(`prayers.${prayer}`)}</span>
               <span
                 className={`text-xs mt-0.5 ${entry.azan_customized ? 'font-medium text-orange-500' : 'text-gray-500'}`}
-                title={entry.azan_customized ? 'Customized Azan time' : undefined}
+                title={entry.azan_customized ? t('schedule.customizedAzan') : undefined}
               >
-                {formatTime12Hr(entry.azan)}
+                <bdi dir="ltr">{formatTime12(entry.azan)}</bdi>
               </span>
-              <span className="text-xs font-semibold text-gray-900 mt-0.5">{entry.iqama}</span>
+              <span className="text-xs font-semibold text-gray-900 mt-0.5">
+                <bdi dir="ltr">{formatTime12(entry.iqama)}</bdi>
+              </span>
               {entry.iqama_conflict && (
                 <span
                   data-testid={`conflict-badge-${prayer}`}
                   className="text-[10px] bg-red-100 text-red-800 rounded-full px-1.5 mt-0.5"
                 >
-                  Conflict
+                  {t('schedule.conflict')}
                 </span>
               )}
               {override ? (
                 <span className="text-xs font-medium text-orange-500 mt-0.5">
-                  {override.overrideType === 'FIXED' ? offsetLabel : `${override.value}m`}
+                  <bdi dir="ltr">
+                    {override.overrideType === 'FIXED' ? offsetLabel : `${override.value}m`}
+                  </bdi>
                 </span>
               ) : (
-                <span className="text-xs font-medium text-emerald-600 mt-0.5">{offsetLabel}</span>
+                <span className="text-xs font-medium text-emerald-600 mt-0.5">
+                  <bdi dir="ltr">{offsetLabel}</bdi>
+                </span>
               )}
             </div>
           );
@@ -88,13 +99,15 @@ export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps)
 
         {/* Sunrise column — shows time and gap from Fajr iqama */}
         <div className="flex-1 flex flex-col items-center py-3 px-1">
-          <span className="text-xs text-gray-400">Sunrise</span>
-          <span className="text-xs text-gray-500 mt-0.5">{schedule.sunrise}</span>
+          <span className="text-xs text-gray-400">{t('prayers.sunrise')}</span>
+          <span className="text-xs text-gray-500 mt-0.5">
+            <bdi dir="ltr">{formatTime12(schedule.sunrise)}</bdi>
+          </span>
           <span className="text-xs font-semibold text-gray-900 mt-0.5">—</span>
           <span className="text-xs font-medium text-gray-400 mt-0.5">
             {(() => {
               const gap = diffMinutes(schedule.fajr.iqama, schedule.sunrise);
-              return gap > 0 ? `-${gap}m` : `${gap}m`;
+              return <bdi dir="ltr">{gap > 0 ? `-${gap}m` : `${gap}m`}</bdi>;
             })()}
           </span>
         </div>
@@ -107,28 +120,34 @@ export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps)
 
           return (
             <div key={prayer} className="flex-1 flex flex-col items-center py-3 px-1">
-              <span className="text-xs text-gray-400">{PRAYER_LABELS[prayer]}</span>
+              <span className="text-xs text-gray-400">{t(`prayers.${prayer}`)}</span>
               <span
                 className={`text-xs mt-0.5 ${entry.azan_customized ? 'font-medium text-orange-500' : 'text-gray-500'}`}
-                title={entry.azan_customized ? 'Customized Azan time' : undefined}
+                title={entry.azan_customized ? t('schedule.customizedAzan') : undefined}
               >
-                {formatTime12Hr(entry.azan)}
+                <bdi dir="ltr">{formatTime12(entry.azan)}</bdi>
               </span>
-              <span className="text-xs font-semibold text-gray-900 mt-0.5">{entry.iqama}</span>
+              <span className="text-xs font-semibold text-gray-900 mt-0.5">
+                <bdi dir="ltr">{formatTime12(entry.iqama)}</bdi>
+              </span>
               {entry.iqama_conflict && (
                 <span
                   data-testid={`conflict-badge-${prayer}`}
                   className="text-[10px] bg-red-100 text-red-800 rounded-full px-1.5 mt-0.5"
                 >
-                  Conflict
+                  {t('schedule.conflict')}
                 </span>
               )}
               {override ? (
                 <span className="text-xs font-medium text-orange-500 mt-0.5">
-                  {override.overrideType === 'FIXED' ? offsetLabel : `${override.value}m`}
+                  <bdi dir="ltr">
+                    {override.overrideType === 'FIXED' ? offsetLabel : `${override.value}m`}
+                  </bdi>
                 </span>
               ) : (
-                <span className="text-xs font-medium text-emerald-600 mt-0.5">{offsetLabel}</span>
+                <span className="text-xs font-medium text-emerald-600 mt-0.5">
+                  <bdi dir="ltr">{offsetLabel}</bdi>
+                </span>
               )}
             </div>
           );

@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import type {
   GeneralSettings,
   CalculationMethodName,
@@ -14,7 +15,6 @@ import type {
   RoundingName,
   AdhanCatalogResponse,
 } from '../../types';
-import { METHOD_LABELS, HIGH_LAT_LABELS, MADHAB_LABELS, ROUNDING_LABELS } from './method-labels';
 
 interface CustomAngles {
   fajrAngle: number;
@@ -40,6 +40,7 @@ export function GeneralSettingsDrawer({
   catalog,
   onApply,
 }: Props) {
+  const { t } = useTranslation();
   const [method, setMethod] = useState<CalculationMethodName>(current.method);
   const [madhab, setMadhab] = useState<MadhabName>(current.madhab);
   const [hlr, setHlr] = useState<HighLatitudeRuleName>(current.highLatitudeRule);
@@ -128,12 +129,12 @@ export function GeneralSettingsDrawer({
           {/* Header */}
           <div className="flex items-center justify-between">
             <h2 id="general-drawer-title" className="text-base font-semibold text-gray-900">
-              General settings
+              {t('adhanGeneral.title')}
             </h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 p-1 min-h-[44px] min-w-[44px] flex items-center justify-center"
-              aria-label="Close drawer"
+              aria-label={t('adhanGeneral.close')}
             >
               ✕
             </button>
@@ -142,7 +143,7 @@ export function GeneralSettingsDrawer({
           {/* Calculation method */}
           <div>
             <label htmlFor="gs-method" className="block text-sm font-medium text-gray-700 mb-1">
-              Calculation method
+              {t('adhanGeneral.calculationMethod')}
             </label>
             <select
               id="gs-method"
@@ -152,7 +153,7 @@ export function GeneralSettingsDrawer({
             >
               {catalog.methods.map((m) => (
                 <option key={m.name} value={m.name}>
-                  {METHOD_LABELS[m.name]}
+                  {t(`methods.${m.name}`)}
                 </option>
               ))}
             </select>
@@ -164,7 +165,7 @@ export function GeneralSettingsDrawer({
                     htmlFor="gs-fajr-angle"
                     className="block text-xs font-medium text-gray-700 mb-1"
                   >
-                    Fajr angle (°)
+                    {t('adhanGeneral.fajrAngle')}
                   </label>
                   <input
                     id="gs-fajr-angle"
@@ -182,7 +183,7 @@ export function GeneralSettingsDrawer({
                     htmlFor="gs-isha-angle"
                     className="block text-xs font-medium text-gray-700 mb-1"
                   >
-                    Isha angle (°)
+                    {t('adhanGeneral.ishaAngle')}
                   </label>
                   <input
                     id="gs-isha-angle"
@@ -196,7 +197,7 @@ export function GeneralSettingsDrawer({
                   />
                 </div>
                 {!anglesValid && (
-                  <p className="text-xs text-red-600">Angles must be between 1° and 30°</p>
+                  <p className="text-xs text-red-600">{t('adhanGeneral.anglesRange')}</p>
                 )}
               </div>
             )}
@@ -204,7 +205,9 @@ export function GeneralSettingsDrawer({
 
           {/* Madhab */}
           <div>
-            <p className="block text-sm font-medium text-gray-700 mb-2">Madhab (Asr timing)</p>
+            <p className="block text-sm font-medium text-gray-700 mb-2">
+              {t('adhanGeneral.madhab')}
+            </p>
             <div className="flex rounded-lg border border-gray-300 overflow-hidden">
               {(['shafi', 'hanafi'] as MadhabName[]).map((m) => (
                 <button
@@ -216,7 +219,7 @@ export function GeneralSettingsDrawer({
                       : 'text-gray-600 hover:bg-gray-50'
                   }`}
                 >
-                  {MADHAB_LABELS[m]}
+                  {t(`madhabLabels.${m}`)}
                 </button>
               ))}
             </div>
@@ -225,7 +228,7 @@ export function GeneralSettingsDrawer({
           {/* High latitude rule */}
           <div>
             <label htmlFor="gs-hlr" className="block text-sm font-medium text-gray-700 mb-1">
-              High latitude rule
+              {t('adhanGeneral.highLatitude')}
             </label>
             <select
               id="gs-hlr"
@@ -235,13 +238,15 @@ export function GeneralSettingsDrawer({
             >
               {catalog.highLatitudeRuleValues.map((r) => (
                 <option key={r} value={r}>
-                  {HIGH_LAT_LABELS[r]}
-                  {r === recommended ? ' (recommended)' : ''}
+                  {t(`highLat.${r}`)}
+                  {r === recommended ? ' ' + t('adhanGeneral.recommended') : ''}
                 </option>
               ))}
             </select>
             {hlr === recommended && (
-              <p className="mt-1 text-xs text-green-600">✓ Recommended for this location</p>
+              <p className="mt-1 text-xs text-green-600">
+                {t('adhanGeneral.recommendedForLocation')}
+              </p>
             )}
           </div>
 
@@ -251,7 +256,7 @@ export function GeneralSettingsDrawer({
               onClick={() => setShowAdvanced((v) => !v)}
               className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
             >
-              {showAdvanced ? '▾' : '▸'} Advanced settings
+              {showAdvanced ? '▾' : '▸'} {t('adhanGeneral.advanced')}
             </button>
             {showAdvanced && (
               <div className="mt-3 space-y-4 border-t border-gray-100 pt-3">
@@ -261,7 +266,7 @@ export function GeneralSettingsDrawer({
                     htmlFor="gs-rounding"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Rounding
+                    {t('adhanGeneral.rounding')}
                   </label>
                   <select
                     id="gs-rounding"
@@ -271,7 +276,7 @@ export function GeneralSettingsDrawer({
                   >
                     {catalog.roundingValues.map((r) => (
                       <option key={r} value={r}>
-                        {ROUNDING_LABELS[r]}
+                        {t(`roundingLabels.${r}`)}
                       </option>
                     ))}
                   </select>
@@ -286,14 +291,14 @@ export function GeneralSettingsDrawer({
               onClick={onClose}
               className="flex-1 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 min-h-[44px]"
             >
-              Cancel
+              {t('adhanGeneral.cancel')}
             </button>
             <button
               onClick={handleApply}
               disabled={!hasChanges}
               className="flex-1 py-2 text-sm rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-40 min-h-[44px]"
             >
-              Add to changes
+              {t('adhanGeneral.addToChanges')}
             </button>
           </div>
         </div>

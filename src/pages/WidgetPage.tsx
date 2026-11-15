@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useSchedule } from '../hooks/useSchedule';
 import { usePrayerContext } from '../hooks/usePrayerContext';
 import { useSimulator } from '../hooks/useSimulator';
@@ -5,6 +6,7 @@ import { HeroBanner } from '../components/HeroBanner';
 import { WidgetPrayerTable } from '../components/WidgetPrayerTable';
 
 export function WidgetPage() {
+  const { t } = useTranslation();
   const { simNow, simDateStr, simTomorrowStr, isSimulating } = useSimulator();
 
   const { data: todaySchedule, loading: todayLoading, error: todayError } = useSchedule(simDateStr);
@@ -46,7 +48,7 @@ export function WidgetPage() {
         {/* Loading skeleton */}
         {todayLoading && (
           <div id="widget-loading" className="px-6 pt-6 pb-4">
-            <div className="animate-pulse space-y-4" aria-label="Loading">
+            <div className="animate-pulse space-y-4" aria-label={t('widget.loading')}>
               <div className="h-6 bg-gray-200 rounded w-40" />
               <div className="h-4 bg-gray-200 rounded w-28" />
               {[...Array(6)].map((_, i) => (
@@ -63,9 +65,7 @@ export function WidgetPage() {
               className="bg-red-50 border border-red-200 rounded-xl p-4 text-center"
               role="alert"
             >
-              <p className="text-red-700 text-sm">
-                {todayError.message ?? 'Prayer times could not be loaded.'}
-              </p>
+              <p className="text-red-700 text-sm">{todayError.message ?? t('widget.error')}</p>
             </div>
           </div>
         )}
@@ -87,12 +87,12 @@ export function WidgetPage() {
         {/* Widget footer */}
         <footer
           id="widget-footer"
-          aria-label="Widget footer"
+          aria-label={t('widget.footerAria')}
           style={{ borderTop: '1px solid #f0f0f0' }}
           className="px-4 py-2.5 text-center shrink-0"
         >
           <p style={{ fontSize: '11px', color: '#999', letterSpacing: '0.02em' }}>
-            Get prayer times on your mobile: <span style={{ color: '#666' }}>iqama.theisbc.ca</span>
+            {t('widget.footerMessage')} <span style={{ color: '#666' }}>iqama.theisbc.ca</span>
           </p>
         </footer>
       </div>

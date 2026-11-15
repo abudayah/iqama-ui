@@ -5,7 +5,9 @@
  * any "Customized" / "Period active" badges. Clicking opens the offset drawer.
  */
 
+import { useTranslation } from 'react-i18next';
 import type { PrayerKey, AdhanConfigResponse, AdhanSettings } from '../../types';
+import { formatTime12 } from '../../i18n/format-time';
 
 interface Props {
   prayer: PrayerKey;
@@ -22,22 +24,6 @@ interface Props {
   onClick: () => void;
 }
 
-const PRAYER_DISPLAY: Record<PrayerKey, string> = {
-  fajr: 'Fajr',
-  sunrise: 'Sunrise',
-  dhuhr: 'Dhuhr',
-  asr: 'Asr',
-  maghrib: 'Maghrib',
-  isha: 'Isha',
-};
-
-/** Formats an HH:mm 24-hour time as a 12-hour AM/PM string (e.g. "05:30 AM"). */
-function formatTime12Hr(time24: string): string {
-  const [hours, minutes] = time24.split(':');
-  const date = new Date(2000, 0, 1, parseInt(hours!, 10), parseInt(minutes!, 10));
-  return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-}
-
 export function PrayerCard({
   prayer,
   effective,
@@ -47,6 +33,9 @@ export function PrayerCard({
   azanTime,
   onClick,
 }: Props) {
+  // Subscribe to language changes so labels and 12-hour times re-format on toggle.
+  const { t } = useTranslation();
+  const prayerLabel = t(`prayers.${prayer}`);
   const perPrayer = effective.perPrayer[prayer];
   const savedOffset = perPrayer?.offsetMinutes ?? 0;
 
@@ -65,28 +54,28 @@ export function PrayerCard({
     displayOffset === 0
       ? null
       : displayOffset > 0
-        ? `+${displayOffset} min`
-        : `${displayOffset} min`;
+        ? `+${displayOffset} ${t('adhanPrayerDrawer.min')}`
+        : `${displayOffset} ${t('adhanPrayerDrawer.min')}`;
 
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-start p-3 rounded-xl border text-left transition-colors min-h-[44px] w-full ${
+      className={`flex flex-col items-start p-3 rounded-xl border text-start transition-colors min-h-[44px] w-full ${
         hasDraftChange
           ? 'border-blue-400 bg-blue-50'
           : isCustomized || hasPeriod
             ? 'border-amber-400 bg-amber-50'
             : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
       }`}
-      aria-label={`Edit ${PRAYER_DISPLAY[prayer]} Azan offset`}
+      aria-label={t('adhanConfig.editOffsetAria', { prayer: prayerLabel })}
     >
       <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-        {PRAYER_DISPLAY[prayer]}
+        {prayerLabel}
       </span>
 
       {azanTime && (
         <span className="mt-0.5 text-sm font-semibold text-gray-800">
-          {formatTime12Hr(azanTime)}
+          <bdi dir="ltr">{formatTime12(azanTime)}</bdi>
         </span>
       )}
 
@@ -96,19 +85,19 @@ export function PrayerCard({
             hasDraftChange ? 'text-blue-700' : 'text-amber-700'
           }`}
         >
-          {offsetLabel}
+          <bdi dir="ltr">{offsetLabel}</bdi>
         </span>
       )}
 
       <div className="mt-1.5 flex flex-wrap gap-1">
         {isCustomized && !hasDraftChange && (
           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 border border-amber-300">
-            ✦ Customized
+            {t('adhanConfig.customized')}
           </span>
         )}
         {hasDraftChange && (
           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-300">
-            ● Draft
+            {t('adhanConfig.draft')}
           </span>
         )}
         {hasPeriod &&

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ApiError } from '../api/errors';
 import type { Override, OverridePayload, PrayerName } from '../types/index';
 
@@ -9,13 +10,7 @@ interface OverrideFormModalProps {
 }
 
 const PRAYERS: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
-const PRAYER_LABELS: Record<string, string> = {
-  fajr: 'Fajr',
-  dhuhr: 'Dhuhr',
-  asr: 'Asr',
-  maghrib: 'Maghrib',
-  isha: 'Isha',
-};
+
 const FIXED_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 const OFFSET_MIN = -120;
@@ -35,6 +30,7 @@ function parseOffsetValue(v: string): number {
 }
 
 export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModalProps) {
+  const { t } = useTranslation();
   const [prayer, setPrayer] = useState<PrayerName>(initial?.prayer ?? 'fajr');
   const [overrideType, setOverrideType] = useState<'FIXED' | 'OFFSET'>(
     initial?.overrideType ?? 'FIXED',
@@ -71,12 +67,12 @@ export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModa
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (overrideType === 'FIXED' && !FIXED_REGEX.test(value)) {
-      newErrors['value'] = 'Enter a valid time (HH:mm, e.g. 05:45)';
+      newErrors['value'] = t('overrideForm.errors.time');
     }
-    if (!startDate) newErrors['startDate'] = 'Start date is required';
-    if (!endDate) newErrors['endDate'] = 'End date is required';
+    if (!startDate) newErrors['startDate'] = t('overrideForm.errors.startRequired');
+    if (!endDate) newErrors['endDate'] = t('overrideForm.errors.endRequired');
     if (startDate && endDate && endDate < startDate) {
-      newErrors['endDate'] = 'End date must be on or after start date';
+      newErrors['endDate'] = t('overrideForm.errors.endBeforeStart');
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -91,7 +87,10 @@ export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModa
     } catch (err) {
       // 409 = overlaps another override for the same prayer: show it by the dates.
       if (err instanceof ApiError && err.status === 409) setErrors({ overlap: err.message });
-      else setErrors({ submit: err instanceof Error ? err.message : 'Save failed' });
+      else
+        setErrors({
+          submit: err instanceof Error ? err.message : t('overrideForm.errors.saveFailed'),
+        });
     } finally {
       setSaving(false);
     }
@@ -100,10 +99,14 @@ export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModa
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
       <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-md p-6">
-        <h2 className="text-lg font-bold mb-4">{initial ? 'Edit Override' : 'New Override'}</h2>
+        <h2 className="text-lg font-bold mb-4">
+          {initial ? t('overrideForm.editTitle') : t('overrideForm.newTitle')}
+        </h2>
 
         {/* Prayer */}
-        <label className="block text-sm font-medium text-gray-700 mb-1">Prayer</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {t('overrideForm.prayer')}
+        </label>
         <select
           value={prayer}
           onChange={(e) => setPrayer(e.target.value as PrayerName)}
@@ -111,30 +114,35 @@ export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModa
         >
           {PRAYERS.map((p) => (
             <option key={p} value={p}>
-              {PRAYER_LABELS[p]}
+              {t(`prayers.${p}`)}
             </option>
           ))}
         </select>
 
         {/* Type */}
-        <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {t('overrideForm.type')}
+        </label>
         <div className="flex gap-4 mb-3">
-          {(['FIXED', 'OFFSET'] as const).map((t) => (
-            <label key={t} className="flex items-center gap-2 text-sm cursor-pointer min-h-[44px]">
+          {(['FIXED', 'OFFSET'] as const).map((type) => (
+            <label
+              key={type}
+              className="flex items-center gap-2 text-sm cursor-pointer min-h-[44px]"
+            >
               <input
                 type="radio"
-                value={t}
-                checked={overrideType === t}
-                onChange={() => handleTypeChange(t)}
+                value={type}
+                checked={overrideType === type}
+                onChange={() => handleTypeChange(type)}
               />
-              {t}
+              {type === 'FIXED' ? t('overrideForm.fixed') : t('overrideForm.offset')}
             </label>
           ))}
         </div>
 
         {/* Value */}
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          {overrideType === 'FIXED' ? 'Time (HH:mm)' : 'Offset (minutes)'}
+          {overrideType === 'FIXED' ? t('overrideForm.timeLabel') : t('overrideForm.offsetLabel')}
         </label>
 
         {overrideType === 'FIXED' ? (
@@ -148,19 +156,23 @@ export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModa
               aria-describedby="override-step-hint"
             />
             <p id="override-step-hint" className="text-xs text-gray-500 mb-1">
-              Iqama times are on a 5-minute mark. The final time can be moved further to keep the
-              safety rules (minimum gap after Azan, Fajr before sunrise). The schedule and the
-              warning on this page show the real time.
+              {t('overrideForm.stepHint')}
             </p>
           </>
         ) : (
           <div className="mb-1">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-xs text-gray-500">-{Math.abs(OFFSET_MIN)} min</span>
-              <span className="text-lg font-bold tabular-nums text-blue-600">
-                {formatOffset(offsetNum)} min
+              <span className="text-xs text-gray-500">
+                -{Math.abs(OFFSET_MIN)} {t('overrideForm.minShort')}
               </span>
-              <span className="text-xs text-gray-500">+{OFFSET_MAX} min</span>
+              <span className="text-lg font-bold tabular-nums text-blue-600">
+                <bdi dir="ltr">
+                  {formatOffset(offsetNum)} {t('overrideForm.minShort')}
+                </bdi>
+              </span>
+              <span className="text-xs text-gray-500">
+                +{OFFSET_MAX} {t('overrideForm.minShort')}
+              </span>
             </div>
             <input
               type="range"
@@ -170,21 +182,23 @@ export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModa
               value={offsetNum}
               onChange={(e) => handleOffsetSlider(Number(e.target.value))}
               className="w-full h-2 accent-blue-600 cursor-pointer"
-              aria-label="Offset in minutes"
+              aria-label={t('overrideForm.offsetAria')}
             />
             <div className="flex justify-between text-xs text-gray-400 mt-1 px-0.5">
-              <span>-120</span>
-              <span>-60</span>
+              <span dir="ltr">-120</span>
+              <span dir="ltr">-60</span>
               <span>0</span>
-              <span>+60</span>
-              <span>+120</span>
+              <span dir="ltr">+60</span>
+              <span dir="ltr">+120</span>
             </div>
           </div>
         )}
         {errors['value'] && <p className="text-red-600 text-xs mb-2">{errors['value']}</p>}
 
         {/* Start date */}
-        <label className="block text-sm font-medium text-gray-700 mb-1 mt-2">Start Date</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1 mt-2">
+          {t('overrideForm.startDate')}
+        </label>
         <input
           type="date"
           value={startDate}
@@ -194,7 +208,9 @@ export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModa
         {errors['startDate'] && <p className="text-red-600 text-xs mb-2">{errors['startDate']}</p>}
 
         {/* End date */}
-        <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {t('overrideForm.endDate')}
+        </label>
         <input
           type="date"
           value={endDate}
@@ -220,14 +236,14 @@ export function OverrideFormModal({ initial, onSave, onClose }: OverrideFormModa
             onClick={onClose}
             className="flex-1 border border-gray-300 text-gray-700 rounded py-3 text-sm min-h-[44px]"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={() => void handleSubmit()}
             disabled={saving}
             className="flex-1 bg-blue-600 text-white rounded py-3 text-sm font-medium disabled:opacity-50 min-h-[44px]"
           >
-            {saving ? 'Saving...' : 'Save'}
+            {saving ? t('common.saving') : t('overrideForm.save')}
           </button>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { describe, it } from 'vitest';
 import * as fc from 'fast-check';
 import { EidCard } from './EidCard';
 import type { EidPrayerRecord, EidPrayerEntry } from '../types';
+import { formatTime12 } from '../i18n/format-time';
 
 /**
  * Validates: Requirements 4.3, 8.2
@@ -90,7 +91,7 @@ describe('EidCard property tests', () => {
         let allPresent = true;
         for (const entry of record.prayers) {
           if (!screen.queryByText(entry.label)) allPresent = false;
-          if (!screen.queryByText(entry.time)) allPresent = false;
+          if (!screen.queryByText(formatTime12(entry.time))) allPresent = false;
         }
         unmount();
         return allPresent;

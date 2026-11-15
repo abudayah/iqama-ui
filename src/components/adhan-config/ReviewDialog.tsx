@@ -6,8 +6,9 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import type { AdhanSettings, GeneralSettings, PreviewResponse, PrayerKey } from '../../types';
-import { METHOD_LABELS, HIGH_LAT_LABELS, MADHAB_LABELS, ROUNDING_LABELS } from './method-labels';
 
 interface Props {
   isOpen: boolean;
@@ -22,19 +23,23 @@ interface Props {
 
 type ChangeRow = { label: string; before: string; after: string };
 
-function describeGeneral(g: GeneralSettings): string {
+function describeGeneral(g: GeneralSettings, t: TFunction): string {
   return [
-    METHOD_LABELS[g.method],
-    MADHAB_LABELS[g.madhab],
-    HIGH_LAT_LABELS[g.highLatitudeRule],
-    ROUNDING_LABELS[g.rounding],
-    g.shafaq ? `Shafaq: ${g.shafaq}` : '',
+    t(`methods.${g.method}`),
+    t(`madhabLabels.${g.madhab}`),
+    t(`highLat.${g.highLatitudeRule}`),
+    t(`roundingLabels.${g.rounding}`),
+    g.shafaq ? t('adhanReview.shafaq', { value: t(`shafaqLabels.${g.shafaq}`) }) : '',
   ]
     .filter(Boolean)
     .join(' · ');
 }
 
-function buildChangeRows(current: AdhanSettings | null, proposed: AdhanSettings): ChangeRow[] {
+function buildChangeRows(
+  current: AdhanSettings | null,
+  proposed: AdhanSettings,
+  t: TFunction,
+): ChangeRow[] {
   const rows: ChangeRow[] = [];
   if (!current) return rows;
 
@@ -43,27 +48,27 @@ function buildChangeRows(current: AdhanSettings | null, proposed: AdhanSettings)
 
   if (gc.method !== gp.method)
     rows.push({
-      label: 'Calculation method',
-      before: METHOD_LABELS[gc.method],
-      after: METHOD_LABELS[gp.method],
+      label: t('adhanReview.calculationMethod'),
+      before: t(`methods.${gc.method}`),
+      after: t(`methods.${gp.method}`),
     });
   if (gc.madhab !== gp.madhab)
     rows.push({
-      label: 'Madhab',
-      before: MADHAB_LABELS[gc.madhab],
-      after: MADHAB_LABELS[gp.madhab],
+      label: t('adhanReview.madhab'),
+      before: t(`madhabLabels.${gc.madhab}`),
+      after: t(`madhabLabels.${gp.madhab}`),
     });
   if (gc.highLatitudeRule !== gp.highLatitudeRule)
     rows.push({
-      label: 'High latitude rule',
-      before: HIGH_LAT_LABELS[gc.highLatitudeRule],
-      after: HIGH_LAT_LABELS[gp.highLatitudeRule],
+      label: t('adhanReview.highLatitude'),
+      before: t(`highLat.${gc.highLatitudeRule}`),
+      after: t(`highLat.${gp.highLatitudeRule}`),
     });
   if (gc.rounding !== gp.rounding)
     rows.push({
-      label: 'Rounding',
-      before: ROUNDING_LABELS[gc.rounding],
-      after: ROUNDING_LABELS[gp.rounding],
+      label: t('adhanReview.rounding'),
+      before: t(`roundingLabels.${gc.rounding}`),
+      after: t(`roundingLabels.${gp.rounding}`),
     });
 
   const prayers: PrayerKey[] = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'];
@@ -73,9 +78,9 @@ function buildChangeRows(current: AdhanSettings | null, proposed: AdhanSettings)
     if (pp?.offsetMinutes !== undefined && pp.offsetMinutes !== (cp?.offsetMinutes ?? 0)) {
       const val = pp.offsetMinutes;
       rows.push({
-        label: `${p.charAt(0).toUpperCase() + p.slice(1)} offset`,
-        before: `${cp?.offsetMinutes ?? 0} min`,
-        after: `${val > 0 ? '+' : ''}${val} min`,
+        label: t('adhanReview.prayerOffset', { prayer: t(`prayers.${p}`) }),
+        before: `${cp?.offsetMinutes ?? 0} ${t('adhanPrayerDrawer.min')}`,
+        after: `${val > 0 ? '+' : ''}${val} ${t('adhanPrayerDrawer.min')}`,
       });
     }
   }
@@ -93,6 +98,7 @@ export function ReviewDialog({
   previewLoading,
   previewError,
 }: Props) {
+  const { t } = useTranslation();
   const [confirmed, setConfirmed] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
 
@@ -116,7 +122,7 @@ export function ReviewDialog({
 
   if (!isOpen) return null;
 
-  const changeRows = buildChangeRows(currentSettings, proposedSettings);
+  const changeRows = buildChangeRows(currentSettings, proposedSettings, t);
   const warnings = preview?.warnings ?? [];
   const hasErrors = !!previewError;
   const canApply = preview !== null && !hasErrors && confirmed && !previewLoading;
@@ -136,7 +142,7 @@ export function ReviewDialog({
         {/* Header */}
         <div className="px-6 pt-6 pb-4 border-b border-gray-100">
           <h2 id="review-dialog-title" className="text-lg font-semibold text-gray-900">
-            Review changes
+            {t('adhanReview.title')}
           </h2>
         </div>
 
@@ -144,40 +150,44 @@ export function ReviewDialog({
         <div className="px-6 py-4 overflow-y-auto flex-1 space-y-4">
           {/* Summary line */}
           <div className="text-sm text-gray-700">
-            <span className="font-medium">Proposed:</span>{' '}
-            {describeGeneral(proposedSettings.general)}
+            <span className="font-medium">{t('adhanReview.proposed')}</span>{' '}
+            {describeGeneral(proposedSettings.general, t)}
           </div>
 
           {/* Change table */}
           {changeRows.length > 0 ? (
             <table className="w-full text-sm border-collapse">
               <thead>
-                <tr className="text-left text-gray-500 text-xs uppercase tracking-wide">
-                  <th className="pb-2 font-medium">Setting</th>
-                  <th className="pb-2 font-medium">Before</th>
-                  <th className="pb-2 font-medium">After</th>
+                <tr className="text-start text-gray-500 text-xs uppercase tracking-wide">
+                  <th className="pb-2 font-medium">{t('adhanReview.setting')}</th>
+                  <th className="pb-2 font-medium">{t('adhanReview.before')}</th>
+                  <th className="pb-2 font-medium">{t('adhanReview.after')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {changeRows.map((row) => (
                   <tr key={row.label}>
                     <td className="py-2 text-gray-700">{row.label}</td>
-                    <td className="py-2 text-gray-500 line-through">{row.before}</td>
-                    <td className="py-2 text-blue-700 font-medium">{row.after}</td>
+                    <td className="py-2 text-gray-500 line-through">
+                      <bdi dir="ltr">{row.before}</bdi>
+                    </td>
+                    <td className="py-2 text-blue-700 font-medium">
+                      <bdi dir="ltr">{row.after}</bdi>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           ) : (
             <p className="text-sm text-gray-400 italic">
-              {previewLoading ? 'Loading preview…' : 'No changes detected.'}
+              {previewLoading ? t('adhanReview.loadingPreview') : t('adhanReview.noChanges')}
             </p>
           )}
 
           {/* Warnings */}
           {warnings.length > 0 && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-1">
-              <p className="text-sm font-medium text-amber-800">Warnings</p>
+              <p className="text-sm font-medium text-amber-800">{t('adhanReview.warnings')}</p>
               {warnings.map((w, i) => (
                 <p key={i} className="text-sm text-amber-700">
                   ⚠️ {w.message}
@@ -200,11 +210,9 @@ export function ReviewDialog({
               checked={confirmed}
               onChange={(e) => setConfirmed(e.target.checked)}
               className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              aria-label="I understand this changes times shown to the community"
+              aria-label={t('adhanReview.understandAria')}
             />
-            <span className="text-sm text-gray-700">
-              I understand this will change the prayer times shown to the community.
-            </span>
+            <span className="text-sm text-gray-700">{t('adhanReview.understand')}</span>
           </label>
         </div>
 
@@ -214,14 +222,14 @@ export function ReviewDialog({
             onClick={onClose}
             className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 min-h-[44px]"
           >
-            Cancel
+            {t('adhanReview.cancel')}
           </button>
           <button
             onClick={() => onConfirm()}
             disabled={!canApply}
             className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px]"
           >
-            Apply to public schedule
+            {t('adhanReview.apply')}
           </button>
         </div>
       </div>

@@ -4,13 +4,17 @@
  * Shown at the top of the page when URL simulator params are active.
  * Displays the simulated date and time, and provides a link to exit.
  */
+import { Trans, useTranslation } from 'react-i18next';
+import { getIntlLocale } from '../i18n/locale';
+
 interface SimulatorBannerProps {
   simDateStr: string;
   simNow: Date;
 }
 
 export function SimulatorBanner({ simDateStr, simNow }: SimulatorBannerProps) {
-  const timeStr = simNow.toLocaleTimeString([], {
+  const { t, i18n } = useTranslation();
+  const timeStr = simNow.toLocaleTimeString(getIntlLocale(i18n.language), {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
@@ -27,7 +31,7 @@ export function SimulatorBanner({ simDateStr, simNow }: SimulatorBannerProps) {
     <div
       role="status"
       id="simulator-banner"
-      aria-label="Simulator mode active"
+      aria-label={t('simulator.activeAria')}
       className="flex items-center justify-between gap-3 px-4 py-2 text-xs font-medium"
       style={{ background: '#7c3aed', color: '#fff' }}
     >
@@ -47,16 +51,26 @@ export function SimulatorBanner({ simDateStr, simNow }: SimulatorBannerProps) {
             clipRule="evenodd"
           />
         </svg>
-        <span>
-          Simulator active — {simDateStr} at {timeStr}
+        <span dir="auto">
+          <Trans
+            i18nKey="simulator.active"
+            values={{
+              date: new Date(`${simDateStr}T12:00:00`).toLocaleDateString(
+                getIntlLocale(i18n.language),
+                { year: 'numeric', month: 'short', day: 'numeric' },
+              ),
+              time: timeStr,
+            }}
+            components={{ d: <bdi dir="auto" />, t: <bdi dir="ltr" /> }}
+          />
         </span>
       </span>
       <button
         onClick={exitSimulator}
         className="underline underline-offset-2 opacity-80 hover:opacity-100 transition-opacity"
-        aria-label="Exit simulator"
+        aria-label={t('simulator.exitAria')}
       >
-        Exit
+        {t('simulator.exit')}
       </button>
     </div>
   );

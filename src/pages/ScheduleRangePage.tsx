@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useScheduleRange } from '../hooks/useScheduleRange';
 import { useOverrides } from '../hooks/useOverrides';
 import { WeekSelect } from '../components/WeekSelect';
@@ -28,6 +29,7 @@ function getCurrentWeek(): { start: string; end: string } {
 }
 
 export function ScheduleRangePage() {
+  const { t } = useTranslation();
   const defaultWeek = getCurrentWeek();
   const [start, setStart] = useState(defaultWeek.start);
   const [end, setEnd] = useState(defaultWeek.end);
@@ -43,7 +45,7 @@ export function ScheduleRangePage() {
   return (
     <div id="schedule-range-page">
       <div className="p-4 bg-white border-b border-gray-200">
-        <label className="block text-xs text-gray-500 mb-1">Week</label>
+        <label className="block text-xs text-gray-500 mb-1">{t('schedule.week')}</label>
         <WeekSelect start={start} end={end} onWeekChange={handleWeekChange} />
       </div>
       <div id="schedule-range-content" className="p-4">

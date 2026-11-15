@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { DailySchedule } from '../types/index';
 import type { PeekTarget } from '../components/HeroBanner';
 import { useSchedule } from '../hooks/useSchedule';
@@ -13,6 +14,7 @@ import { PublicFooter } from '../components/PublicFooter';
 const PEEK_DURATION_MS = 4_000;
 
 export function PrayerViewerPage() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'today' | 'tomorrow'>('today');
 
   /* ── Peek state ── */
@@ -112,7 +114,7 @@ export function PrayerViewerPage() {
         {/* Loading skeleton */}
         {isLoading && (
           <div className="bg-white rounded-t-3xl px-6 pt-6 pb-4">
-            <div className="animate-pulse space-y-4" aria-label="Loading">
+            <div className="animate-pulse space-y-4" aria-label={t('prayerTable.loadingAria')}>
               <div className="h-6 bg-gray-200 rounded w-40" />
               <div className="h-4 bg-gray-200 rounded w-28" />
               {[...Array(6)].map((_, i) => (
@@ -134,7 +136,7 @@ export function PrayerViewerPage() {
                 onClick={() => void refetch()}
                 className="bg-red-600 text-white px-4 py-2 rounded text-sm min-h-[44px]"
               >
-                Retry
+                {t('common.retry')}
               </button>
             </div>
           </div>

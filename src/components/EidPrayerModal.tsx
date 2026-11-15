@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ceilToNearest15 } from '../logic/ceil-to-nearest-15';
 import type { SubmitOverridePayload } from '../types';
+import { getIntlLocale } from '../i18n/locale';
 
 interface EidPrayerModalProps {
   eidType: 'EID_AL_FITR' | 'EID_AL_ADHA';
@@ -50,6 +52,7 @@ export function EidPrayerModal({
   onSubmit,
   onClose,
 }: EidPrayerModalProps) {
+  const { t, i18n } = useTranslation();
   const defaultFirst = computeDefaultFirstPrayer(sunriseTime, eidType);
   const defaultSecond = computeDefaultSecondPrayer(defaultFirst);
 
@@ -58,10 +61,9 @@ export function EidPrayerModal({
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const title =
-    eidType === 'EID_AL_FITR' ? 'Confirm Eid al-Fitr Prayers' : 'Confirm Eid al-Adha Prayers';
+  const title = eidType === 'EID_AL_FITR' ? t('eidModal.fitrTitle') : t('eidModal.adhaTitle');
 
-  const formattedDate = eidDate.toLocaleDateString('en-US', {
+  const formattedDate = eidDate.toLocaleDateString(getIntlLocale(i18n.language), {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -70,8 +72,8 @@ export function EidPrayerModal({
 
   const message =
     eidType === 'EID_AL_FITR'
-      ? `Based on your selection, the 1st of Shawwal will be on ${formattedDate}. Please confirm the prayer timings.`
-      : `Based on your selection, Eid al-Adha (10th of Dhul-Hijjah) will be on ${formattedDate}. Please confirm the prayer timings.`;
+      ? t('eidModal.fitrMessage', { date: formattedDate })
+      : t('eidModal.adhaMessage', { date: formattedDate });
 
   const handleSubmit = async () => {
     setSaving(true);
@@ -93,7 +95,7 @@ export function EidPrayerModal({
       await onSubmit(payload);
       onClose();
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Submission failed. Please try again.');
+      setSubmitError(err instanceof Error ? err.message : t('eidModal.submitFailed'));
     } finally {
       setSaving(false);
     }
@@ -114,25 +116,29 @@ export function EidPrayerModal({
         <p className="text-sm text-gray-700 mb-5">{message}</p>
 
         {/* 1st Prayer */}
-        <label className="block text-sm font-medium text-gray-700 mb-1">1st Prayer</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {t('eidModal.first')}
+        </label>
         <input
           type="time"
           step={300}
           value={firstPrayerTime}
           onChange={(e) => setFirstPrayerTime(e.target.value)}
           className="w-full border border-gray-300 rounded px-3 py-3 text-sm mb-3 min-h-[44px]"
-          aria-label="1st Prayer time"
+          aria-label={t('eidModal.firstAria')}
         />
 
         {/* 2nd Prayer */}
-        <label className="block text-sm font-medium text-gray-700 mb-1">2nd Prayer</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {t('eidModal.second')}
+        </label>
         <input
           type="time"
           step={300}
           value={secondPrayerTime}
           onChange={(e) => setSecondPrayerTime(e.target.value)}
           className="w-full border border-gray-300 rounded px-3 py-3 text-sm mb-3 min-h-[44px]"
-          aria-label="2nd Prayer time"
+          aria-label={t('eidModal.secondAria')}
         />
 
         {/* Inline error */}
@@ -148,14 +154,14 @@ export function EidPrayerModal({
             onClick={onClose}
             className="flex-1 border border-gray-300 text-gray-700 rounded py-3 text-sm min-h-[44px]"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={() => void handleSubmit()}
             disabled={saving}
             className="flex-1 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded py-3 text-sm font-medium disabled:opacity-50 min-h-[44px]"
           >
-            {saving ? 'Saving...' : 'Confirm'}
+            {saving ? t('common.saving') : t('eidModal.confirm')}
           </button>
         </div>
       </div>
