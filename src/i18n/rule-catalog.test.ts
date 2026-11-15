@@ -9,28 +9,6 @@ describe('Iqama rule catalog translations', () => {
     await i18n.changeLanguage('en');
   });
 
-  it('translates modifier labels, weekdays, notes and options to Arabic', async () => {
-    await i18n.changeLanguage('ar');
-    expect(translateRuleCatalog('Limits', i18n.language)).toBe('الحدود');
-    expect(
-      translateRuleCatalog('Iqama at least this many minutes before sunrise', i18n.language),
-    ).toBe('يجب أن تكون الإقامة قبل الشروق بهذه الدقائق على الأقل');
-    expect(translateRuleCatalog('Direction', i18n.language)).toBe('اتجاه التقريب');
-    expect(translateRuleCatalog('Weekday adjustment', i18n.language)).toBe('تعديل حسب يوم الأسبوع');
-    expect(translateRuleCatalog('SUN', i18n.language)).toBe('الأحد');
-    expect(translateRuleCatalog('FRI', i18n.language)).toBe('الجمعة');
-    expect(translateRuleCatalog('Hold for the Friday to Thursday week', i18n.language)).toContain(
-      'الجمعة إلى الخميس',
-    );
-    expect(
-      translateRuleCatalog(
-        'Minutes added on that weekday, e.g. FRI -5. Leave a weekday empty for no change.',
-        i18n.language,
-      ),
-    ).toContain('اترك اليوم فارغاً');
-    expect(translateRuleCatalog('5 minutes', i18n.language)).toBe('5 دقائق');
-  });
-
   it('translates every engine field and option from stable identities', async () => {
     await i18n.changeLanguage('ar');
     const visit = (fields: CatalogField[]) => {

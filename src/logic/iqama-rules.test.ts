@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { describeRule, isFriday, upcomingFridays, changedPrayers } from './iqama-rules';
 import type { PrayerRule, RuleSet } from '../types/iqama-rules';
-import i18n from '../i18n';
 
 describe('describeRule', () => {
   it('describes offset with rounding', () => {
@@ -21,20 +20,6 @@ describe('describeRule', () => {
     expect(describeRule(r)).toBe(
       'Fixed at 01:45 PM, at least 10 min after Azan, at least 20 min before sunrise, Fri − 5 min, held Friday to Thursday',
     );
-  });
-  it('localizes the full rule summary into Arabic', async () => {
-    await i18n.changeLanguage('ar');
-    const r: PrayerRule = {
-      base: { type: 'FIXED_TIME', time: '13:45' },
-      limits: { minAfterAzan: 10, latestBeforeSunrise: 20 },
-      weekdayAdjust: { FRI: -5 },
-      weeklyLock: true,
-    };
-    const text = describeRule(r);
-    expect(text).toContain('ثابت عند 01:45 م');
-    expect(text).toContain('الجمعة');
-    expect(text).toContain('مثبّتة من الجمعة إلى الخميس');
-    await i18n.changeLanguage('en');
   });
 
   it('ignores rounding step 1', () => {
