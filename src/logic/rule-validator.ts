@@ -10,6 +10,7 @@
  * catalog ever describes them.
  */
 import type { PrayerName } from '../types/index';
+import i18n from '../i18n';
 import type { CatalogField, IqamaCatalog } from '../types/iqama-rules';
 
 export type FieldErrors = Record<string, string>;
@@ -116,7 +117,7 @@ export function validateField(
         const all = f.fields ?? [];
         if (!f.required && all.length > 0 && all.every((x) => !x.required)) {
           const set = all.some((x) => !isEmpty(obj[x.name]));
-          if (!set) errors[path] = 'Set at least one value, or turn it off';
+          if (!set) errors[path] = i18n.t('ruleEditor.emptyGroup');
         }
       }
       return;

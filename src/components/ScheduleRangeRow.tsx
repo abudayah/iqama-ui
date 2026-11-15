@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import type { DailySchedule, Override, PrayerName } from '../types/index';
 import { isActive } from '../logic/is-active';
 import { formatTime12 } from '../i18n/format-time';
+import { formatWeekdayName, getIntlLocale } from '../i18n/locale';
 
 interface ScheduleRangeRowProps {
   schedule: DailySchedule;
@@ -22,14 +23,23 @@ function diffMinutes(a: string, b: string): number {
 
 export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps) {
   // Subscribe to language changes so labels and 12-hour times re-format on toggle.
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const activeOverrides = overrides.filter((o) => isActive(o, schedule.date));
 
   return (
     <div id={`schedule-range-row-${schedule.date}`} className="bg-white border-b border-gray-100">
       <div className="flex items-center px-4 py-2 bg-gray-50">
         <span className="text-sm font-medium text-gray-800 flex-1">
-          <bdi dir="ltr">{schedule.date}</bdi>
+          <bdi dir="ltr">
+            {new Date(`${schedule.date}T12:00:00`).toLocaleDateString(
+              getIntlLocale(i18n.language),
+              {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+              },
+            )}
+          </bdi>
         </span>
         {schedule.iqama_conflict && (
           <span
@@ -40,7 +50,9 @@ export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps)
           </span>
         )}
         <span className="text-xs text-gray-500">
-          <bdi dir="ltr">{schedule.day_of_week}</bdi>
+          <bdi dir="auto">
+            {formatWeekdayName(schedule.day_of_week, getIntlLocale(i18n.language))}
+          </bdi>
         </span>
       </div>
       <div className="flex">
@@ -60,7 +72,7 @@ export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps)
                 <bdi dir="ltr">{formatTime12(entry.azan)}</bdi>
               </span>
               <span className="text-xs font-semibold text-gray-900 mt-0.5">
-                <bdi dir="ltr">{entry.iqama}</bdi>
+                <bdi dir="ltr">{formatTime12(entry.iqama)}</bdi>
               </span>
               {entry.iqama_conflict && (
                 <span
@@ -89,7 +101,7 @@ export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps)
         <div className="flex-1 flex flex-col items-center py-3 px-1">
           <span className="text-xs text-gray-400">{t('prayers.sunrise')}</span>
           <span className="text-xs text-gray-500 mt-0.5">
-            <bdi dir="ltr">{schedule.sunrise}</bdi>
+            <bdi dir="ltr">{formatTime12(schedule.sunrise)}</bdi>
           </span>
           <span className="text-xs font-semibold text-gray-900 mt-0.5">—</span>
           <span className="text-xs font-medium text-gray-400 mt-0.5">
@@ -116,7 +128,7 @@ export function ScheduleRangeRow({ schedule, overrides }: ScheduleRangeRowProps)
                 <bdi dir="ltr">{formatTime12(entry.azan)}</bdi>
               </span>
               <span className="text-xs font-semibold text-gray-900 mt-0.5">
-                <bdi dir="ltr">{entry.iqama}</bdi>
+                <bdi dir="ltr">{formatTime12(entry.iqama)}</bdi>
               </span>
               {entry.iqama_conflict && (
                 <span

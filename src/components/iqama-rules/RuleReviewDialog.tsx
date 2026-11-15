@@ -11,6 +11,9 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { joinList } from '../../i18n/list';
+import { getIntlLocale } from '../../i18n/locale';
+import { formatTime12 } from '../../i18n/format-time';
+import { formatWeekdayName } from '../../i18n/locale';
 import type { PrayerName } from '../../types/index';
 import type { IqamaPreviewResponse, PrayerRule } from '../../types/iqama-rules';
 import {
@@ -62,13 +65,13 @@ interface Props {
 const EXAMPLES = 3;
 
 /** Up to three days where this prayer's time changes: "Fri 13  17:35 → 17:40". */
-function exampleDays(preview: IqamaPreviewResponse, prayer: PrayerName) {
+function exampleDays(preview: IqamaPreviewResponse, prayer: PrayerName, locale: string) {
   return preview.days
     .filter((d) => d.prayers[prayer].current.iqama !== d.prayers[prayer].proposed.iqama)
     .slice(0, EXAMPLES)
     .map((d) => ({
       date: d.date,
-      label: `${d.day_of_week.slice(0, 3)} ${Number(d.date.slice(8))}`,
+      label: `${formatWeekdayName(d.day_of_week, locale)} ${Number(d.date.slice(8))}`,
       from: d.prayers[prayer].current.iqama,
       to: d.prayers[prayer].proposed.iqama,
     }));
@@ -92,7 +95,7 @@ export function RuleReviewDialog({
   onConfirm,
   onClose,
 }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [confirmedFor, setConfirmedFor] = useState<string | null>(null);
   const [ackFor, setAckFor] = useState<string | null>(null);
   const [reason, setReason] = useState('');
@@ -150,7 +153,9 @@ export function RuleReviewDialog({
             </h2>
             <p className="text-sm text-gray-600 mt-1" data-testid="review-subtitle">
               {joinList(changed.map((p) => t(`prayers.${p}`)))} ·{' '}
-              {t('rules.versions.from', { date: formatDay(effectiveFrom) })}
+              {t('rules.versions.from', {
+                date: formatDay(effectiveFrom, getIntlLocale(i18n.language)),
+              })}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <label className="text-sm text-gray-700" htmlFor="iqama-effective-from">
@@ -200,7 +205,7 @@ export function RuleReviewDialog({
             {preview && s && (
               <div data-testid="year-scan" className="space-y-3">
                 {changes.map((c) => {
-                  const examples = exampleDays(preview, c.prayer);
+                  const examples = exampleDays(preview, c.prayer, getIntlLocale(i18n.language));
                   return (
                     <section
                       key={c.prayer}
@@ -219,7 +224,7 @@ export function RuleReviewDialog({
                           {examples.map((e) => (
                             <li key={e.date}>
                               <bdi dir="ltr">
-                                {e.label}&nbsp;&nbsp;{e.from} → {e.to}
+                                {e.label}&nbsp;&nbsp;{formatTime12(e.from)} → {formatTime12(e.to)}
                               </bdi>
                             </li>
                           ))}

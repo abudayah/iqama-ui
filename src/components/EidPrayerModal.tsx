@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ceilToNearest15 } from '../logic/ceil-to-nearest-15';
 import type { SubmitOverridePayload } from '../types';
+import { getIntlLocale } from '../i18n/locale';
 
 interface EidPrayerModalProps {
   eidType: 'EID_AL_FITR' | 'EID_AL_ADHA';
@@ -51,7 +52,7 @@ export function EidPrayerModal({
   onSubmit,
   onClose,
 }: EidPrayerModalProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const defaultFirst = computeDefaultFirstPrayer(sunriseTime, eidType);
   const defaultSecond = computeDefaultSecondPrayer(defaultFirst);
 
@@ -62,8 +63,7 @@ export function EidPrayerModal({
 
   const title = eidType === 'EID_AL_FITR' ? t('eidModal.fitrTitle') : t('eidModal.adhaTitle');
 
-  // Dates stay in English by design.
-  const formattedDate = eidDate.toLocaleDateString('en-US', {
+  const formattedDate = eidDate.toLocaleDateString(getIntlLocale(i18n.language), {
     weekday: 'long',
     year: 'numeric',
     month: 'long',

@@ -1,15 +1,15 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { DailySchedule } from '../types/index';
 import type { PrayerEvent } from '../logic/derive-next-prayer';
 import type { CountdownMode } from '../hooks/usePrayerContext';
 import { formatWidgetDate } from '../logic/format-widget-date';
+import { formatHijriDate } from '../i18n/format-hijri-date';
+import { getIntlLocale } from '../i18n/locale';
+import { formatTime12 } from '../i18n/format-time';
 
 // Helper to format time from 24hr to 12hr AM/PM
-const formatTime12Hr = (time24: string): string => {
-  const [hours, minutes] = time24.split(':');
-  const date = new Date(2000, 0, 1, parseInt(hours!), parseInt(minutes!));
-  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-};
+const formatTime12Hr = (time24: string): string => formatTime12(time24);
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 
@@ -24,8 +24,7 @@ export interface WidgetPrayerTableProps {
 }
 
 interface DaySectionProps {
-  label: 'Today' | 'Tomorrow';
-  labelAr: 'اليوم' | 'الغد';
+  labelKey: 'prayerTable.today' | 'prayerTable.tomorrow';
   schedule: DailySchedule;
   nextPrayer: PrayerEvent | null;
   countdownMode: CountdownMode;
@@ -34,28 +33,11 @@ interface DaySectionProps {
   isNextSection: boolean;
 }
 
-// ─── Bilingual label map ──────────────────────────────────────────────────────
-
-const BILINGUAL_LABELS: Record<string, { en: string; ar: string }> = {
-  fajr: { en: 'Fajr', ar: 'فجر' },
-  sunrise: { en: 'Sunrise', ar: 'شروق' },
-  dhuhr: { en: 'Dhuhr', ar: 'ظهر' },
-  asr: { en: 'Asr', ar: 'عصر' },
-  maghrib: { en: 'Maghrib', ar: 'مغرب' },
-  isha: { en: 'Isha', ar: 'عشاء' },
-  'eid-1': { en: '1st Eid', ar: 'عيد ١' },
-  'eid-2': { en: '2nd Eid', ar: 'عيد ٢' },
-  qiyam: { en: 'Qiyam', ar: 'قيام' },
-};
-
-// On Fridays, Dhuhr is replaced by the Jumuah (Friday) prayer
-const FRIDAY_DHUHR_LABEL = { en: 'Friday', ar: 'الجمعة' };
-
 // ─── Column descriptor ────────────────────────────────────────────────────────
 
 interface ColDef {
   key: string; // unique key for React + IDs
-  labels: { en: string; ar: string };
+  label: string;
   azan: string; // time to show in Azan row
   iqama: string | null; // time to show in Iqama row (null = dash)
   eventKey: string; // matches PrayerEvent for highlight logic
@@ -63,18 +45,22 @@ interface ColDef {
 
 // ─── Build column list from schedule ─────────────────────────────────────────
 
-function buildColumns(schedule: DailySchedule, isFriday: boolean): ColDef[] {
+function buildColumns(
+  schedule: DailySchedule,
+  isFriday: boolean,
+  t: (key: string) => string,
+): ColDef[] {
   const cols: ColDef[] = [
     {
       key: 'fajr',
-      labels: BILINGUAL_LABELS['fajr']!,
+      label: t('prayers.fajr'),
       azan: schedule.fajr.azan,
       iqama: schedule.fajr.iqama,
       eventKey: 'fajr',
     },
     {
       key: 'sunrise',
-      labels: BILINGUAL_LABELS['sunrise']!,
+      label: t('prayers.sunrise'),
       azan: schedule.sunrise,
       iqama: null,
       eventKey: 'sunrise',
@@ -85,7 +71,7 @@ function buildColumns(schedule: DailySchedule, isFriday: boolean): ColDef[] {
   if (schedule.eid_prayer_1) {
     cols.push({
       key: 'eid-1',
-      labels: BILINGUAL_LABELS['eid-1']!,
+      label: t('prayers.eid1'),
       azan: schedule.eid_prayer_1,
       iqama: null,
       eventKey: 'eid-prayer-1',
@@ -94,7 +80,7 @@ function buildColumns(schedule: DailySchedule, isFriday: boolean): ColDef[] {
   if (schedule.eid_prayer_2) {
     cols.push({
       key: 'eid-2',
-      labels: BILINGUAL_LABELS['eid-2']!,
+      label: t('prayers.eid2'),
       azan: schedule.eid_prayer_2,
       iqama: null,
       eventKey: 'eid-prayer-2',
@@ -104,28 +90,28 @@ function buildColumns(schedule: DailySchedule, isFriday: boolean): ColDef[] {
   cols.push(
     {
       key: 'dhuhr',
-      labels: isFriday ? FRIDAY_DHUHR_LABEL : BILINGUAL_LABELS['dhuhr']!,
+      label: t(isFriday ? 'prayers.friday' : 'prayers.dhuhr'),
       azan: schedule.dhuhr.azan,
       iqama: schedule.dhuhr.iqama,
       eventKey: 'dhuhr',
     },
     {
       key: 'asr',
-      labels: BILINGUAL_LABELS['asr']!,
+      label: t('prayers.asr'),
       azan: schedule.asr.azan,
       iqama: schedule.asr.iqama,
       eventKey: 'asr',
     },
     {
       key: 'maghrib',
-      labels: BILINGUAL_LABELS['maghrib']!,
+      label: t('prayers.maghrib'),
       azan: schedule.maghrib.azan,
       iqama: schedule.maghrib.iqama,
       eventKey: 'maghrib',
     },
     {
       key: 'isha',
-      labels: BILINGUAL_LABELS['isha']!,
+      label: t('prayers.isha'),
       azan: schedule.isha.azan,
       iqama: schedule.isha.iqama,
       eventKey: 'isha',
@@ -136,7 +122,7 @@ function buildColumns(schedule: DailySchedule, isFriday: boolean): ColDef[] {
   if (schedule.qiyam_time) {
     cols.push({
       key: 'qiyam',
-      labels: BILINGUAL_LABELS['qiyam']!,
+      label: t('prayers.qiyam'),
       azan: schedule.qiyam_time,
       iqama: null,
       eventKey: 'qiyam',
@@ -169,14 +155,14 @@ function specialColor(key: string): string | null {
 // ─── DaySection ──────────────────────────────────────────────────────────────
 
 function DaySection({
-  label,
-  labelAr,
+  labelKey,
   schedule,
   nextPrayer,
   countdownMode,
   isToday,
   isNextSection,
 }: DaySectionProps) {
+  const { t, i18n } = useTranslation();
   // Highlight logic uses isNextSection (not isToday) so tomorrow's Fajr gets highlighted
   // when today's prayers are exhausted.
   const nextPrayerKey = isNextSection && nextPrayer !== null ? (nextPrayer as string) : null;
@@ -221,7 +207,7 @@ function DaySection({
   };
 
   const isFriday = schedule.day_of_week === 'Friday';
-  const columns = buildColumns(schedule, isFriday);
+  const columns = buildColumns(schedule, isFriday, t);
   const sectionId = isToday ? 'widget-today' : 'widget-tomorrow';
 
   return (
@@ -231,15 +217,11 @@ function DaySection({
         id={`${sectionId}-header`}
         className="px-4 pt-2 pb-1 flex items-baseline justify-between gap-4"
       >
-        <h2 className="text-base font-bold text-gray-900 shrink-0">
-          <span>{label}</span>
-          {' / '}
-          <span lang="ar">{labelAr}</span>
-        </h2>
+        <h2 className="text-base font-bold text-gray-900 shrink-0">{t(labelKey)}</h2>
         <p className="text-xs text-gray-500 text-right">
-          {schedule.hijri_date}
+          {formatHijriDate(schedule.hijri_date, i18n.language)}
           {' · '}
-          {formatWidgetDate(schedule.date, schedule.day_of_week)}
+          {formatWidgetDate(schedule.date, getIntlLocale(i18n.language))}
         </p>
       </div>
 
@@ -267,10 +249,7 @@ function DaySection({
                     ].join(' ')}
                     style={{ ...colBg(col.eventKey), ...(sc ? { color: sc } : {}) }}
                   >
-                    <span className="block">{col.labels.en}</span>
-                    <span className="block font-normal text-xs mt-0.5 opacity-75" lang="ar">
-                      {col.labels.ar}
-                    </span>
+                    <span className="block">{col.label}</span>
                   </th>
                 );
               })}
@@ -285,10 +264,7 @@ function DaySection({
                 className="px-3 py-2 text-right text-sm font-bold uppercase whitespace-nowrap"
                 style={{ color: '#205072' }}
               >
-                <span className="block">Azan</span>
-                <span className="block font-normal text-xs mt-0.5 opacity-80" lang="ar">
-                  أذان
-                </span>
+                <span className="block">{t('widget.azan')}</span>
               </th>
               {columns.map((col) => {
                 const sc = specialColor(col.key);
@@ -317,10 +293,7 @@ function DaySection({
                 className="px-3 py-2 text-right text-sm font-bold uppercase whitespace-nowrap"
                 style={{ color: '#329D9C' }}
               >
-                <span className="block">Iqama</span>
-                <span className="block font-normal text-xs mt-0.5 opacity-80" lang="ar">
-                  إقامة
-                </span>
+                <span className="block">{t('widget.iqama')}</span>
               </th>
               {columns.map((col) => {
                 const sc = specialColor(col.key);
@@ -357,6 +330,7 @@ export function WidgetPrayerTable({
   countdownMode,
   tick: _tick,
 }: WidgetPrayerTableProps) {
+  const { t } = useTranslation();
   const nextIsToday = nextSchedule === todaySchedule;
   const nextIsTomorrow = nextSchedule === tomorrowSchedule && tomorrowSchedule !== null;
 
@@ -365,8 +339,7 @@ export function WidgetPrayerTable({
       {/* Today section — takes half the available space */}
       <div className="flex-1 min-h-0 flex flex-col">
         <DaySection
-          label="Today"
-          labelAr="اليوم"
+          labelKey="prayerTable.today"
           schedule={todaySchedule}
           nextPrayer={nextIsToday ? nextPrayer : null}
           countdownMode={countdownMode}
@@ -382,8 +355,7 @@ export function WidgetPrayerTable({
       <div className="flex-1 min-h-0 flex flex-col">
         {tomorrowSchedule !== null ? (
           <DaySection
-            label="Tomorrow"
-            labelAr="الغد"
+            labelKey="prayerTable.tomorrow"
             schedule={tomorrowSchedule}
             nextPrayer={nextIsTomorrow ? nextPrayer : null}
             countdownMode={nextIsTomorrow ? countdownMode : 'done'}
@@ -392,7 +364,7 @@ export function WidgetPrayerTable({
           />
         ) : (
           <div className="px-4 py-6 text-center text-gray-400 text-sm animate-pulse">
-            Loading tomorrow…
+            {t('prayerTable.loadingTomorrow')}
           </div>
         )}
       </div>

@@ -15,6 +15,9 @@ import type {
   RuleSet,
 } from '../../types/iqama-rules';
 import { describeRule } from '../../logic/iqama-rules';
+import { formatTime12 } from '../../i18n/format-time';
+import { formatWeekdayName, getIntlLocale } from '../../i18n/locale';
+import { translateRuleCatalog } from '../../i18n/rule-catalog';
 import { emptyObject, emptyValue, pruneEmpty } from '../../logic/rule-defaults';
 import { modifierAllowedFor, validateRule } from '../../logic/rule-validator';
 import { previewIqamaRules } from '../../services/iqama-rules-service';
@@ -71,7 +74,7 @@ function SheetBody({
   onApply,
   onClose,
 }: Props & { prayer: PrayerName }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [rule, setRule] = useState<Draft>(initialRule as unknown as Draft);
   const [preview, setPreview] = useState<IqamaPreviewResponse | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -180,11 +183,15 @@ function SheetBody({
               {!baseType && <option value="">{t('ruleEditor.choose')}</option>}
               {catalog.baseTypes.map((b) => (
                 <option key={b.type} value={b.type}>
-                  {b.label}
+                  {translateRuleCatalog(b.label, i18n.language)}
                 </option>
               ))}
             </select>
-            {baseType?.note && <p className="text-xs text-gray-500 mt-1">{baseType.note}</p>}
+            {baseType?.note && (
+              <p className="text-xs text-gray-500 mt-1">
+                {translateRuleCatalog(baseType.note, i18n.language)}
+              </p>
+            )}
           </div>
 
           {baseType && (
@@ -208,13 +215,17 @@ function SheetBody({
               return (
                 <div key={m.name}>
                   <Toggle
-                    label={m.label}
+                    label={translateRuleCatalog(m.label, i18n.language)}
                     checked={on}
                     onChange={(v) => toggleModifier(m.name, v)}
                   />
                   {on && m.kind === 'object' && (
                     <div className="pl-8 space-y-2">
-                      {m.note && <p className="text-xs text-gray-500">{m.note}</p>}
+                      {m.note && (
+                        <p className="text-xs text-gray-500">
+                          {translateRuleCatalog(m.note, i18n.language)}
+                        </p>
+                      )}
                       {errors[m.name] && (
                         <p role="alert" className="text-xs text-red-600">
                           {errors[m.name]}
@@ -263,15 +274,16 @@ function SheetBody({
                       className="min-w-[88px] shrink-0 border border-gray-200 rounded-lg p-2 text-center"
                     >
                       <div className="text-xs text-gray-500">
-                        <bdi dir="ltr">
-                          {d.day_of_week.slice(0, 3)} {d.date.slice(5)}
+                        <bdi dir="auto">
+                          {formatWeekdayName(d.day_of_week, getIntlLocale(i18n.language))}{' '}
+                          {Number(d.date.slice(8))}
                         </bdi>
                       </div>
                       <div className="text-xs text-gray-400">
-                        <bdi dir="ltr">{p.azan} →</bdi>
+                        <bdi dir="ltr">{formatTime12(p.azan)} →</bdi>
                       </div>
                       <div className="text-sm font-semibold text-gray-900">
-                        <bdi dir="ltr">{p.proposed.iqama}</bdi>
+                        <bdi dir="ltr">{formatTime12(p.proposed.iqama)}</bdi>
                       </div>
                       {p.proposed.clamped && (
                         <span

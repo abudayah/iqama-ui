@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 const MAPS_URL =
   'https://www.google.com/maps/search/?api=1&query=Masjid+Al-Hidayah+2626+Kingsway+Ave+Port+Coquitlam+BC';
 
@@ -16,13 +18,15 @@ function MapPinIcon() {
 }
 
 export function MasjidHeader() {
+  const { t } = useTranslation();
+
   return (
     <header id="masjid-header" className="bg-white border-b border-gray-100">
       <div className="max-w-lg mx-auto px-4 flex items-center justify-between gap-3">
         {/* Logo — full header height */}
         <img
           src="/isbc-logo.png"
-          alt="Masjid Al-Hidayah"
+          alt={t('footer.masjidName')}
           className="h-14 w-auto object-contain py-1"
         />
 
@@ -32,11 +36,11 @@ export function MasjidHeader() {
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-brand-teal transition-colors shrink-0"
-          aria-label="Open Masjid Al-Hidayah in Google Maps"
+          aria-label={t('masjidHeader.mapLinkAria')}
         >
           <MapPinIcon />
           <span className="hidden sm:inline">2626 Kingsway Ave, Port Coquitlam</span>
-          <span className="sm:hidden">Directions</span>
+          <span className="sm:hidden">{t('footer.directions')}</span>
         </a>
       </div>
     </header>

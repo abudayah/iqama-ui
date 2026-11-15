@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 interface DateRangePickerProps {
   start: string;
   end: string;
@@ -5,10 +7,12 @@ interface DateRangePickerProps {
 }
 
 export function DateRangePicker({ start, end, onRangeChange }: DateRangePickerProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex gap-3 items-center p-4 bg-white border-b border-gray-200">
       <div className="flex-1">
-        <label className="block text-xs text-gray-500 mb-1">From</label>
+        <label className="block text-xs text-gray-500 mb-1">{t('dateRange.from')}</label>
         <input
           type="date"
           value={start}
@@ -17,7 +21,7 @@ export function DateRangePicker({ start, end, onRangeChange }: DateRangePickerPr
         />
       </div>
       <div className="flex-1">
-        <label className="block text-xs text-gray-500 mb-1">To</label>
+        <label className="block text-xs text-gray-500 mb-1">{t('dateRange.to')}</label>
         <input
           type="date"
           value={end}

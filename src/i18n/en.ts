@@ -22,6 +22,20 @@ export interface I18nKeys {
     details: string;
     save: string;
   };
+  hijriMonths: {
+    muharram: string;
+    safar: string;
+    rabiAlAwwal: string;
+    rabiAlThani: string;
+    jumadaAlAwwal: string;
+    jumadaAlThani: string;
+    rajab: string;
+    shaban: string;
+    ramadan: string;
+    shawwal: string;
+    dhulQidah: string;
+    dhulHijjah: string;
+  };
   lang: {
     switchToEnglish: string;
     switchToArabic: string;
@@ -161,6 +175,49 @@ export interface I18nKeys {
     eidAdhaWillFall: string;
     monthWillBeDays_one: string;
     monthWillBeDays_other: string;
+  };
+  sightingCard: {
+    title: string;
+    prompt: string;
+    monthEndsToday: string;
+    complete30Days: string;
+  };
+  dateRange: {
+    from: string;
+    to: string;
+  };
+  masjidHeader: {
+    mapLinkAria: string;
+  };
+  widget: {
+    loading: string;
+    error: string;
+    footerAria: string;
+    footerMessage: string;
+    azan: string;
+    iqama: string;
+  };
+  nextPrayerBanner: {
+    nextPrayer: string;
+    iqamaAt: string;
+    untilAzan: string;
+    untilIqama: string;
+    iqamaInProgress: string;
+  };
+  eidMoonSighting: {
+    title: string;
+    todayHijri: string;
+    overrideStatus: string;
+    overrideSubmitted: string;
+    noOverride: string;
+    savedRecords: string;
+    noPrayerTimes: string;
+    edit: string;
+    savedSuccess: string;
+    submissionFailed: string;
+  };
+  installPrompt: {
+    alreadyInstalled: string;
   };
   eidCard: {
     preliminary: string;
@@ -331,7 +388,9 @@ export interface I18nKeys {
     removeAria: string;
     itemAria: string;
     range: string;
+    emptyGroup: string;
     sheetTitle: string;
+    catalog: Record<string, string>;
     ruleType: string;
     modifiers: string;
     next7Days: string;
@@ -511,9 +570,23 @@ const en: I18nKeys = {
     details: 'Details',
     save: 'Save',
   },
+  hijriMonths: {
+    muharram: 'Muharram',
+    safar: 'Safar',
+    rabiAlAwwal: 'Rabi al-Awwal',
+    rabiAlThani: 'Rabi al-Thani',
+    jumadaAlAwwal: 'Jumada al-Awwal',
+    jumadaAlThani: 'Jumada al-Thani',
+    rajab: 'Rajab',
+    shaban: "Sha'ban",
+    ramadan: 'Ramadan',
+    shawwal: 'Shawwal',
+    dhulQidah: "Dhul Qi'dah",
+    dhulHijjah: 'Dhul Hijjah',
+  },
   lang: {
     switchToEnglish: 'Switch to English',
-    switchToArabic: 'التبديل إلى العربية',
+    switchToArabic: 'Switch to Arabic',
   },
   gate: {
     loginTitle: 'Admin Login',
@@ -551,9 +624,9 @@ const en: I18nKeys = {
     back: 'Back',
     backAria: 'Back to prayer times',
     clearing: 'Clearing…',
-    cacheCleared: '✓ Cache cleared',
-    failed: '✗ Failed',
-    clearCache: '🗑 Clear cache',
+    cacheCleared: 'Cache cleared',
+    failed: 'Failed',
+    clearCache: 'Clear cache',
     clearCacheTitle: 'Clear server schedule cache',
     signOut: 'Sign out',
     iqamaTabs: 'Iqama',
@@ -654,6 +727,49 @@ const en: I18nKeys = {
     eidAdhaWillFall: 'Eid al-Adha will fall on {{date}}',
     monthWillBeDays_one: 'Month will be {{count}} day',
     monthWillBeDays_other: 'Month will be {{count}} days',
+  },
+  sightingCard: {
+    title: 'Moon Sighting',
+    prompt: 'Today is the 29th of {{currentMonth}}. Has the moon for {{nextMonth}} been sighted?',
+    monthEndsToday: 'Yes, month ends today (29 days)',
+    complete30Days: 'No, complete 30 days',
+  },
+  dateRange: {
+    from: 'From',
+    to: 'To',
+  },
+  masjidHeader: {
+    mapLinkAria: 'Open Masjid Al-Hidayah in Google Maps',
+  },
+  widget: {
+    loading: 'Loading',
+    error: 'Prayer times could not be loaded.',
+    footerAria: 'Widget footer',
+    footerMessage: 'Get prayer times on your mobile:',
+    azan: 'Azan',
+    iqama: 'Iqama',
+  },
+  nextPrayerBanner: {
+    nextPrayer: 'Next prayer',
+    iqamaAt: 'Iqama at {{time}}',
+    untilAzan: 'Time until azan',
+    untilIqama: 'Time until iqama',
+    iqamaInProgress: 'Iqama in progress',
+  },
+  eidMoonSighting: {
+    title: 'Eid & Moon Sighting',
+    todayHijri: 'Today (Hijri):',
+    overrideStatus: 'Override status:',
+    overrideSubmitted: 'Override submitted',
+    noOverride: 'No override yet',
+    savedRecords: 'Saved Eid Records',
+    noPrayerTimes: 'No prayer times saved yet',
+    edit: 'Edit',
+    savedSuccess: 'Moon-sighting decision saved successfully.',
+    submissionFailed: 'Submission failed. Please try again.',
+  },
+  installPrompt: {
+    alreadyInstalled: 'App is already installed! You can find it on your home screen.',
   },
   eidCard: {
     preliminary: 'Preliminary times — subject to moon-sighting confirmation',
@@ -829,7 +945,55 @@ const en: I18nKeys = {
     removeAria: 'Remove {{label}} {{index}}',
     itemAria: '{{label}} {{index}}',
     range: '{{min}} to {{max}}',
+    emptyGroup: 'Set at least one value, or turn it off',
     sheetTitle: '{{prayer}} · Iqama rule',
+    catalog: {
+      limits: 'Limits',
+      minAfterAzan: 'At least this many minutes after Azan',
+      latestBeforeSunrise: 'At most this many minutes before sunrise',
+      iqamaBeforeSunrise: 'Iqama at least this many minutes before sunrise',
+      direction: 'Direction',
+      roundUp: 'Round up',
+      roundDown: 'Round down',
+      roundNearest: 'Round to nearest',
+      multipleMinutes: 'To a multiple of (minutes)',
+      minutes5: '5 minutes',
+      minutes10: '10 minutes',
+      minutes15: '15 minutes',
+      minutes30: '30 minutes',
+      minutes60: '60 minutes',
+      weekdayAdjustment: 'Weekday adjustment',
+      weekdayAdjustmentNote:
+        'Minutes added on that weekday, e.g. FRI -5. Leave a weekday empty for no change.',
+      weekdaySun: 'SUN',
+      weekdayMon: 'MON',
+      weekdayTue: 'TUE',
+      weekdayWed: 'WED',
+      weekdayThu: 'THU',
+      weekdayFri: 'FRI',
+      weekdaySat: 'SAT',
+      weeklyLock: 'Hold for the Friday to Thursday week',
+      offsetMinutes: 'Minutes after Azan',
+      fixedClockTime: 'Fixed clock time',
+      time: 'Time',
+      scaledGap: 'Gap that scales with Azan time',
+      scaledGapNote:
+        'Azan times must be strictly increasing; the gap is held flat before the first and after the last point.',
+      points: 'Points',
+      whenAzanAt: 'When Azan is at',
+      gapAfterAzan: 'Gap after Azan (minutes)',
+      seasonalFixedTimes: 'Seasonal fixed times',
+      seasonalNote:
+        'Repeats every year; the last segment wraps over New Year. Start dates must be unique.',
+      segments: 'Segments',
+      startsOn: 'Starts on',
+      calendarDate: 'A calendar date',
+      firstFriday: 'The first Friday of a month',
+      monthNumber: 'Month (1 = January)',
+      dayOfMonth: 'Day of month',
+      validDayInMonth: 'Must exist in the chosen month (February allows 29).',
+      iqamaTime: 'Iqama time',
+    },
     ruleType: 'Rule type',
     modifiers: 'Modifiers',
     next7Days: 'Next 7 days (Azan → Iqama)',

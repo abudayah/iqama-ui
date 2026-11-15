@@ -212,6 +212,20 @@ When the user taps a future prayer row, `peekPrayer` and `peekSchedule` are set.
 
 ---
 
+## Text Overlay (LTR / RTL)
+
+The countdown stack (super-title, timer, sub-line) is pinned to the **physical left** edge in both reading directions. The sky scene is not mirrored in Arabic — the sun still travels left → right and the moon stays at `left: 72%` — so the text keeps its left placement rather than moving to the right.
+
+```jsx
+<div className="relative z-10 flex flex-col justify-start px-6 pt-8 max-w-xs ml-0 mr-auto text-left">
+```
+
+- `ml-0 mr-auto` — `max-w-xs` makes the box narrower than the banner; the auto right margin absorbs the leftover space, so the box hugs the left edge in RTL too (without it, the box starts at the inline-start edge, i.e. the right).
+- `text-left` — overrides the inherited `text-align: start`, which resolves to `right` under `dir="rtl"`.
+- The timer digits render inside `<bdi dir="ltr">`, so the countdown is never reordered by the surrounding RTL text.
+
+---
+
 ## CSS Keyframes (`src/index.css`)
 
 | Keyframe | Used by | Description |
@@ -233,4 +247,5 @@ When the user taps a future prayer row, `peekPrayer` and `peekSchedule` are set.
 7. **Moon phase logic lives in `moon-phase.ts`** — do not inline phase calculations in `HeroBanner.tsx`. `HeroBanner.tsx` only imports `getMoonPhase` and computes `glowIntensity`/`glowFilter` from it.
 8. **Shadow circle `r=46`, not `r=50`** — the disc is `r=45`; the shadow must be `r=46` for clean crescent/gibbous geometry. A larger radius causes the shadow to bleed outside the disc boundary.
 9. **Islamic crescent convention** — waxing shadow is on the RIGHT (lit on left), waning shadow is on the LEFT (lit on right). Do not swap these.
-10. **Full moon has no shadow circle** — day 15 returns `shadowSide: 'none'`; the shadow `<circle>` must not be rendered. Conditionally render it: `{phase.shadowSide !== 'none' && <circle ... />}`.
+10. **Text overlay stays on the left in RTL** — keep `ml-0 mr-auto text-left` on the countdown stack. Do not swap these for logical utilities (`ms-*`/`me-*`, `text-start`), which would mirror the text to the right in Arabic while the sky scene stays unmirrored.
+11. **Full moon has no shadow circle** — day 15 returns `shadowSide: 'none'`; the shadow `<circle>` must not be rendered. Conditionally render it: `{phase.shadowSide !== 'none' && <circle ... />}`.

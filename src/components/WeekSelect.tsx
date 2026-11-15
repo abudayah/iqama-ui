@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getIntlLocale } from '../i18n/locale';
 
 export interface WeekOption {
   /** YYYY-MM-DD of the Friday that starts the week */
@@ -19,8 +20,8 @@ function toYMD(d: Date): string {
 }
 
 /** Short weekday + month-day label, e.g. "Fri May 9". */
-function shortLabel(d: Date): string {
-  return d.toLocaleDateString('en-US', {
+function shortLabel(d: Date, locale: string): string {
+  return d.toLocaleDateString(locale, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
@@ -31,7 +32,7 @@ function shortLabel(d: Date): string {
  * Generate all Friday→Thursday weeks that overlap with the given year range.
  * Weeks are ordered chronologically (earliest first).
  */
-function generateWeeks(fromYear: number, toYear: number): WeekOption[] {
+function generateWeeks(fromYear: number, toYear: number, locale: string): WeekOption[] {
   const weeks: WeekOption[] = [];
 
   // Start from the first Friday on or before Jan 1 of fromYear
@@ -58,7 +59,7 @@ function generateWeeks(fromYear: number, toYear: number): WeekOption[] {
     weeks.push({
       start: toYMD(friday),
       end: toYMD(thursday),
-      label: `${shortLabel(friday)} – ${shortLabel(thursday)}${yearLabel}`,
+      label: `${shortLabel(friday, locale)} – ${shortLabel(thursday, locale)}${yearLabel}`,
     });
 
     cursor.setDate(cursor.getDate() + 7);
@@ -84,10 +85,14 @@ interface WeekSelectProps {
 }
 
 export function WeekSelect({ start, onWeekChange }: WeekSelectProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const currentYear = new Date().getFullYear();
+  const locale = getIntlLocale(i18n.language);
   // Show current year + next year so the full upcoming calendar is available
-  const weeks = useMemo(() => generateWeeks(currentYear, currentYear + 1), [currentYear]);
+  const weeks = useMemo(
+    () => generateWeeks(currentYear, currentYear + 1, locale),
+    [currentYear, locale],
+  );
 
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);

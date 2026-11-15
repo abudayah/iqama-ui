@@ -326,8 +326,8 @@ describe('RamadanEidPage — unit tests', () => {
       refetch: vi.fn(),
     });
     render(<RamadanEidPage />);
-    expect(screen.getByText('07:30')).toBeInTheDocument();
-    expect(screen.getByText('09:00')).toBeInTheDocument();
+    expect(screen.getByText('07:30 AM')).toBeInTheDocument();
+    expect(screen.getByText('09:00 AM')).toBeInTheDocument();
   });
 
   it('opens EidPrayerModal when "Edit times" button is clicked', () => {

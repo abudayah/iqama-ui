@@ -5,6 +5,8 @@ import type { PrayerEvent } from '../logic/derive-next-prayer';
 import type { CountdownMode } from '../hooks/usePrayerContext';
 import type { PeekTarget } from './HeroBanner';
 import { PrayerRow } from './PrayerRow';
+import { getIntlLocale } from '../i18n/locale';
+import { formatHijriDate } from '../i18n/format-hijri-date';
 
 interface PrayerTableProps {
   todaySchedule: DailySchedule;
@@ -32,23 +34,15 @@ interface PrayerTableProps {
 
 const PRAYERS: PrayerName[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
 
-function formatDisplayDate(dateStr: string, dayOfWeek: string): string {
-  const [, month, day] = dateStr.split('-').map(Number);
-  const monthNames = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  return `${dayOfWeek}, ${monthNames[month! - 1]} ${day}`;
+function formatDisplayDate(dateStr: string, locale: string): string {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(Date.UTC(year!, month! - 1, day!));
+  return new Intl.DateTimeFormat(locale, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }).format(date);
 }
 
 function isPrayerPast(schedule: DailySchedule, prayer: PrayerName, now: Date): boolean {
@@ -308,11 +302,11 @@ export function PrayerTable({
       >
         <div>
           <h3 className="text-l font-bold text-gray-900">
-            <bdi dir="ltr">{activeSchedule.hijri_date}</bdi>
+            <bdi dir="auto">{formatHijriDate(activeSchedule.hijri_date, i18n.language)}</bdi>
           </h3>
           <p className="text-sm text-gray-500 mt-1">
             <bdi dir="ltr">
-              {formatDisplayDate(activeSchedule.date, activeSchedule.day_of_week)}
+              {formatDisplayDate(activeSchedule.date, getIntlLocale(i18n.language))}
             </bdi>
           </p>
         </div>

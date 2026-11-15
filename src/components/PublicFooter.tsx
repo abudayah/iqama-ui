@@ -121,16 +121,16 @@ export function PublicFooter() {
           )}
 
           <span
-            className="md:hidden"
             style={{ width: 1, height: 10, background: '#ddd', display: 'inline-block' }}
+            aria-hidden="true"
           />
-          <div className="flex items-center md:hidden">
+          <div className="flex items-center">
             <LangToggle />
           </div>
           <Link
             to="/admin"
             aria-label={t('footer.adminAria')}
-            className="flex items-center transition-colors hover:text-gray-600 md:hidden p-1"
+            className="flex items-center transition-colors hover:text-gray-600 p-1"
             style={{
               color: '#888',
             }}

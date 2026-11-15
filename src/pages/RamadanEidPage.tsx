@@ -8,22 +8,24 @@ import { submitOverride, deleteOverride } from '../services/hijri-calendar-servi
 import { calculateEidDate } from '../logic/calculate-eid-date';
 import i18n from '../i18n';
 import type { EidType, EidPrayerRecord, SubmitOverridePayload } from '../types/index';
+import { getIntlLocale } from '../i18n/locale';
+import { formatTime12 } from '../i18n/format-time';
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
-const HIJRI_MONTHS = [
-  'Muharram',
-  'Safar',
-  'Rabi al-Awwal',
-  'Rabi al-Thani',
-  'Jumada al-Awwal',
-  'Jumada al-Thani',
-  'Rajab',
-  "Sha'ban",
-  'Ramadan',
-  'Shawwal',
-  "Dhul Qi'dah",
-  'Dhul Hijjah',
+const HIJRI_MONTH_KEYS = [
+  'hijriMonths.muharram',
+  'hijriMonths.safar',
+  'hijriMonths.rabiAlAwwal',
+  'hijriMonths.rabiAlThani',
+  'hijriMonths.jumadaAlAwwal',
+  'hijriMonths.jumadaAlThani',
+  'hijriMonths.rajab',
+  'hijriMonths.shaban',
+  'hijriMonths.ramadan',
+  'hijriMonths.shawwal',
+  'hijriMonths.dhulQidah',
+  'hijriMonths.dhulHijjah',
 ] as const;
 
 const EID_TYPES: EidType[] = ['EID_AL_FITR', 'EID_AL_ADHA'];
@@ -41,7 +43,7 @@ type MonthLength = 'astronomical' | 29 | 30;
  * - Month 11 (Dhul Qi'dah): "Eid al-Adha will fall on <date>"
  * - All other months: "Month will be <length> days"
  *
- * Dates stay in English by design; only the surrounding sentence is translated.
+ * Gregorian dates follow the currently active UI locale.
  */
 export function computeConsequenceText(
   hijriMonth: number,
@@ -50,7 +52,7 @@ export function computeConsequenceText(
 ): string {
   if (hijriMonth === 9) {
     const eidDate = calculateEidDate(referenceDate, length === 29, 'FITR');
-    const formatted = eidDate.toLocaleDateString('en-US', {
+    const formatted = eidDate.toLocaleDateString(getIntlLocale(), {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -60,7 +62,7 @@ export function computeConsequenceText(
   }
   if (hijriMonth === 11) {
     const eidDate = calculateEidDate(referenceDate, length === 29, 'ADHA');
-    const formatted = eidDate.toLocaleDateString('en-US', {
+    const formatted = eidDate.toLocaleDateString(getIntlLocale(), {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
@@ -74,7 +76,7 @@ export function computeConsequenceText(
 // ── Component ──────────────────────────────────────────────────────────────
 
 export function RamadanEidPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // ── Hooks ──
   const {
@@ -121,7 +123,7 @@ export function RamadanEidPage() {
   const currentMonthLength: MonthLength = status?.overrideLength ?? 'astronomical';
 
   const hijriDateDisplay = status
-    ? `${HIJRI_MONTHS[(status.hijriMonth ?? 1) - 1]} ${status.hijriDay}, ${status.hijriYear}`
+    ? `${t(HIJRI_MONTH_KEYS[(status.hijriMonth ?? 1) - 1] ?? 'hijriMonths.muharram')} ${status.hijriDay}, ${status.hijriYear}`
     : null;
 
   // ── Moon Sighting tile handler ──
@@ -463,18 +465,21 @@ export function RamadanEidPage() {
                         <div className="space-y-1">
                           <p className="text-xs text-gray-500">
                             <bdi dir="ltr">
-                              {new Date(record.date + 'T12:00:00').toLocaleDateString('en-US', {
-                                weekday: 'long',
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric',
-                              })}
+                              {new Date(record.date + 'T12:00:00').toLocaleDateString(
+                                getIntlLocale(i18n.language),
+                                {
+                                  weekday: 'long',
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                                },
+                              )}
                             </bdi>
                           </p>
                           {record.prayers.map((prayer) => (
                             <p key={prayer.label} className="text-xs text-gray-700">
                               <span className="font-medium">{prayer.label}:</span>{' '}
-                              <bdi dir="ltr">{prayer.time}</bdi>
+                              <bdi dir="ltr">{formatTime12(prayer.time)}</bdi>
                             </p>
                           ))}
                         </div>

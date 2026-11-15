@@ -34,9 +34,9 @@ describe('EidCard', () => {
   it('renders all prayer labels and times', () => {
     render(<EidCard record={baseRecord} />);
     expect(screen.getByText('1st Prayer')).toBeInTheDocument();
-    expect(screen.getByText('07:00')).toBeInTheDocument();
+    expect(screen.getByText('07:00 AM')).toBeInTheDocument();
     expect(screen.getByText('2nd Prayer')).toBeInTheDocument();
-    expect(screen.getByText('08:30')).toBeInTheDocument();
+    expect(screen.getByText('08:30 AM')).toBeInTheDocument();
   });
 
   it('shows preliminary notice when source is astronomical', () => {
@@ -68,8 +68,8 @@ describe('EidCard', () => {
     render(<EidCard record={record} />);
     expect(screen.getByText('Eid al-Adha')).toBeInTheDocument();
     expect(screen.getByText('Friday, June 6, 2025')).toBeInTheDocument();
-    expect(screen.getByText('06:45')).toBeInTheDocument();
-    expect(screen.getByText('08:15')).toBeInTheDocument();
+    expect(screen.getByText('06:45 AM')).toBeInTheDocument();
+    expect(screen.getByText('08:15 AM')).toBeInTheDocument();
     expect(screen.queryByTestId('preliminary-notice')).not.toBeInTheDocument();
   });
 });

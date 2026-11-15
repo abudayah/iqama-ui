@@ -8,6 +8,8 @@ import type {
 } from '../types/iqama-rules';
 import i18n from '../i18n';
 import { joinList } from '../i18n/list';
+import { formatTime12 } from '../i18n/format-time';
+import { formatWeekdayName, getIntlLocale } from '../i18n/locale';
 
 const PRAYER_LABELS: Record<string, string> = {
   fajr: 'Fajr',
@@ -21,15 +23,14 @@ const PRAYER_LABELS: Record<string, string> = {
 export const prayerLabel = (name: string): string =>
   PRAYER_LABELS[name] ?? name.charAt(0).toUpperCase() + name.slice(1);
 
-/** Weekday names stay in English by design (they label fixed dates). */
 const WEEKDAY_LABELS: Record<Weekday, string> = {
-  SUN: 'Sun',
-  MON: 'Mon',
-  TUE: 'Tue',
-  WED: 'Wed',
-  THU: 'Thu',
-  FRI: 'Fri',
-  SAT: 'Sat',
+  SUN: 'Sunday',
+  MON: 'Monday',
+  TUE: 'Tuesday',
+  WED: 'Wednesday',
+  THU: 'Thursday',
+  FRI: 'Friday',
+  SAT: 'Saturday',
 };
 
 const signed = (n: number) => `${n < 0 ? '−' : '+'} ${Math.abs(n)} ${i18n.t('ruleDescribe.min')}`;
@@ -41,7 +42,7 @@ function describeBase(base: RuleBase): string {
         ? i18n.t('ruleDescribe.atAzan')
         : i18n.t('ruleDescribe.azan', { offset: signed(base.minutes) });
     case 'FIXED_TIME':
-      return i18n.t('ruleDescribe.fixed', { time: base.time });
+      return i18n.t('ruleDescribe.fixed', { time: formatTime12(base.time) });
     case 'SCALED_GAP': {
       const gaps = base.points.map((p) => p.gapMinutes);
       return i18n.t('ruleDescribe.scaled', {
@@ -75,7 +76,12 @@ export function describeRule(rule: PrayerRule): string {
   const adj = Object.entries(weekdayAdjust ?? {}).filter(([, v]) => v);
   if (adj.length)
     parts.push(
-      joinList(adj.map(([d, v]) => `${WEEKDAY_LABELS[d as Weekday]} ${signed(v as number)}`)),
+      joinList(
+        adj.map(
+          ([d, v]) =>
+            `${formatWeekdayName(WEEKDAY_LABELS[d as Weekday], getIntlLocale())} ${signed(v as number)}`,
+        ),
+      ),
     );
   if (weeklyLock) parts.push(i18n.t('ruleDescribe.weeklyLock'));
   return joinList(parts);
@@ -112,9 +118,9 @@ export function changedPrayers(base: RuleSet, draft: Partial<RuleSet>): PrayerNa
   return (Object.keys(draft) as PrayerName[]).filter((p) => !sameRule(draft[p]!, base[p]));
 }
 
-/** "Fri, Nov 13" for a YYYY-MM-DD date. */
-export function formatDay(date: string): string {
-  return new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', {
+/** Format a YYYY-MM-DD date using the requested locale. */
+export function formatDay(date: string, locale = 'en-US'): string {
+  return new Date(`${date}T12:00:00Z`).toLocaleDateString(locale, {
     weekday: 'short',
     month: 'short',
     day: 'numeric',

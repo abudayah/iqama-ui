@@ -13,6 +13,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getIntlLocale } from '../i18n/locale';
 import type {
   PrayerKey,
   AdhanSettings,
@@ -79,7 +80,7 @@ function periodLabelsForPrayer(activePeriods: AdhanConfigPeriod[], prayer: Praye
 type ActiveTab = 'overview' | 'periods';
 
 export function AdhanConfigPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { config, catalog, loading, error, refresh } = useAdhanConfig();
   const draft = useAdhanDraft(config?.today);
 
@@ -280,13 +281,16 @@ export function AdhanConfigPage() {
                           {' · '}
                           <bdi dir="ltr">
                             {t('adhanConfig.lastUpdated', {
-                              date: new Date(currentVersion.createdAt).toLocaleString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                                hour: 'numeric',
-                                minute: '2-digit',
-                              }),
+                              date: new Date(currentVersion.createdAt).toLocaleString(
+                                getIntlLocale(i18n.language),
+                                {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                  hour: 'numeric',
+                                  minute: '2-digit',
+                                },
+                              ),
                             })}
                           </bdi>
                         </span>

@@ -5,6 +5,7 @@ import type { PrayerName, DailySchedule, CountdownState } from '../types/index';
 import type { PrayerEvent } from '../logic/derive-next-prayer';
 import { IslamicEventBanner } from './IslamicEventBanner';
 import { getMoonPhase } from './moon-phase';
+import { formatTime12 } from '../i18n/format-time';
 
 /** Prayers + sunrise + Eid prayers — anything that can be peeked */
 export type PeekTarget = PrayerName | 'sunrise' | 'eid-prayer-1' | 'eid-prayer-2';
@@ -533,6 +534,8 @@ export function HeroBanner({
     displayPrayer && displaySchedule && !isNonAzanEvent(displayPrayer)
       ? (displaySchedule[displayPrayer as PrayerName]?.iqama ?? null)
       : null;
+  const localizedAzanTime = azanTime ? formatTime12(azanTime) : null;
+  const localizedIqamaTime = iqamaTime ? formatTime12(iqamaTime) : null;
 
   /* ── Countdown display ── */
   const effectiveMode = isPeeking ? 'to_azan' : countdownMode;
@@ -556,18 +559,18 @@ export function HeroBanner({
 
   const subLine = isPeeking
     ? azanTime
-      ? t('hero.at', { prayer: prayerLabel, time: azanTime })
+      ? t('hero.at', { prayer: prayerLabel, time: localizedAzanTime })
       : prayerLabel
     : isIqamaWindow
       ? iqamaTime
-        ? t('hero.iqamaAt', { prayer: prayerLabel, time: iqamaTime })
+        ? t('hero.iqamaAt', { prayer: prayerLabel, time: localizedIqamaTime })
         : prayerLabel
       : displayPrayer === 'sunrise'
         ? azanTime
-          ? t('hero.at', { prayer: prayerLabel, time: azanTime })
+          ? t('hero.at', { prayer: prayerLabel, time: localizedAzanTime })
           : prayerLabel
         : azanTime
-          ? t('hero.azanAt', { prayer: prayerLabel, time: azanTime })
+          ? t('hero.azanAt', { prayer: prayerLabel, time: localizedAzanTime })
           : prayerLabel;
 
   /* ── Moon phase ── */
@@ -603,9 +606,15 @@ export function HeroBanner({
       }}
       aria-label={t('hero.aria')}
     >
-      {/* ── Text content — left-aligned stacked layout ── */}
+      {/*
+       * ── Text content — stacked layout, pinned to the physical left ──
+       * The sky scene composition (sun arc, mountains) is not mirrored in RTL,
+       * so the countdown stays on the left in both directions: `ml-0 mr-auto`
+       * holds the box against the left edge, and `text-left` keeps the stack
+       * flush with it instead of inheriting `text-align: start` (right in RTL).
+       */}
       <div
-        className="relative z-10 flex flex-col justify-start px-6 pt-8 max-w-xs"
+        className="relative z-10 flex flex-col justify-start px-6 pt-8 max-w-xs ml-0 mr-auto text-left"
         style={{ textShadow: '0 2px 12px rgba(0,0,0,0.45)' }}
       >
         {/* Super-title */}

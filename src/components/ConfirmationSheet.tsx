@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 interface ConfirmationSheetProps {
   consequenceText: string;
   onConfirm: () => void;
@@ -9,6 +11,8 @@ export function ConfirmationSheet({
   onConfirm,
   onCancel,
 }: ConfirmationSheetProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       {/* Backdrop */}
@@ -33,13 +37,13 @@ export function ConfirmationSheet({
             onClick={onCancel}
             className="flex-1 border border-gray-300 hover:bg-gray-50 active:bg-gray-100 text-gray-700 rounded py-3 text-sm font-medium transition-colors min-h-[44px]"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             onClick={onConfirm}
             className="flex-1 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded py-3 text-sm font-medium transition-colors min-h-[44px]"
           >
-            Confirm
+            {t('eidModal.confirm')}
           </button>
         </div>
       </div>

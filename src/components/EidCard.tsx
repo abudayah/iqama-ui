@@ -1,5 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import type { EidPrayerRecord } from '../types';
+import { getIntlLocale } from '../i18n/locale';
+import { formatTime12 } from '../i18n/format-time';
 
 interface EidCardProps {
   record: EidPrayerRecord;
@@ -8,15 +10,15 @@ interface EidCardProps {
 /**
  * Parses a YYYY-MM-DD string and formats it as a human-readable date
  * (e.g., "Friday, June 27, 2025") without timezone shift.
- * Dates stay in English by design.
+ * Date formatting follows the active UI locale.
  */
-function formatGregorianDate(dateStr: string): string {
+function formatGregorianDate(dateStr: string, locale: string): string {
   const [yearStr, monthStr, dayStr] = dateStr.split('-');
   const year = parseInt(yearStr!, 10);
   const month = parseInt(monthStr!, 10) - 1; // months are 0-indexed in Date
   const day = parseInt(dayStr!, 10);
   const date = new Date(year, month, day);
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(locale, {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -25,10 +27,10 @@ function formatGregorianDate(dateStr: string): string {
 }
 
 export function EidCard({ record }: EidCardProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const typeName =
     record.type === 'EID_AL_FITR' ? t('ramadan.eidFitrName') : t('ramadan.eidAdhaName');
-  const formattedDate = formatGregorianDate(record.date);
+  const formattedDate = formatGregorianDate(record.date, getIntlLocale(i18n.language));
   const isAstronomical = record.source === 'astronomical';
 
   return (
@@ -62,7 +64,7 @@ export function EidCard({ record }: EidCardProps) {
             >
               <span className="text-sm font-medium text-gray-700">{entry.label}</span>
               <span className="text-sm font-semibold text-emerald-700">
-                <bdi dir="ltr">{entry.time}</bdi>
+                <bdi dir="ltr">{formatTime12(entry.time)}</bdi>
               </span>
             </div>
           ))}

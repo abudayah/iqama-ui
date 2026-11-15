@@ -1,8 +1,9 @@
 import { useTranslation } from 'react-i18next';
 import type { Override } from '../types/index';
 import { isActive } from '../logic/is-active';
+import { getIntlLocale } from '../i18n/locale';
 
-function formatDate(dateStr: string | null | undefined): string {
+function formatDate(dateStr: string | null | undefined, locale: string): string {
   if (!dateStr) return '—';
   const datePart = dateStr.split('T')[0] ?? dateStr; // handle ISO timestamps like 2026-05-04T00:00:00.000Z
   const parts = datePart.split('-').map(Number);
@@ -10,7 +11,7 @@ function formatDate(dateStr: string | null | undefined): string {
   const [year, month, day] = parts as [number, number, number];
   const date = new Date(year, month - 1, day);
   if (isNaN(date.getTime())) return dateStr;
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat(locale, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -27,7 +28,7 @@ interface OverrideRowProps {
 }
 
 export function OverrideRow({ override, today, onEdit, onDelete, clamped }: OverrideRowProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const active = isActive(override, today);
   const prayerLabel = t(`prayers.${override.prayer}`);
 
@@ -55,8 +56,8 @@ export function OverrideRow({ override, today, onEdit, onDelete, clamped }: Over
         <p className="text-xs text-gray-500 mt-0.5">
           {override.overrideType === 'FIXED' ? t('overrideForm.fixed') : t('overrideForm.offset')}:{' '}
           <bdi dir="ltr">{override.value}</bdi> ·{' '}
-          <bdi dir="ltr">{formatDate(override.startDate)}</bdi> –{' '}
-          <bdi dir="ltr">{formatDate(override.endDate)}</bdi>
+          <bdi dir="ltr">{formatDate(override.startDate, getIntlLocale(i18n.language))}</bdi> –{' '}
+          <bdi dir="ltr">{formatDate(override.endDate, getIntlLocale(i18n.language))}</bdi>
         </p>
         {clamped && (
           <p

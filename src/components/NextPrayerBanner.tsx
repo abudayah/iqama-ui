@@ -1,4 +1,6 @@
+import { useTranslation } from 'react-i18next';
 import type { PrayerName, CountdownState, DailySchedule } from '../types/index';
+import { formatTime12 } from '../i18n/format-time';
 
 interface NextPrayerBannerProps {
   nextPrayer: PrayerName | null;
@@ -6,12 +8,12 @@ interface NextPrayerBannerProps {
   schedule: DailySchedule | null;
 }
 
-const PRAYER_LABELS: Record<string, string> = {
-  fajr: 'Fajr',
-  dhuhr: 'Dhuhr',
-  asr: 'Asr',
-  maghrib: 'Maghrib',
-  isha: 'Isha',
+const PRAYER_LABEL_KEYS: Record<string, string> = {
+  fajr: 'prayers.fajr',
+  dhuhr: 'prayers.dhuhr',
+  asr: 'prayers.asr',
+  maghrib: 'prayers.maghrib',
+  isha: 'prayers.isha',
 };
 
 /** Returns the previous prayer name relative to the next one, used for the progress bar left label. */
@@ -45,6 +47,7 @@ function calcProgress(schedule: DailySchedule, nextPrayer: PrayerName, now: Date
 }
 
 export function NextPrayerBanner({ nextPrayer, countdown, schedule }: NextPrayerBannerProps) {
+  const { t } = useTranslation();
   if (!nextPrayer || !schedule) return null;
 
   const now = new Date();
@@ -55,10 +58,10 @@ export function NextPrayerBanner({ nextPrayer, countdown, schedule }: NextPrayer
 
   const countdownLabel =
     countdown.phase === 'to_azan'
-      ? 'Time until azan'
+      ? t('nextPrayerBanner.untilAzan')
       : countdown.phase === 'to_iqama'
-        ? 'Time until iqama'
-        : 'Iqama in progress';
+        ? t('nextPrayerBanner.untilIqama')
+        : t('nextPrayerBanner.iqamaInProgress');
 
   return (
     <div
@@ -94,11 +97,13 @@ export function NextPrayerBanner({ nextPrayer, countdown, schedule }: NextPrayer
         <div className="flex justify-between items-start">
           <div>
             <p className="text-xs" style={{ opacity: 0.75 }}>
-              Next prayer
+              {t('nextPrayerBanner.nextPrayer')}
             </p>
-            <p className="text-2xl font-medium mt-0.5">{PRAYER_LABELS[nextPrayer] ?? nextPrayer}</p>
+            <p className="text-2xl font-medium mt-0.5">
+              {t(PRAYER_LABEL_KEYS[nextPrayer] ?? 'prayers.fajr')}
+            </p>
             <p className="text-sm mt-0.5" style={{ opacity: 0.7 }}>
-              Iqama at {iqamaTime}
+              {t('nextPrayerBanner.iqamaAt', { time: formatTime12(iqamaTime) })}
             </p>
           </div>
           <div className="text-right">
@@ -127,10 +132,11 @@ export function NextPrayerBanner({ nextPrayer, countdown, schedule }: NextPrayer
           </div>
           <div className="flex justify-between mt-1">
             <p className="text-xs" style={{ opacity: 0.6 }}>
-              {PRAYER_LABELS[prev]} {schedule[prev].azan}
+              {t(PRAYER_LABEL_KEYS[prev] ?? 'prayers.fajr')} {formatTime12(schedule[prev].azan)}
             </p>
             <p className="text-xs" style={{ opacity: 0.6 }}>
-              {PRAYER_LABELS[nextAfter]} {schedule[nextAfter].azan}
+              {t(PRAYER_LABEL_KEYS[nextAfter] ?? 'prayers.fajr')}{' '}
+              {formatTime12(schedule[nextAfter].azan)}
             </p>
           </div>
         </div>

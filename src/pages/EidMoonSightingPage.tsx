@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSightingStatus } from '../hooks/useSightingStatus';
 import { useEidPrayers } from '../hooks/useEidPrayers';
 import { SightingCard } from '../components/SightingCard';
@@ -6,30 +7,28 @@ import { EidPrayerModal } from '../components/EidPrayerModal';
 import { submitOverride } from '../services/hijri-calendar-service';
 import { calculateEidDate } from '../logic/calculate-eid-date';
 import type { EidType, EidPrayerRecord } from '../types/index';
+import { getIntlLocale } from '../i18n/locale';
+import { formatTime12 } from '../i18n/format-time';
 
-const HIJRI_MONTHS = [
-  'Muharram',
-  'Safar',
-  'Rabi al-Awwal',
-  'Rabi al-Thani',
-  'Jumada al-Awwal',
-  'Jumada al-Thani',
-  'Rajab',
-  "Sha'ban",
-  'Ramadan',
-  'Shawwal',
-  "Dhul Qi'dah",
-  'Dhul Hijjah',
+const HIJRI_MONTH_KEYS = [
+  'hijriMonths.muharram',
+  'hijriMonths.safar',
+  'hijriMonths.rabiAlAwwal',
+  'hijriMonths.rabiAlThani',
+  'hijriMonths.jumadaAlAwwal',
+  'hijriMonths.jumadaAlThani',
+  'hijriMonths.rajab',
+  'hijriMonths.shaban',
+  'hijriMonths.ramadan',
+  'hijriMonths.shawwal',
+  'hijriMonths.dhulQidah',
+  'hijriMonths.dhulHijjah',
 ] as const;
-
-const EID_TYPE_LABELS: Record<EidType, string> = {
-  EID_AL_FITR: 'Eid al-Fitr',
-  EID_AL_ADHA: 'Eid al-Adha',
-};
 
 const EID_TYPES: EidType[] = ['EID_AL_FITR', 'EID_AL_ADHA'];
 
 export function EidMoonSightingPage() {
+  const { t, i18n } = useTranslation();
   const { status, loading: statusLoading, error: statusError } = useSightingStatus();
   const { records, loading: recordsLoading, error: recordsError, refetch } = useEidPrayers();
 
@@ -60,12 +59,12 @@ export function EidMoonSightingPage() {
           setSightingSuccess(true);
         } catch (err) {
           setSightingError(
-            err instanceof Error ? err.message : 'Submission failed. Please try again.',
+            err instanceof Error ? err.message : t('eidMoonSighting.submissionFailed'),
           );
         }
       }
     },
-    [status],
+    [status, t],
   );
 
   /* ── Edit button handler ── */
@@ -140,14 +139,14 @@ export function EidMoonSightingPage() {
 
   /* ── Hijri date display ── */
   const hijriDateDisplay = status
-    ? `${HIJRI_MONTHS[status.hijriMonth - 1]} ${status.hijriDay}, ${new Date(status.gregorianDate).getFullYear()}`
+    ? `${t(HIJRI_MONTH_KEYS[status.hijriMonth - 1] ?? 'hijriMonths.muharram')} ${status.hijriDay}, ${new Date(status.gregorianDate).getFullYear()}`
     : null;
 
   return (
     <div className="p-4">
       {/* ── Section 1: Status display ── */}
       <div className="mb-6">
-        <h1 className="text-lg font-bold text-gray-800 mb-3">Eid &amp; Moon Sighting</h1>
+        <h1 className="text-lg font-bold text-gray-800 mb-3">{t('eidMoonSighting.title')}</h1>
 
         {statusLoading && (
           <div className="animate-pulse space-y-2">
@@ -168,24 +167,26 @@ export function EidMoonSightingPage() {
         {status && !statusLoading && (
           <div className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
             <p className="text-sm text-gray-700">
-              <span className="font-medium">Today (Hijri):</span>{' '}
+              <span className="font-medium">{t('eidMoonSighting.todayHijri')}</span>{' '}
               <span data-testid="hijri-date">{hijriDateDisplay}</span>
             </p>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-700 font-medium">Override status:</span>
+              <span className="text-sm text-gray-700 font-medium">
+                {t('eidMoonSighting.overrideStatus')}
+              </span>
               {status.hasOverride ? (
                 <span
                   className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800"
                   data-testid="override-badge"
                 >
-                  Override submitted
+                  {t('eidMoonSighting.overrideSubmitted')}
                 </span>
               ) : (
                 <span
                   className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
                   data-testid="override-badge"
                 >
-                  No override yet
+                  {t('eidMoonSighting.noOverride')}
                 </span>
               )}
             </div>
@@ -195,7 +196,9 @@ export function EidMoonSightingPage() {
 
       {/* ── Section 2: Saved Eid records ── */}
       <div className="mb-6">
-        <h2 className="text-base font-semibold text-gray-800 mb-3">Saved Eid Records</h2>
+        <h2 className="text-base font-semibold text-gray-800 mb-3">
+          {t('eidMoonSighting.savedRecords')}
+        </h2>
 
         {recordsLoading && (
           <div className="animate-pulse space-y-3">
@@ -229,27 +232,35 @@ export function EidMoonSightingPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-gray-800 mb-1">
-                        {EID_TYPE_LABELS[eidType]}
+                        {eidType === 'EID_AL_FITR'
+                          ? t('ramadan.eidFitrName')
+                          : t('ramadan.eidAdhaName')}
                       </p>
 
                       {hasOverrideRecord && record ? (
                         <div className="space-y-1">
                           <p className="text-xs text-gray-500">
-                            {new Date(record.date + 'T12:00:00').toLocaleDateString('en-US', {
-                              weekday: 'long',
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                            })}
+                            {new Date(record.date + 'T12:00:00').toLocaleDateString(
+                              getIntlLocale(i18n.language),
+                              {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                              },
+                            )}
                           </p>
                           {record.prayers.map((prayer) => (
                             <p key={prayer.label} className="text-xs text-gray-700">
-                              <span className="font-medium">{prayer.label}:</span> {prayer.time}
+                              <span className="font-medium">{prayer.label}:</span>{' '}
+                              <bdi dir="ltr">{formatTime12(prayer.time)}</bdi>
                             </p>
                           ))}
                         </div>
                       ) : (
-                        <p className="text-xs text-gray-400 italic">No prayer times saved yet</p>
+                        <p className="text-xs text-gray-400 italic">
+                          {t('eidMoonSighting.noPrayerTimes')}
+                        </p>
                       )}
                     </div>
 
@@ -259,7 +270,7 @@ export function EidMoonSightingPage() {
                       className="shrink-0 text-sm text-blue-600 border border-blue-200 rounded-lg px-3 py-1.5 hover:bg-blue-50 active:bg-blue-100 disabled:opacity-40 min-h-[44px]"
                       data-testid={`edit-button-${eidType}`}
                     >
-                      Edit
+                      {t('eidMoonSighting.edit')}
                     </button>
                   </div>
                 </div>
@@ -271,14 +282,14 @@ export function EidMoonSightingPage() {
 
       {/* ── Section 3: Moon sighting submission ── */}
       <div className="mb-6">
-        <h2 className="text-base font-semibold text-gray-800 mb-3">Moon Sighting</h2>
+        <h2 className="text-base font-semibold text-gray-800 mb-3">{t('ramadan.moonSighting')}</h2>
 
         {sightingSuccess && (
           <div
             className="mb-3 bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-emerald-700 text-sm"
             role="status"
           >
-            Moon-sighting decision saved successfully.
+            {t('eidMoonSighting.savedSuccess')}
           </div>
         )}
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import i18n from '../i18n';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -35,7 +36,7 @@ export function useInstallPrompt() {
     if (!promptEvent) {
       // If running as installed app, show a message
       if (isInstalled) {
-        alert('App is already installed! You can find it on your home screen.');
+        alert(i18n.t('installPrompt.alreadyInstalled'));
       }
       return;
     }

@@ -1,6 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LangToggle } from './LangToggle';
 
 export function AdminNav() {
   const { t } = useTranslation();
@@ -58,9 +57,6 @@ export function AdminNav() {
       >
         {t('nav.adhan')}
       </NavLink>
-      <div className="flex shrink-0 items-center px-2">
-        <LangToggle />
-      </div>
     </nav>
   );
 }
