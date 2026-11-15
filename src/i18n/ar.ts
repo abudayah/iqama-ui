@@ -435,6 +435,7 @@ const ar: I18nKeys = {
     emptyGroup: 'أدخل قيمة واحدة على الأقل، أو أوقف الخيار',
     sheetTitle: '{{prayer}} · القاعدة الأساسية للإقامة',
     catalog: {
+      rounding: 'التقريب',
       limits: 'الحدود',
       minAfterAzan: 'الحد الأدنى للدقائق بعد الأذان',
       // The engine's English label says "at most"; the engine means the iqama must be

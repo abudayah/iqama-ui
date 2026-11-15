@@ -1010,6 +1010,7 @@ const en: I18nKeys = {
     emptyGroup: 'Set at least one value, or turn it off',
     sheetTitle: '{{prayer}} · Iqama rule',
     catalog: {
+      rounding: 'Rounding',
       limits: 'Limits',
       minAfterAzan: 'At least this many minutes after Azan',
       latestBeforeSunrise: 'At most this many minutes before sunrise',
